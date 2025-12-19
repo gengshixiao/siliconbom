@@ -1,0 +1,19 @@
+:root {
+    --bg-color: #F8FAFC;       /* 浅灰底色 */
+    --trace-color: #CBD5E1;    /* 未激活线路颜色 (银灰) */
+    --trace-active: #6DD5E8;   /* 激活线路颜色 (淡青色) */
+    --chip-body: #FFFFFF;      /* 芯片本体白 */
+    --pin-metal: #94A3B8;      /* 引脚金属色 */
+    --text-main: #334155;
+    --text-secondary: #64748B;
+    --border-color: #E2E8F0;
+    --sidebar-w: 260px;
+    --sidebar-w-collapsed: 64px;  /* 折叠时的宽度 */
+    --transition: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+    --input-bg: #FFFFFF;
+    --button-disabled: #CBD5E1;
+    --link-color: #3B82F6;
+    --primary-color: #6DD5E8;
+    --primary-hover: #4DB6AC;
+}
+

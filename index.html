@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>SiliconBom 硅宝</title>
+    
+    <!-- 引入公共CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/settings-feedback.css">
+    <link rel="stylesheet" href="css/user-block.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <div class="mention-dropdown" id="mentionDropdown"></div>
+
+    <div class="layout-wrapper">
+        
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索" id="sidebarSearchInput">
+                    </div>
+                </div>
+
+                <!-- 新建项目 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史项目列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">R26系列同规格产品推荐</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息（登录状态） -->
+            <div class="user-block" id="userBlock" style="display: none;">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+            <!-- 登录按钮（未登录状态） -->
+            <div class="login-prompt" id="loginButton">
+                <button class="login-btn-sidebar">登录</button>
+            </div>
+        </aside>
+
+        <main class="main-viewport">
+            <div class="floors-container" id="floorsContainer">
+                 <!-- 新页面（教程页）：先留空，但保留底部线路与按钮 -->
+                 <section class="floor floor-tutorial">
+                     <svg class="pcb-layer-svg pcb-layer-svg--tutorial" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"></svg>
+                    <div class="tutorial-card">
+                        <div class="tutorial-card-header">
+                            <h2>🚀 硅宝使用教程</h2>
+                        </div>
+                        <div class="tutorial-card-content" id="tutorialContent">
+                            <!-- Markdown内容将通过JavaScript渲染 -->
+                        </div>
+                    </div>
+                 </section>
+                 
+                 <!-- 工作台（当前页面） -->
+                 <section class="floor floor-workbench">
+                     <!-- SVG内容将由JavaScript动态生成，确保精确连接到芯片引脚 -->
+                     <svg class="pcb-layer-svg pcb-layer-svg--workbench" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"></svg>
+
+                     <div class="chip-package">
+                     <div class="chip-marking">
+                         SILICON-BOM<br>
+                         AI-CORE-V5
+                     </div>
+
+                     <div class="pin-array top">
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead active"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                     </div>
+                     <div class="pin-array bottom">
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead active"></div>
+                         <div class="pin-lead"></div>
+                     </div>
+                     <div class="pin-array left">
+                         <div class="pin-lead active"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                     </div>
+                     <div class="pin-array right">
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead active"></div>
+                         <div class="pin-lead"></div>
+                         <div class="pin-lead"></div>
+                     </div>
+
+                     <div class="chip-interface">
+                         <!-- 欢迎界面 -->
+                         <div class="welcome-area" id="welcomeArea">
+                             <h1>硅宝已就绪</h1>
+                             <p>随时准备启动研发任务</p>
+                         </div>
+
+                         <!-- 对话容器 -->
+                         <div class="chat-container" id="chatContainer" style="display: none;">
+                             <!-- 对话头部 -->
+                             <div class="chat-header">
+                                 <h1 class="chat-title" id="chatTitle">GD25Q64ESIGR芯片查询</h1>
+                             </div>
+
+                             <!-- 消息区域 -->
+                             <div class="messages-container" id="messagesContainer">
+                                 <!-- 对话内容将通过JavaScript动态生成 -->
+                             </div>
+                         </div>
+
+                         <div class="search-wrapper">
+                             <div class="input-editor" id="mainTextarea" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
+                             <div class="input-actions">
+                                 <div class="input-actions-left">
+                                     <div class="mode-badge balanced" id="indexModeBadge">
+                                         <span class="mode-badge-icon">⚖️</span>
+                                         <span id="indexModeBadgeText">均衡模式</span>
+                                     </div>
+                                 </div>
+                                 <div class="input-actions-right">
+                                     <button class="btn-attach" type="button" aria-label="上传文件">
+                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                         </svg>
+                                     </button>
+                                     <button class="btn-voice" type="button" aria-label="语音输入">
+                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                             <line x1="12" y1="19" x2="12" y2="23"></line>
+                                             <line x1="8" y1="23" x2="16" y2="23"></line>
+                                         </svg>
+                                     </button>
+                                     <button class="btn-send" type="button" aria-label="发送">
+                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                             <line x1="22" y1="2" x2="11" y2="13"></line>
+                                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                         </svg>
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                 </div>
+
+                 </section>
+                 
+                 <!-- 最佳实践页面 -->
+                 <section class="floor floor-practices">
+                     <svg class="pcb-layer-svg pcb-layer-svg--practices" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"></svg>
+                     
+                     <!-- 卡片列表 -->
+                     <div class="practices-container" id="practicesContainer">
+                         <div class="practices-card">
+                            <div class="practice-item">
+                                <div class="practice-bg practice-bg-material">
+                                    <div class="practice-bg-pattern"></div>
+                                    <div class="practice-bg-icon">🔍</div>
+                                    <div class="practice-bg-text">MATERIAL SEARCH</div>
+                                    <div class="practice-pin">📌</div>
+                                </div>
+                                 <div class="practice-content">
+                                     <div class="practice-header">
+                                         <div class="practice-avatar">👨🏻‍💻</div>
+                                         <div class="practice-user">@奋斗小青年陈工</div>
+                                     </div>
+                                     <div class="practice-title">物料检索</div>
+                                     <div class="practice-desc">仅需简单描述，快速查找所需物料</div>
+                                     <div class="practice-tags">
+                                         <span class="practice-tag">高效研发</span>
+                                         <span class="practice-tag">数据获取</span>
+                                         <span class="practice-tag">智能推荐</span>
+                                     </div>
+                                 </div>
+                             </div>
+                             
+                            <div class="practice-item">
+                                <div class="practice-bg practice-bg-bom">
+                                    <div class="practice-bg-pattern"></div>
+                                    <div class="practice-bg-icon">📊</div>
+                                    <div class="practice-bg-text">BOM REVIEW</div>
+                                    <div class="practice-pin">📌</div>
+                                </div>
+                                 <div class="practice-content">
+                                     <div class="practice-header">
+                                         <div class="practice-avatar">📋</div>
+                                         <div class="practice-user">@BOM管理员小陈</div>
+                                     </div>
+                                     <div class="practice-title">BOM评审</div>
+                                     <div class="practice-desc">一键审查内容，轻松获取多版本方案</div>
+                                     <div class="practice-tags">
+                                         <span class="practice-tag">物料选型</span>
+                                         <span class="practice-tag">BOM版本管理</span>
+                                     </div>
+                                 </div>
+                             </div>
+                             
+                            <div class="practice-item">
+                                <div class="practice-bg practice-bg-research">
+                                    <div class="practice-bg-pattern"></div>
+                                    <div class="practice-bg-icon">⚡</div>
+                                    <div class="practice-bg-text">DEEP RESEARCH</div>
+                                    <div class="practice-pin">📌</div>
+                                </div>
+                                 <div class="practice-content">
+                                     <div class="practice-header">
+                                         <div class="practice-avatar">🚀</div>
+                                         <div class="practice-user">@不愿意透露姓名的产品大佬</div>
+                                     </div>
+                                     <div class="practice-title">研发任务研究</div>
+                                     <div class="practice-desc">深入分析参数，获取最优器件</div>
+                                     <div class="practice-tags">
+                                         <span class="practice-tag">替代料查询</span>
+                                         <span class="practice-tag">技术参数提取</span>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                     
+                     <!-- 对话容器（默认隐藏） -->
+                     <div class="practices-chat-container" id="practicesChatContainer" style="display: none;">
+                         <!-- 对话头部 -->
+                         <div class="chat-header">
+                             <button class="chat-back-btn" id="chatBackBtn">
+                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                     <path d="M19 12H6m6-7l-7 7 7 7"></path>
+                                 </svg>
+                             </button>
+                             <div class="chat-title-wrapper">
+                                 <h1 class="chat-title-main">最佳实践</h1>
+                                 <span class="chat-title-sub" id="practicesChatTitle">@奋斗小青年陈工</span>
+                             </div>
+                         </div>
+
+                         <!-- 消息区域 -->
+                         <div class="messages-container" id="practicesMessagesContainer">
+                             <!-- 对话内容将通过JavaScript动态生成 -->
+                         </div>
+                     </div>
+                 </section>
+             </div>
+         </main>
+    </div>
+
+    <!-- 研发偏好设置弹窗 -->
+
+    <!-- PDF抽屉遮罩 -->
+    <div class="pdf-drawer-overlay" id="pdfDrawerOverlay"></div>
+    
+    <!-- PDF抽屉 -->
+    <div class="pdf-drawer" id="pdfDrawer">
+        <div class="pdf-drawer-header">
+            <div class="pdf-drawer-title" id="pdfDrawerTitle">文档查看器</div>
+            <button class="pdf-drawer-close" id="pdfDrawerClose">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="pdf-drawer-content">
+            <div id="pdfViewerContent">
+                <!-- PDF内容将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 对话展示模态框 -->
+    <div class="chat-demo-modal-overlay" id="chatDemoModalOverlay">
+        <div class="chat-demo-modal">
+            <div class="chat-demo-header">
+                <div class="chat-demo-title">
+                    <h2>GD25Q64ESIGR芯片查询</h2>
+                    <span class="chat-demo-subtitle">@奋斗小青年陈工</span>
+                </div>
+                <button class="chat-demo-close" id="chatDemoClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="chat-demo-messages" id="chatDemoMessages">
+                <!-- 对话内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Markdown渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    
+    <!-- 引入公共JavaScript -->
+    <script src="js/sidebar.js"></script>
+    <script src="js/tooltip.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/sidebar-navigation.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/confirm-dialog.js"></script>
+    <script src="js/login-modal.js"></script>
+    <script src="js/settings-modal.js"></script>
+    <script src="js/feedback-modal.js"></script>
+    <script src="js/user-menu.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>
