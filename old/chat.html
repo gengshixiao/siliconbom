@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>智能对话 - 硅宝</title>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;
+            --trace-color: #CBD5E1;
+            --trace-active: #6DD5E8;
+            --chip-body: #FFFFFF;
+            --pin-metal: #94A3B8;
+            --text-main: #334155;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 64px;
+            --transition: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', 'PingFang SC', sans-serif; 
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+            background-size: 30px 30px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 布局容器 */
+        .layout-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 左侧侧边栏样式 - 完全复用 */
+        .sidebar-unit {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            z-index: 20;
+            position: relative;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed {
+            width: var(--sidebar-w-collapsed);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E2E8F0;
+            min-height: 64px;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-header {
+            justify-content: space-between;
+            padding: 16px 8px;
+        }
+        
+        .user-avatar-header {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-unit.collapsed .user-avatar-header {
+            display: block;
+        }
+        
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .brand-logo {
+            width: auto;
+            height: 40px;
+            display: block;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .sidebar-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .sidebar-unit.collapsed .brand-logo {
+            display: none;
+        }
+
+        /* 搜索框 */
+        .sidebar-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #F8FAFC;
+            font-size: 13px;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-search {
+            display: none;
+        }
+        
+        /* 菜单项 */
+        .menu-section {
+            padding: 8px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-section.project-section {
+            display: none;
+        }
+        
+        .sidebar-unit.collapsed .menu-section {
+            padding: 4px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            padding: 12px;
+            margin: 2px 0;
+        }
+        
+        .menu-section-title {
+            padding: 8px 16px 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-unit.collapsed .menu-section-title {
+            display: none;
+        }
+        
+        .menu-item {
+            position: relative;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 0;
+        }
+        
+        .menu-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item.active {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .menu-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .menu-item-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .sidebar-unit.collapsed .menu-item-text {
+            display: none;
+        }
+        
+        /* 项目列表 */
+        .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .project-item {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .project-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .project-item.active {
+            background: rgba(109, 213, 232, 0.1);
+            color: var(--trace-active);
+        }
+        
+        .project-item-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .project-item {
+            padding: 8px;
+            justify-content: center;
+        }
+        
+        .sidebar-unit.collapsed .project-item-icon,
+        .sidebar-unit.collapsed .project-item-text {
+            display: none;
+        }
+        
+        .view-all-link {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: var(--trace-active);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .view-all-link:hover {
+            background: #F1F5F9;
+        }
+
+        /* 用户信息 */
+        .user-block {
+            padding: 16px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 2px;
+        }
+        
+        .user-license {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .user-info {
+            display: none;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 对话区域 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* 对话头部 */
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* 消息区域 */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 消息样式 */
+        .message {
+            display: flex;
+            gap: 16px;
+            max-width: 100%;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .message.user .message-avatar {
+            display: none;
+        }
+
+        .message.assistant .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-image: url('https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message.user .message-content {
+            display: flex;
+            justify-content: flex-end;
+            margin-right: 0;
+        }
+
+        .message-bubble {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .message.user .message-bubble {
+            background: var(--trace-active);
+            color: white;
+            border-color: var(--trace-active);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        .message.user .message-text {
+            color: white;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .message.user .message-time {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: right;
+        }
+
+        /* 工具调用样式 */
+        .tool-call {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            position: relative;
+        }
+
+        .tool-call-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tool-call-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--trace-active);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .tool-call-name {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .tool-call-status {
+            margin-left: auto;
+            padding: 4px 8px;
+            background: #10B981;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tool-call-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* 芯片参数表格 */
+        .chip-info-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            margin: 16px 0;
+        }
+
+        .chip-info-header {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chip-info-body {
+            padding: 0;
+        }
+
+        .chip-param-row {
+            display: flex;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .chip-param-row:last-child {
+            border-bottom: none;
+        }
+
+        .chip-param-label {
+            flex: 0 0 140px;
+            padding: 12px 16px;
+            background: #F8FAFC;
+            font-weight: 500;
+            color: var(--text-main);
+            border-right: 1px solid #F1F5F9;
+        }
+
+        .chip-param-value {
+            flex: 1;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+        }
+
+        /* 替代料列表 */
+        .alternatives-list {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .alternatives-header {
+            background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .alternative-item {
+            padding: 16px;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alternative-item:last-child {
+            border-bottom: none;
+        }
+
+        .alternative-name {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .alternative-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .alternative-compatibility {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .compatibility-high {
+            background: #DCFCE7;
+            color: #16A34A;
+        }
+
+        .compatibility-medium {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        /* 输入区域 */
+        .input-container {
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-wrapper {
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .search-wrapper:focus-within { 
+            border-color: var(--trace-active); 
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.15); 
+        }
+        
+        .search-wrapper .input-editor {
+            width: 100%;
+            min-height: 40px;
+            max-height: 200px;
+            border: none; 
+            background: transparent; 
+            outline: none;
+            resize: none; 
+            font-size: 16px; 
+            color: #333;
+            line-height: 24px;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+        
+        .search-wrapper .input-editor:empty::before {
+            content: attr(data-placeholder);
+            color: #94A3B8;
+            font-size: 14px;
+        }
+        
+        .input-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .btn-attach,
+        .btn-voice {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94A3B8;
+            transition: all 0.2s;
+        }
+        
+        .btn-attach:hover,
+        .btn-voice:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .btn-attach svg,
+        .btn-voice svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .send-button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--trace-active);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .send-button:hover {
+            background: #5BC5D8;
+            transform: translateY(-1px);
+        }
+        
+        .send-button:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .send-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 研发风格铭牌 */
+        .input-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-actions-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1.5px solid;
+            white-space: nowrap;
+        }
+
+        .mode-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .mode-badge.balanced {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            border-color: #6DD5E8;
+            color: #fff;
+        }
+
+        .mode-badge.efficiency {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            border-color: #F59E0B;
+            color: #fff;
+        }
+
+        .mode-badge.inspiration {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            border-color: #8B5CF6;
+            color: #fff;
+        }
+
+        .mode-badge-icon {
+            font-size: 14px;
+        }
+
+        /* 设置弹窗样式 */
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal-overlay.show {
+            display: flex;
+        }
+
+        .settings-modal {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .settings-modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .settings-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .settings-modal-title-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .settings-modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            font-size: 20px;
+            color: #64748B;
+        }
+
+        .settings-modal-close:hover {
+            background-color: #F1F5F9;
+        }
+
+        .settings-modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .settings-form-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .settings-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .settings-preference-tag {
+            position: relative;
+            padding: 10px 20px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 24px;
+            font-size: 14px;
+            color: #334155;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-preference-tag:hover {
+            border-color: #6DD5E8;
+            background: #F0FDFF;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.15);
+        }
+
+        .settings-preference-tag.selected {
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .settings-preference-tag[data-mode="balanced"].selected {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .settings-preference-tag[data-mode="efficiency"].selected {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .settings-preference-tag[data-mode="inspiration"].selected {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .settings-preference-tag-icon {
+            font-size: 16px;
+        }
+
+        .settings-preference-tag-tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 320px;
+            min-width: 240px;
+            white-space: normal;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .settings-preference-tag-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.85);
+        }
+
+        .settings-preference-tag:hover .settings-preference-tag-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-preference-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 12px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #334155;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.2s ease;
+            background: #fff;
+            line-height: 1.6;
+        }
+
+        .settings-preference-textarea:focus {
+            outline: none;
+            border-color: #6DD5E8;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .settings-preference-textarea::placeholder {
+            color: #94A3B8;
+            line-height: 1.6;
+        }
+
+        .settings-modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #FAFBFC;
+        }
+
+        .settings-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .settings-btn-cancel {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #E2E8F0;
+        }
+
+        .settings-btn-cancel:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+        }
+
+        .settings-btn-save {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            color: #fff;
+        }
+
+        .settings-btn-save:hover {
+            background: linear-gradient(135deg, #4DB6AC 0%, #6DD5E8 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .settings-modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .settings-modal-content::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .settings-modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* 加载动画 */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            background: #F8FAFC;
+            border-radius: 16px;
+            margin: 12px 0;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--trace-active);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Tooltip样式 */
+        .menu-item-tooltip {
+            position: fixed;
+            padding: 6px 10px;
+            background: #1E293B;
+            color: #fff;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .menu-item-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .menu-item-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: #1E293B;
+        }
+
+        /* PDF文件标识 */
+        .pdf-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .pdf-file:hover {
+            background: #F1F5F9;
+            border-color: var(--trace-active);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.2);
+        }
+
+        .pdf-file-icon {
+            width: 24px;
+            height: 24px;
+            background: #DC2626;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .pdf-file-info {
+            flex: 1;
+        }
+
+        .pdf-file-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .pdf-file-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .pdf-file-action {
+            color: var(--trace-active);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* 右侧PDF抽屉 */
+        .pdf-drawer {
+            position: fixed;
+            top: 0;
+            right: -60%;
+            width: 60%;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-drawer.open {
+            right: 0;
+        }
+
+        .pdf-drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #F8FAFC;
+        }
+
+        .pdf-drawer-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .pdf-drawer-close:hover {
+            background: #E2E8F0;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #F8FAFC;
+        }
+
+        /* 抽屉遮罩 */
+        .pdf-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .pdf-drawer-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar-unit {
+                position: fixed;
+                left: -100%;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar-unit.mobile-open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .messages-container {
+                padding: 16px;
+            }
+            
+            .input-container {
+                padding: 16px;
+            }
+            
+            .search-wrapper {
+                width: 95%;
+            }
+            
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-wrapper">
+        <!-- 左侧侧边栏 -->
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索会话...">
+                    </div>
+                </div>
+
+                <!-- 新建会话 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史会话列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item active">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">GD25Q64ESIGR芯片查询</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="user-block">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="chat-container">
+                <!-- 对话头部 -->
+                <div class="chat-header">
+                    <h1 class="chat-title">GD25Q64ESIGR芯片查询</h1>
+                </div>
+
+                <!-- 消息区域 -->
+                <div class="messages-container" id="messagesContainer">
+                    <!-- 用户消息 -->
+                    <div class="message user">
+                        <div class="message-avatar">L</div>
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <div class="message-text">GD25Q64ESIGR</div>
+                                <div class="message-time">14:32</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 助手消息 -->
+                    <div class="message assistant">
+                        <div class="message-avatar"></div>
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <div class="message-text">
+                                    我来为您查询 GD25Q64ESIGR 这款芯片的详细信息。让我调用物料查询工具来获取相关数据。
+                                </div>
+                                
+                                <!-- 工具调用 -->
+                                <div class="tool-call">
+                                    <div class="tool-call-header">
+                                        <div class="tool-call-icon">🔍</div>
+                                        <div class="tool-call-name">物料查询工具</div>
+                                        <div class="tool-call-status">已完成</div>
+                                    </div>
+                                    <div class="tool-call-content">
+                                        正在查询芯片型号: GD25Q64ESIGR<br>
+                                        搜索范围: 存储器芯片数据库<br>
+                                        查询结果: 找到匹配的芯片信息
+                                    </div>
+                                </div>
+
+                                <div class="message-text">
+                                    查询完成！GD25Q64ESIGR 是一款由兆易创新(GigaDevice)生产的 64Mbit SPI NOR Flash 存储器芯片。以下是详细的技术参数：
+                                </div>
+
+                                <!-- 芯片参数表格 -->
+                                <div class="chip-info-table">
+                                    <div class="chip-info-header">
+                                        📱 GD25Q64ESIGR 技术参数
+                                    </div>
+                                    <div class="chip-info-body">
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">制造商</div>
+                                            <div class="chip-param-value">兆易创新 (GigaDevice)</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">存储容量</div>
+                                            <div class="chip-param-value">64Mbit (8MB)</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">接口类型</div>
+                                            <div class="chip-param-value">SPI (Serial Peripheral Interface)</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">工作电压</div>
+                                            <div class="chip-param-value">2.7V ~ 3.6V</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">工作温度</div>
+                                            <div class="chip-param-value">-40°C ~ +85°C (工业级)</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">封装形式</div>
+                                            <div class="chip-param-value">SOP8 (150mil)</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">时钟频率</div>
+                                            <div class="chip-param-value">最高 133MHz</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">擦写次数</div>
+                                            <div class="chip-param-value">100,000 次典型值</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">数据保持</div>
+                                            <div class="chip-param-value">20年 @ 85°C</div>
+                                        </div>
+                                        <div class="chip-param-row">
+                                            <div class="chip-param-label">页编程时间</div>
+                                            <div class="chip-param-value">0.7ms 典型值</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="message-text">
+                                    📋 <strong>物料说明书要点：</strong><br>
+                                    • 支持标准SPI指令集，兼容性好<br>
+                                    • 具备硬件写保护功能<br>
+                                    • 支持双/四线SPI高速读取<br>
+                                    • 低功耗设计，待机电流&lt;1μA<br>
+                                    • 符合RoHS环保标准<br>
+                                    • 适用于嵌入式系统、物联网设备等应用
+                                </div>
+
+                                <!-- PDF文件标识 -->
+                                <div class="pdf-file" onclick="openPdfDrawer('GD25Q64ESIGR_datasheet.pdf')">
+                                    <div class="pdf-file-icon">PDF</div>
+                                    <div class="pdf-file-info">
+                                        <div class="pdf-file-name">GD25Q64ESIGR 数据手册</div>
+                                        <div class="pdf-file-size">2.3 MB • 42页</div>
+                                    </div>
+                                    <div class="pdf-file-action">查看 →</div>
+                                </div>
+
+                                <!-- 替代料列表 -->
+                                <div class="alternatives-list">
+                                    <div class="alternatives-header">
+                                        🔄 推荐替代料列表
+                                    </div>
+                                    <div class="alternative-item">
+                                        <div>
+                                            <div class="alternative-name">W25Q64JVSSIQ</div>
+                                            <div class="alternative-desc">华邦电子 64Mbit SPI Flash，SOP8封装</div>
+                                        </div>
+                                        <div class="alternative-compatibility compatibility-high">高兼容</div>
+                                    </div>
+                                    <div class="alternative-item">
+                                        <div>
+                                            <div class="alternative-name">MX25L6433F</div>
+                                            <div class="alternative-desc">旺宏电子 64Mbit SPI Flash，SOP8封装</div>
+                                        </div>
+                                        <div class="alternative-compatibility compatibility-high">高兼容</div>
+                                    </div>
+                                    <div class="alternative-item">
+                                        <div>
+                                            <div class="alternative-name">AT25SF641</div>
+                                            <div class="alternative-desc">Adesto 64Mbit SPI Flash，SOP8封装</div>
+                                        </div>
+                                        <div class="alternative-compatibility compatibility-medium">中等兼容</div>
+                                    </div>
+                                    <div class="alternative-item">
+                                        <div>
+                                            <div class="alternative-name">S25FL064K</div>
+                                            <div class="alternative-desc">赛普拉斯 64Mbit SPI Flash，SOP8封装</div>
+                                        </div>
+                                        <div class="alternative-compatibility compatibility-medium">中等兼容</div>
+                                    </div>
+                                </div>
+
+                                <div class="message-text">
+                                    以上就是 GD25Q64ESIGR 的完整技术信息。如果您需要了解更多细节，比如具体的应用电路设计、PCB布局建议，或者其他技术问题，请随时告诉我！
+                                </div>
+
+                                <div class="message-time">14:32</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输入区域 -->
+                <div class="input-container">
+                    <div class="search-wrapper">
+                        <div class="input-editor" id="messageInput" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
+                        <div class="input-actions">
+                            <div class="input-actions-left">
+                                <div class="mode-badge balanced" id="chatModeBadge">
+                                    <span class="mode-badge-icon">⚖️</span>
+                                    <span id="chatModeBadgeText">均衡模式</span>
+                                </div>
+                            </div>
+                            <div class="input-actions-right">
+                                <button class="btn-attach" type="button" aria-label="上传文件">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-voice" type="button" aria-label="语音输入">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    </svg>
+                                </button>
+                                <button class="send-button" id="sendButton">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13"/>
+                                        <polygon points="22,2 15,22 11,13 2,9"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PDF抽屉遮罩 -->
+        <div class="pdf-drawer-overlay" id="pdfDrawerOverlay" onclick="closePdfDrawer()"></div>
+        
+        <!-- PDF抽屉 -->
+        <div class="pdf-drawer" id="pdfDrawer">
+            <div class="pdf-drawer-header">
+                <div class="pdf-drawer-title" id="pdfDrawerTitle">文档查看器</div>
+                <button class="pdf-drawer-close" onclick="closePdfDrawer()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="pdf-drawer-content">
+                <div id="pdfViewerContent">
+                    <!-- PDF内容将在这里显示 -->
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 16px; opacity: 0.5;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        <p>正在加载PDF文档...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 侧边栏折叠/展开功能
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebarToggle && sidebarUnit) {
+                // 从localStorage读取折叠状态
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    sidebarUnit.classList.add('collapsed');
+                }
+                
+                // 更新按钮图标方向
+                function updateToggleIcon(collapsed) {
+                    const iconPath = sidebarToggle.querySelector('#toggleIconPath');
+                    if (iconPath) {
+                        if (collapsed) {
+                            iconPath.setAttribute('d', 'M15 18l-6-6 6-6');
+                        } else {
+                            iconPath.setAttribute('d', 'M9 18l6-6-6-6');
+                        }
+                    }
+                }
+                
+                // 切换折叠状态
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarUnit.classList.toggle('collapsed');
+                    const collapsed = sidebarUnit.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', collapsed);
+                    updateToggleIcon(collapsed);
+                });
+                
+                // 初始化按钮图标方向
+                updateToggleIcon(isCollapsed);
+            }
+        })();
+
+        // Tooltip功能
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            let tooltip = null;
+            
+            function createTooltip() {
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'menu-item-tooltip';
+                    document.body.appendChild(tooltip);
+                }
+                return tooltip;
+            }
+            
+            function showTooltip(element, text) {
+                if (!sidebarUnit.classList.contains('collapsed')) {
+                    return;
+                }
+                
+                const tooltipEl = createTooltip();
+                tooltipEl.textContent = text;
+                
+                const rect = element.getBoundingClientRect();
+                const sidebarRect = sidebarUnit.getBoundingClientRect();
+                
+                tooltipEl.style.left = (sidebarRect.right + 8) + 'px';
+                tooltipEl.style.top = (rect.top + rect.height / 2) + 'px';
+                tooltipEl.style.transform = 'translateY(-50%)';
+                
+                tooltipEl.classList.add('show');
+            }
+            
+            function hideTooltip() {
+                if (tooltip) {
+                    tooltip.classList.remove('show');
+                }
+            }
+            
+            // 为所有带data-tooltip的菜单项添加事件监听
+            const menuItems = document.querySelectorAll('.menu-item[data-tooltip]');
+            menuItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    const tooltipText = this.getAttribute('data-tooltip');
+                    showTooltip(this, tooltipText);
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+            });
+            
+            // 当侧边栏展开时隐藏tooltip
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        if (!sidebarUnit.classList.contains('collapsed')) {
+                            hideTooltip();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(sidebarUnit, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        })();
+
+        // 输入框相关元素
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const messagesContainer = document.getElementById('messagesContainer');
+
+        // 发送消息功能
+        function sendMessage() {
+            const message = messageInput.textContent.trim();
+            if (!message) return;
+
+            // 清空输入框
+            messageInput.textContent = '';
+            messageInput.innerHTML = '';
+
+            // 添加用户消息
+            addMessage('user', message);
+
+            // 模拟AI回复
+            setTimeout(() => {
+                addTypingIndicator();
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    addMessage('assistant', '收到您的消息：' + message + '\n\n这是一个模拟回复。在实际应用中，这里会调用相应的AI模型来生成专业的技术回答。');
+                }, 2000);
+            }, 500);
+        }
+
+        // 添加消息到对话区域
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const currentTime = new Date().toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            messageDiv.innerHTML = `
+                ${type === 'assistant' ? '<div class="message-avatar"></div>' : ''}
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">${content.replace(/\n/g, '<br>')}</div>
+                        <div class="message-time">${currentTime}</div>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 添加打字指示器
+        function addTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typingIndicator';
+            
+            typingDiv.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span>硅宝正在思考</span>
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 移除打字指示器
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // 发送按钮点击事件
+        sendButton.addEventListener('click', sendMessage);
+
+        // 回车发送消息
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 附件按钮功能
+        document.querySelector('.btn-attach').addEventListener('click', function() {
+            // 创建文件输入元素
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg';
+            fileInput.style.display = 'none';
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 这里可以添加文件上传逻辑
+                    console.log('选择的文件:', file.name);
+                    // 可以在消息中显示文件信息
+                    addMessage('user', `📎 已上传文件: ${file.name}`);
+                }
+            });
+            
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        });
+
+        // 语音按钮功能
+        document.querySelector('.btn-voice').addEventListener('click', function() {
+            // 这里可以添加语音输入逻辑
+            console.log('语音输入功能');
+            addMessage('assistant', '语音输入功能正在开发中，敬请期待！');
+        });
+
+        // 自动滚动到底部
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // PDF抽屉功能
+        function openPdfDrawer(filename) {
+            const pdfDrawer = document.getElementById('pdfDrawer');
+            const pdfDrawerOverlay = document.getElementById('pdfDrawerOverlay');
+            const pdfDrawerTitle = document.getElementById('pdfDrawerTitle');
+            const pdfViewerContent = document.getElementById('pdfViewerContent');
+            
+            // 设置标题
+            pdfDrawerTitle.textContent = filename;
+            
+            // 模拟PDF内容加载
+            setTimeout(() => {
+                pdfViewerContent.innerHTML = `
+                    <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <h2 style="color: var(--text-main); margin-bottom: 8px;">GD25Q64ESIGR</h2>
+                            <p style="color: var(--text-secondary); font-size: 14px;">64Mbit SPI NOR Flash 数据手册</p>
+                        </div>
+                        
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📋 产品概述</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 14px;">
+                                GD25Q64ESIGR是兆易创新推出的一款64Mbit容量的SPI NOR Flash存储器。
+                                该产品采用先进的工艺技术，具有高可靠性、低功耗的特点，广泛应用于各种嵌入式系统中。
+                            </p>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">⚡ 主要特性</h3>
+                            <ul style="color: var(--text-secondary); line-height: 1.8; font-size: 14px; padding-left: 20px;">
+                                <li>64Mbit (8MB) 存储容量</li>
+                                <li>标准SPI接口，最高133MHz时钟频率</li>
+                                <li>支持双线和四线SPI高速读取模式</li>
+                                <li>2.7V-3.6V宽电压工作范围</li>
+                                <li>-40°C到+85°C工业级温度范围</li>
+                                <li>100,000次擦写循环寿命</li>
+                                <li>20年数据保持能力</li>
+                                <li>硬件和软件写保护功能</li>
+                            </ul>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📐 封装信息</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                <div><strong>封装类型:</strong> SOP8 (150mil)</div>
+                                <div><strong>引脚数量:</strong> 8 pins</div>
+                                <div><strong>封装尺寸:</strong> 5.28mm × 5.28mm</div>
+                                <div><strong>厚度:</strong> 1.75mm</div>
+                            </div>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">🔧 应用领域</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: var(--text-secondary);">
+                                <div>• 嵌入式系统固件存储</div>
+                                <div>• 物联网设备</div>
+                                <div>• 工业控制系统</div>
+                                <div>• 消费电子产品</div>
+                                <div>• 通信设备</div>
+                                <div>• 汽车电子</div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+                            <p style="color: var(--text-secondary); font-size: 12px;">
+                                © 2024 兆易创新科技集团股份有限公司 版权所有
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }, 800);
+            
+            // 显示抽屉
+            pdfDrawerOverlay.classList.add('show');
+            pdfDrawer.classList.add('open');
+            
+            // 禁止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePdfDrawer() {
+            const pdfDrawer = document.getElementById('pdfDrawer');
+            const pdfDrawerOverlay = document.getElementById('pdfDrawerOverlay');
+            
+            // 隐藏抽屉
+            pdfDrawerOverlay.classList.remove('show');
+            pdfDrawer.classList.remove('open');
+            
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }
+
+        // ESC键关闭抽屉
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePdfDrawer();
+            }
+        });
+    </script>
+
+    <!-- 研发偏好设置弹窗 -->
+    <div class="settings-modal-overlay" id="chatSettingsModal">
+        <div class="settings-modal">
+            <div class="settings-modal-header">
+                <h2 class="settings-modal-title">
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝" class="settings-modal-title-icon">
+                    <span>研发偏好</span>
+                </h2>
+                <button class="settings-modal-close" id="chatSettingsClose">×</button>
+            </div>
+            <div class="settings-modal-content">
+                <div class="settings-form-section">
+                    <div class="settings-form-section-title">研发风格</div>
+                    <div class="settings-tags-container">
+                        <div class="settings-preference-tag selected" data-mode="balanced">
+                            <span class="settings-preference-tag-icon">⚖️</span>
+                            <span>均衡模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                在任务深度和时间上做了平衡，适用于大多数工程师
+                            </div>
+                        </div>
+                        <div class="settings-preference-tag" data-mode="efficiency">
+                            <span class="settings-preference-tag-icon">⚡</span>
+                            <span>效率模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                硅宝将专注于执行你发出的指令，速度最快，但不会帮你思考过多内容
+                            </div>
+                        </div>
+                        <div class="settings-preference-tag" data-mode="inspiration">
+                            <span class="settings-preference-tag-icon">💡</span>
+                            <span>启发模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                硅宝将使用更复杂的模型和更多的数据与你协作，结果更丰富和全面，但耗时更久
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-form-section">
+                    <div class="settings-form-section-title">选型偏好</div>
+                    <textarea 
+                        class="settings-preference-textarea" 
+                        id="chatSelectionPreference"
+                        placeholder="描述你的选型倾向，例如：&#10;• 偏好的品牌（TI、ADI、国产等）&#10;• 技术参数要求（功耗、精度、速度等）&#10;• 应用场景特点（车规、工业、消费级）&#10;• 其他考虑因素"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="settings-modal-footer">
+                <button class="settings-btn settings-btn-cancel" id="chatSettingsCancel">取消</button>
+                <button class="settings-btn settings-btn-save" id="chatSettingsSave">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 研发偏好设置逻辑
+        (function() {
+            const modeConfig = {
+                balanced: { icon: '⚖️', text: '均衡模式', class: 'balanced' },
+                efficiency: { icon: '⚡', text: '效率模式', class: 'efficiency' },
+                inspiration: { icon: '💡', text: '启发模式', class: 'inspiration' }
+            };
+
+            const modeBadge = document.getElementById('chatModeBadge');
+            const modeBadgeText = document.getElementById('chatModeBadgeText');
+            const settingsModal = document.getElementById('chatSettingsModal');
+            const closeBtn = document.getElementById('chatSettingsClose');
+            const cancelBtn = document.getElementById('chatSettingsCancel');
+            const saveBtn = document.getElementById('chatSettingsSave');
+            const preferenceTags = document.querySelectorAll('#chatSettingsModal .settings-preference-tag');
+            const selectionPreference = document.getElementById('chatSelectionPreference');
+
+            let selectedMode = 'balanced';
+
+            function loadSettings() {
+                const savedMode = localStorage.getItem('developmentMode');
+                const savedPreference = localStorage.getItem('selectionPreference');
+
+                if (savedMode && modeConfig[savedMode]) {
+                    selectedMode = savedMode;
+                    updateModeBadge(savedMode);
+                    preferenceTags.forEach(tag => {
+                        tag.classList.remove('selected');
+                        if (tag.getAttribute('data-mode') === savedMode) {
+                            tag.classList.add('selected');
+                        }
+                    });
+                }
+
+                if (savedPreference) {
+                    selectionPreference.value = savedPreference;
+                }
+            }
+
+            function updateModeBadge(mode) {
+                const config = modeConfig[mode];
+                modeBadge.className = `mode-badge ${config.class}`;
+                modeBadge.querySelector('.mode-badge-icon').textContent = config.icon;
+                modeBadgeText.textContent = config.text;
+            }
+
+            modeBadge.addEventListener('click', function() {
+                settingsModal.classList.add('show');
+            });
+
+            function closeModal() {
+                settingsModal.classList.remove('show');
+            }
+
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            settingsModal.addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+
+            document.querySelector('#chatSettingsModal .settings-modal').addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            preferenceTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const mode = this.getAttribute('data-mode');
+                    if (selectedMode === mode) {
+                        this.classList.remove('selected');
+                        selectedMode = null;
+                    } else {
+                        preferenceTags.forEach(t => t.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedMode = mode;
+                    }
+                });
+            });
+
+            saveBtn.addEventListener('click', function() {
+                const preference = selectionPreference.value.trim();
+                if (selectedMode) {
+                    localStorage.setItem('developmentMode', selectedMode);
+                    updateModeBadge(selectedMode);
+                } else {
+                    localStorage.removeItem('developmentMode');
+                }
+                if (preference) {
+                    localStorage.setItem('selectionPreference', preference);
+                } else {
+                    localStorage.removeItem('selectionPreference');
+                }
+                closeModal();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && settingsModal.classList.contains('show')) {
+                    closeModal();
+                }
+            });
+
+            loadSettings();
+        })();
+    </script>
+</body>
+</html>

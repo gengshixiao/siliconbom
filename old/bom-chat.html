@@ -1,0 +1,3001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>BOM生成对话 - 硅宝</title>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;
+            --trace-color: #CBD5E1;
+            --trace-active: #6DD5E8;
+            --chip-body: #FFFFFF;
+            --pin-metal: #94A3B8;
+            --text-main: #334155;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 64px;
+            --transition: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', 'PingFang SC', sans-serif; 
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+            background-size: 30px 30px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 布局容器 */
+        .layout-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 左侧侧边栏样式 - 完全复用 */
+        .sidebar-unit {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            z-index: 20;
+            position: relative;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed {
+            width: var(--sidebar-w-collapsed);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E2E8F0;
+            min-height: 64px;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-header {
+            justify-content: space-between;
+            padding: 16px 8px;
+        }
+        
+        .user-avatar-header {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-unit.collapsed .user-avatar-header {
+            display: block;
+        }
+        
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .brand-logo {
+            width: auto;
+            height: 40px;
+            display: block;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .sidebar-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .sidebar-unit.collapsed .brand-logo {
+            display: none;
+        }
+
+        /* 搜索框 */
+        .sidebar-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #F8FAFC;
+            font-size: 13px;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-search {
+            display: none;
+        }
+        
+        /* 菜单项 */
+        .menu-section {
+            padding: 8px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-section.project-section {
+            display: none;
+        }
+        
+        .sidebar-unit.collapsed .menu-section {
+            padding: 4px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            padding: 12px;
+            margin: 2px 0;
+        }
+        
+        .menu-section-title {
+            padding: 8px 16px 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-unit.collapsed .menu-section-title {
+            display: none;
+        }
+        
+        .menu-item {
+            position: relative;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 0;
+        }
+        
+        .menu-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item.active {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .menu-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .menu-item-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .sidebar-unit.collapsed .menu-item-text {
+            display: none;
+        }
+        
+        /* 项目列表 */
+        .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .project-item {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .project-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .project-item.active {
+            background: rgba(109, 213, 232, 0.1);
+            color: var(--trace-active);
+        }
+        
+        .project-item-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .project-item {
+            padding: 8px;
+            justify-content: center;
+        }
+        
+        .sidebar-unit.collapsed .project-item-icon,
+        .sidebar-unit.collapsed .project-item-text {
+            display: none;
+        }
+        
+        .view-all-link {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: var(--trace-active);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .view-all-link:hover {
+            background: #F1F5F9;
+        }
+
+        /* 用户信息 */
+        .user-block {
+            padding: 16px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 2px;
+        }
+        
+        .user-license {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .user-info {
+            display: none;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 对话区域 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* 对话头部 */
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* 消息区域 */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 消息样式 */
+        .message {
+            display: flex;
+            gap: 16px;
+            max-width: 100%;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .message.user .message-avatar {
+            display: none;
+        }
+
+        .message.assistant .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-image: url('https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message.user .message-content {
+            display: flex;
+            justify-content: flex-end;
+            margin-right: 0;
+        }
+
+        .message-bubble {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .message.user .message-bubble {
+            background: #E0F7FA;
+            color: var(--text-main);
+            border-color: #B2EBF2;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        .message.user .message-text {
+            color: var(--text-main);
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .message.user .message-time {
+            color: #0097A7;
+            text-align: right;
+        }
+
+        /* 文件上传显示 */
+        .uploaded-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0;
+            margin-bottom: 8px;
+        }
+
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            background: #2563EB;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .uploaded-file span {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 需求表单 */
+        .requirements-form {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .form-body {
+            padding: 0;
+        }
+
+        .requirement-item {
+            display: flex;
+            border-bottom: 1px solid #F1F5F9;
+            min-height: 60px;
+        }
+
+        .requirement-item:last-child {
+            border-bottom: none;
+        }
+
+        .requirement-type {
+            flex: 0 0 200px;
+            padding: 16px;
+            background: #F8FAFC;
+            font-weight: 500;
+            color: var(--text-main);
+            border-right: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+        }
+
+        .requirement-desc {
+            flex: 1;
+            padding: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .requirement-desc input {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text-secondary);
+            outline: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .requirement-desc input:focus {
+            color: var(--text-main);
+            background: #F8FAFC;
+            border-color: var(--trace-active);
+        }
+
+        .requirement-desc input:disabled {
+            color: var(--text-secondary);
+            background: transparent;
+            border-color: transparent;
+            cursor: not-allowed;
+        }
+
+        .form-actions {
+            padding: 16px;
+            border-top: 1px solid #F1F5F9;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .confirm-btn {
+            padding: 10px 20px;
+            background: var(--trace-active);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn:hover {
+            background: #5BC5D8;
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn.confirmed {
+            background: #94A3B8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 并行任务展示 */
+        .parallel-tasks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .task-card.processing {
+            border-color: var(--trace-active);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.2);
+        }
+
+        .task-card.completed {
+            border-color: #10B981;
+        }
+
+        .task-header {
+            padding: 12px 16px;
+            background: #F8FAFC;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94A3B8;
+        }
+
+        .task-status.processing {
+            background: var(--trace-active);
+            animation: pulse 2s infinite;
+        }
+
+        .task-status.completed {
+            background: #10B981;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .task-title {
+            font-weight: 500;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .task-content {
+            padding: 16px;
+        }
+
+        .task-progress {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .task-result {
+            margin-top: 12px;
+            padding: 12px;
+            background: #F0FDF4;
+            border-radius: 8px;
+            border-left: 4px solid #10B981;
+        }
+
+        .selected-component {
+            font-weight: 600;
+            color: #059669;
+            margin-bottom: 4px;
+        }
+
+        .component-reason {
+            font-size: 12px;
+            color: #065F46;
+        }
+
+        /* BOM表格 */
+        .bom-table-container {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .bom-table-header {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .bom-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bom-table th {
+            background: #F8FAFC;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-main);
+            border-bottom: 1px solid #E2E8F0;
+            font-size: 13px;
+        }
+
+        .bom-table td {
+            padding: 12px;
+            border-bottom: 1px solid #F1F5F9;
+            font-size: 13px;
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+
+        .bom-table tr:hover {
+            background: #F8FAFC;
+        }
+
+        .component-select {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .component-name {
+            color: var(--trace-active);
+            cursor: pointer;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .component-name:hover {
+            background: rgba(109, 213, 232, 0.1);
+        }
+
+        .dropdown-icon {
+            width: 12px;
+            height: 12px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .component-select:hover .dropdown-icon {
+            transform: translateY(2px);
+        }
+
+        .dropdown-indicator {
+            margin-left: 6px;
+            font-size: 12px;
+            color: #94A3B8;
+        }
+
+        .alternatives-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            min-width: 250px;
+            display: none;
+        }
+
+        .alternatives-dropdown.show {
+            display: block;
+        }
+
+        .alternative-option {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #F1F5F9;
+            transition: all 0.2s;
+        }
+
+        .alternative-option:last-child {
+            border-bottom: none;
+        }
+
+        .alternative-option:hover {
+            background: #F8FAFC;
+        }
+
+        .alternative-name {
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .alternative-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .alternative-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .tag-high-compatible {
+            background: #DCFCE7;
+            color: #16A34A;
+        }
+
+        .tag-same-manufacturer {
+            background: #DBEAFE;
+            color: #2563EB;
+        }
+
+        .tag-cost-effective {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .alt-tags {
+            margin-top: 6px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .alt-tag {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #0F172A;
+            background: #E2E8F0;
+        }
+
+        .tag-high { background: #DCFCE7; color: #15803D; }
+        .tag-brand { background: #E0E7FF; color: #4338CA; }
+        .tag-cost { background: #FEF3C7; color: #B45309; }
+        .tag-speed { background: #FFE4E6; color: #BE123C; }
+
+        .pdf-link {
+            color: var(--trace-active);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pdf-link:hover {
+            text-decoration: underline;
+        }
+
+        .bom-actions {
+            padding: 16px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .bom-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bom-btn:hover {
+            border-color: var(--trace-active);
+            color: var(--trace-active);
+        }
+
+        .bom-btn.primary {
+            background: var(--trace-active);
+            color: white;
+            border-color: var(--trace-active);
+        }
+
+        .bom-btn.primary:hover {
+            background: #5BC5D8;
+        }
+
+        /* 输入区域 */
+        .input-container {
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-wrapper {
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .search-wrapper:focus-within { 
+            border-color: var(--trace-active); 
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.15); 
+        }
+        
+        .search-wrapper .input-editor {
+            width: 100%;
+            min-height: 40px;
+            max-height: 200px;
+            border: none; 
+            background: transparent; 
+            outline: none;
+            resize: none; 
+            font-size: 16px; 
+            color: #333;
+            line-height: 24px;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+        
+        .search-wrapper .input-editor:empty::before {
+            content: attr(data-placeholder);
+            color: #94A3B8;
+            font-size: 14px;
+        }
+        
+        .input-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .btn-attach,
+        .btn-voice {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94A3B8;
+            transition: all 0.2s;
+        }
+        
+        .btn-attach:hover,
+        .btn-voice:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .btn-attach svg,
+        .btn-voice svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .send-button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--trace-active);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .send-button:hover {
+            background: #5BC5D8;
+            transform: translateY(-1px);
+        }
+        
+        .send-button:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .send-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 研发风格铭牌 */
+        .input-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-actions-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1.5px solid;
+            white-space: nowrap;
+        }
+
+        .mode-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .mode-badge.balanced {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            border-color: #6DD5E8;
+            color: #fff;
+        }
+
+        .mode-badge.efficiency {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            border-color: #F59E0B;
+            color: #fff;
+        }
+
+        .mode-badge.inspiration {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            border-color: #8B5CF6;
+            color: #fff;
+        }
+
+        .mode-badge-icon {
+            font-size: 14px;
+        }
+
+        /* 设置弹窗样式 */
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal-overlay.show {
+            display: flex;
+        }
+
+        .settings-modal {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .settings-modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .settings-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .settings-modal-title-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .settings-modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            font-size: 20px;
+            color: #64748B;
+        }
+
+        .settings-modal-close:hover {
+            background-color: #F1F5F9;
+        }
+
+        .settings-modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .settings-form-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .settings-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .settings-preference-tag {
+            position: relative;
+            padding: 10px 20px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 24px;
+            font-size: 14px;
+            color: #334155;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-preference-tag:hover {
+            border-color: #6DD5E8;
+            background: #F0FDFF;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.15);
+        }
+
+        .settings-preference-tag.selected {
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .settings-preference-tag[data-mode="balanced"].selected {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .settings-preference-tag[data-mode="efficiency"].selected {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .settings-preference-tag[data-mode="inspiration"].selected {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .settings-preference-tag-icon {
+            font-size: 16px;
+        }
+
+        .settings-preference-tag-tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 320px;
+            min-width: 240px;
+            white-space: normal;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .settings-preference-tag-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.85);
+        }
+
+        .settings-preference-tag:hover .settings-preference-tag-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-preference-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 12px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #334155;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.2s ease;
+            background: #fff;
+            line-height: 1.6;
+        }
+
+        .settings-preference-textarea:focus {
+            outline: none;
+            border-color: #6DD5E8;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .settings-preference-textarea::placeholder {
+            color: #94A3B8;
+            line-height: 1.6;
+        }
+
+        .settings-modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #FAFBFC;
+        }
+
+        .settings-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .settings-btn-cancel {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #E2E8F0;
+        }
+
+        .settings-btn-cancel:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+        }
+
+        .settings-btn-save {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            color: #fff;
+        }
+
+        .settings-btn-save:hover {
+            background: linear-gradient(135deg, #4DB6AC 0%, #6DD5E8 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .settings-modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .settings-modal-content::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .settings-modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* PDF抽屉样式 */
+        .pdf-drawer {
+            position: fixed;
+            top: 0;
+            right: -60%;
+            width: 60%;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-drawer.open {
+            right: 0;
+        }
+
+        .pdf-drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #F8FAFC;
+        }
+
+        .pdf-drawer-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .pdf-drawer-close:hover {
+            background: #E2E8F0;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #F8FAFC;
+        }
+
+        .pdf-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .pdf-drawer-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* BOM生成加载动画 */
+        .bom-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 16px 0;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #F1F5F9;
+            border-top-color: var(--trace-active);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .loading-progress {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .loading-steps {
+            margin-top: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .loading-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .loading-step-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .loading-step.active .loading-step-icon {
+            background: var(--trace-active);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-step.active {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .loading-step.completed .loading-step-icon {
+            background: #10B981;
+        }
+
+        .loading-step.completed .loading-step-icon::after {
+            content: '✓';
+            color: white;
+            font-size: 10px;
+        }
+
+        /* 右侧PDF抽屉 */
+        .pdf-drawer {
+            position: fixed;
+            top: 0;
+            right: -60%;
+            width: 60%;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-drawer.open {
+            right: 0;
+        }
+
+        .pdf-drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #F8FAFC;
+        }
+
+        .pdf-drawer-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .pdf-drawer-close:hover {
+            background: #E2E8F0;
+            color: var(--text-main);
+        }
+
+        .pdf-drawer-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #F8FAFC;
+        }
+
+        /* 抽屉遮罩 */
+        .pdf-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .pdf-drawer-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar-unit {
+                position: fixed;
+                left: -100%;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar-unit.mobile-open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .messages-container {
+                padding: 16px;
+            }
+            
+            .input-container {
+                padding: 16px;
+            }
+            
+            .search-wrapper {
+                width: 95%;
+            }
+            
+            .message-bubble {
+                max-width: 90%;
+            }
+            
+            .parallel-tasks {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Tooltip样式 */
+        .menu-item-tooltip {
+            position: fixed;
+            padding: 6px 10px;
+            background: #1E293B;
+            color: #fff;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .menu-item-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .menu-item-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: #1E293B;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-wrapper">
+        <!-- 左侧侧边栏 -->
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索会话...">
+                    </div>
+                </div>
+
+                <!-- 新建会话 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史会话列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item active">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">GD25Q64ESIGR芯片查询</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="user-block">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="chat-container">
+                <!-- 对话头部 -->
+                <div class="chat-header">
+                    <h1 class="chat-title">电源切换模块BOM生成</h1>
+                </div>
+
+                <!-- 消息区域 -->
+                <div class="messages-container" id="messagesContainer">
+                    <!-- 用户消息 - 上传文档 -->
+                    <div class="message user">
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <div class="uploaded-file">
+                                    <div class="file-icon">DOC</div>
+                                    <span>电源切换模块需求说明书.docx</span>
+                                </div>
+                                <div class="message-time">14:25</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户消息 - 文字需求 -->
+                    <div class="message user">
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <div class="message-text">基于这个需求文档，帮我生成完整的BOM</div>
+                                <div class="message-time">14:25</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 助手消息 - 第一轮回复 -->
+                    <div class="message assistant">
+                        <div class="message-avatar"></div>
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <div class="message-text">
+                                    我已经分析了您上传的电源切换模块需求说明书。根据文档内容，这是一个双电源自动切换系统，主要技术要求如下：
+                                </div>
+                                
+                                <div class="message-text">
+                                    <strong>📋 核心需求解析：</strong><br>
+                                    • 主电源：12V/5A，备用电源：24V转12V/3A<br>
+                                    • 自动检测主电源状态，故障时无缝切换<br>
+                                    • 切换时间 ≤ 10ms，支持手动强制切换<br>
+                                    • 工作温度：-20°C ~ +70°C<br>
+                                    • 具备过压、欠压、过流保护功能
+                                </div>
+
+                                <!-- 需求表单 -->
+                                <div class="requirements-form">
+                                    <div class="form-header">
+                                        🔧 器件需求分解表单
+                                    </div>
+                                    <div class="form-body">
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">电压检测芯片</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="检测12V主电源，欠压阈值10.8V，过压阈值13.2V，响应时间<1ms">
+                                            </div>
+                                        </div>
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">功率MOSFET</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="N沟道，Vds≥20V，Id≥8A，Rds(on)≤50mΩ，TO-252封装">
+                                            </div>
+                                        </div>
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">DC-DC转换器</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="24V转12V，输出电流≥3A，效率≥85%，隔离型">
+                                            </div>
+                                        </div>
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">控制MCU</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="ARM Cortex-M0+，Flash≥32KB，GPIO≥16个，ADC≥8通道">
+                                            </div>
+                                        </div>
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">电流检测电阻</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="精密电阻，阻值10mΩ，功率≥2W，精度≤1%，2512封装">
+                                            </div>
+                                        </div>
+                                        <div class="requirement-item">
+                                            <div class="requirement-type">保护二极管</div>
+                                            <div class="requirement-desc">
+                                                <input type="text" class="requirement-input" value="肖特基二极管，Vf≤0.5V，If≥5A，Vr≥20V，SMA封装">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button class="confirm-btn" onclick="startBomGeneration()">确认需求，开始生成BOM</button>
+                                    </div>
+                                </div>
+
+                                <div class="message-time">14:26</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第二轮对话将通过JavaScript动态生成 -->
+                </div>
+
+                <!-- 输入区域 -->
+                <div class="input-container">
+                    <div class="search-wrapper">
+                        <div class="input-editor" id="messageInput" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
+                        <div class="input-actions">
+                            <div class="input-actions-left">
+                                <div class="mode-badge balanced" id="bomChatModeBadge">
+                                    <span class="mode-badge-icon">⚖️</span>
+                                    <span id="bomChatModeBadgeText">均衡模式</span>
+                                </div>
+                            </div>
+                            <div class="input-actions-right">
+                                <button class="btn-attach" type="button" aria-label="上传文件">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-voice" type="button" aria-label="语音输入">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    </svg>
+                                </button>
+                                <button class="send-button" id="sendButton">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13"/>
+                                        <polygon points="22,2 15,22 11,13 2,9"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 侧边栏折叠/展开功能
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebarToggle && sidebarUnit) {
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    sidebarUnit.classList.add('collapsed');
+                }
+                
+                function updateToggleIcon(collapsed) {
+                    const iconPath = sidebarToggle.querySelector('#toggleIconPath');
+                    if (iconPath) {
+                        if (collapsed) {
+                            iconPath.setAttribute('d', 'M15 18l-6-6 6-6');
+                        } else {
+                            iconPath.setAttribute('d', 'M9 18l6-6-6-6');
+                        }
+                    }
+                }
+                
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarUnit.classList.toggle('collapsed');
+                    const collapsed = sidebarUnit.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', collapsed);
+                    updateToggleIcon(collapsed);
+                });
+                
+                updateToggleIcon(isCollapsed);
+            }
+        })();
+
+        // Tooltip功能
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            let tooltip = null;
+            
+            function createTooltip() {
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'menu-item-tooltip';
+                    document.body.appendChild(tooltip);
+                }
+                return tooltip;
+            }
+            
+            function showTooltip(element, text) {
+                if (!sidebarUnit.classList.contains('collapsed')) {
+                    return;
+                }
+                
+                const tooltipEl = createTooltip();
+                tooltipEl.textContent = text;
+                
+                const rect = element.getBoundingClientRect();
+                const sidebarRect = sidebarUnit.getBoundingClientRect();
+                
+                tooltipEl.style.left = (sidebarRect.right + 8) + 'px';
+                tooltipEl.style.top = (rect.top + rect.height / 2) + 'px';
+                tooltipEl.style.transform = 'translateY(-50%)';
+                
+                tooltipEl.classList.add('show');
+            }
+            
+            function hideTooltip() {
+                if (tooltip) {
+                    tooltip.classList.remove('show');
+                }
+            }
+            
+            const menuItems = document.querySelectorAll('.menu-item[data-tooltip]');
+            menuItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    const tooltipText = this.getAttribute('data-tooltip');
+                    showTooltip(this, tooltipText);
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+            });
+            
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        if (!sidebarUnit.classList.contains('collapsed')) {
+                            hideTooltip();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(sidebarUnit, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        })();
+
+        // 输入框相关元素
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const messagesContainer = document.getElementById('messagesContainer');
+
+        // BOM生成流程
+        function startBomGeneration() {
+            // 更新确认按钮状态为已确认
+            const confirmBtn = document.querySelector('.confirm-btn');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '✓ 已确认';
+            confirmBtn.style.background = '#10B981';
+            confirmBtn.style.cursor = 'not-allowed';
+            
+            // 锁定所有需求输入框
+            const requirementInputs = document.querySelectorAll('.requirement-input');
+            requirementInputs.forEach(input => {
+                input.disabled = true;
+            });
+            
+            // 滚动到底部
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // 开始第二轮对话
+            setTimeout(() => {
+                showParallelTasks();
+            }, 500);
+        }
+
+        // 显示并行任务
+        function showParallelTasks() {
+            const assistantMessage = document.createElement('div');
+            assistantMessage.className = 'message assistant';
+            
+            assistantMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            收到确认！现在开始并行执行物料查询和选型任务，我将同时为每个器件类型寻找最优解决方案：
+                        </div>
+                        
+                        <div class="parallel-tasks" id="parallelTasks">
+                            <div class="task-card processing" id="task1">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">电压检测芯片选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在搜索电压监控芯片数据库...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-card processing" id="task2">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">功率MOSFET选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在分析MOSFET参数要求...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-card processing" id="task3">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">DC-DC转换器选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在搜索隔离型DC-DC模块...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-card processing" id="task4">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">控制MCU选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在匹配ARM Cortex-M系列...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-card processing" id="task5">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">电流检测电阻选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在查询精密电阻规格...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-card processing" id="task6">
+                                <div class="task-header">
+                                    <div class="task-status processing"></div>
+                                    <div class="task-title">保护二极管选型</div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-progress">正在筛选肖特基二极管...</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="message-time">14:27</div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(assistantMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // 模拟任务完成过程
+            simulateTaskCompletion();
+        }
+
+        // 模拟任务完成
+        function simulateTaskCompletion() {
+            const tasks = [
+                {
+                    id: 'task1',
+                    delay: 2000,
+                    result: {
+                        component: 'TPS3813K33DBVR',
+                        reason: '德州仪器，3.3V基准，1%精度，SOT-23封装，响应时间0.5ms'
+                    }
+                },
+                {
+                    id: 'task2', 
+                    delay: 2500,
+                    result: {
+                        component: 'IRFB4115PBF',
+                        reason: 'Infineon，150V/104A，Rds(on)=8.7mΩ，TO-220封装，性价比优秀'
+                    }
+                },
+                {
+                    id: 'task3',
+                    delay: 3000,
+                    result: {
+                        component: 'TMR 3-2412WI',
+                        reason: 'TRACO POWER，24V转12V/3A，效率87%，3kV隔离，DIP24封装'
+                    }
+                },
+                {
+                    id: 'task4',
+                    delay: 3500,
+                    result: {
+                        component: 'STM32F030C8T6',
+                        reason: 'ST，Cortex-M0，64KB Flash，39个GPIO，12位ADC，LQFP48封装'
+                    }
+                },
+                {
+                    id: 'task5',
+                    delay: 4000,
+                    result: {
+                        component: 'WSL2512R0100FEA',
+                        reason: 'Vishay，10mΩ/2W，±1%精度，2512封装，低温漂系数'
+                    }
+                },
+                {
+                    id: 'task6',
+                    delay: 4500,
+                    result: {
+                        component: 'MBRS340T3G',
+                        reason: 'ON Semi，40V/3A，Vf=0.45V，SMA封装，快速恢复特性'
+                    }
+                }
+            ];
+
+            tasks.forEach(task => {
+                setTimeout(() => {
+                    completeTask(task.id, task.result);
+                }, task.delay);
+            });
+
+            // 所有任务完成后显示BOM生成加载动画
+            setTimeout(() => {
+                showBomLoading();
+            }, 5000);
+        }
+
+        // 完成单个任务
+        function completeTask(taskId, result) {
+            const taskCard = document.getElementById(taskId);
+            const taskStatus = taskCard.querySelector('.task-status');
+            const taskContent = taskCard.querySelector('.task-content');
+            
+            taskCard.classList.remove('processing');
+            taskCard.classList.add('completed');
+            taskStatus.classList.remove('processing');
+            taskStatus.classList.add('completed');
+            
+            taskContent.innerHTML = `
+                <div class="task-progress">✅ 选型完成</div>
+                <div class="task-result">
+                    <div class="selected-component">${result.component}</div>
+                    <div class="component-reason">${result.reason}</div>
+                </div>
+            `;
+        }
+
+        // 显示BOM生成加载动画
+        function showBomLoading() {
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message assistant';
+            loadingMessage.id = 'bomLoadingMessage';
+            
+            loadingMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            所有器件选型已完成！现在开始生成BOM清单...
+                        </div>
+                        
+                        <div class="bom-loading">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">正在生成BOM清单</div>
+                            <div class="loading-progress" id="loadingProgress">正在处理数据...</div>
+                            
+                            <div class="loading-steps">
+                                <div class="loading-step active" id="step1">
+                                    <div class="loading-step-icon"></div>
+                                    <span>整理器件参数信息</span>
+                                </div>
+                                <div class="loading-step" id="step2">
+                                    <div class="loading-step-icon"></div>
+                                    <span>生成BOM表格结构</span>
+                                </div>
+                                <div class="loading-step" id="step3">
+                                    <div class="loading-step-icon"></div>
+                                    <span>关联替代料数据</span>
+                                </div>
+                                <div class="loading-step" id="step4">
+                                    <div class="loading-step-icon"></div>
+                                    <span>完成BOM清单</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="message-time">14:28</div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(loadingMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // 模拟加载步骤
+            simulateLoadingSteps();
+        }
+
+        // 模拟加载步骤
+        function simulateLoadingSteps() {
+            const steps = ['step1', 'step2', 'step3', 'step4'];
+            const progressTexts = [
+                '正在整理器件参数...',
+                '正在生成表格结构...',
+                '正在关联替代料...',
+                '即将完成...'
+            ];
+            
+            let currentStep = 0;
+            
+            const stepInterval = setInterval(() => {
+                if (currentStep > 0) {
+                    // 标记上一步完成
+                    const prevStep = document.getElementById(steps[currentStep - 1]);
+                    if (prevStep) {
+                        prevStep.classList.remove('active');
+                        prevStep.classList.add('completed');
+                    }
+                }
+                
+                if (currentStep < steps.length) {
+                    // 激活当前步骤
+                    const currentStepEl = document.getElementById(steps[currentStep]);
+                    if (currentStepEl) {
+                        currentStepEl.classList.add('active');
+                    }
+                    
+                    // 更新进度文字
+                    const progressEl = document.getElementById('loadingProgress');
+                    if (progressEl) {
+                        progressEl.textContent = progressTexts[currentStep];
+                    }
+                    
+                    currentStep++;
+                } else {
+                    // 所有步骤完成，标记最后一步
+                    const lastStep = document.getElementById(steps[steps.length - 1]);
+                    if (lastStep) {
+                        lastStep.classList.remove('active');
+                        lastStep.classList.add('completed');
+                    }
+                    
+                    clearInterval(stepInterval);
+                    
+                    // 移除加载消息，生成实际BOM
+                    setTimeout(() => {
+                        const loadingMsg = document.getElementById('bomLoadingMessage');
+                        if (loadingMsg) {
+                            loadingMsg.remove();
+                        }
+                        generateBomTable();
+                    }, 800);
+                }
+            }, 1000);
+        }
+
+        // 生成BOM表格
+        function generateBomTable() {
+            const bomMessage = document.createElement('div');
+            bomMessage.className = 'message assistant';
+            
+            bomMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            🎉 所有器件选型完成！基于需求分析和并行查询结果，我为您生成了初版BOM清单。您可以点击器件型号查看替代方案：
+                        </div>
+                        
+                        <div class="bom-table-container">
+                            <div class="bom-table-header">
+                                📋 电源切换模块 BOM清单 v1.0
+                            </div>
+                            <table class="bom-table">
+                                <thead>
+                                    <tr>
+                                        <th>型号</th>
+                                        <th>位号</th>
+                                        <th>分类</th>
+                                        <th>核心参数</th>
+                                        <th>封装</th>
+                                        <th>制造商</th>
+                                        <th>规格书</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'voltage-monitor')">
+                                                    TPS3813K33DBVR
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-voltage-monitor">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'TPS3813K33DBVR', 'Texas Instruments')">
+                                                        <div class="alternative-name">TPS3813K33DBVR <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - 3.3V基准，1%精度，SOT-23</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'MAX6369KA+T', 'Maxim Integrated')">
+                                                        <div class="alternative-name">MAX6369KA+T <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">3.08V基准，1.5%精度，SOT-23</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'MCP130T-300I/TT', 'Microchip')">
+                                                        <div class="alternative-name">MCP130T-300I/TT <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                        <div class="alternative-desc">3.0V基准，2%精度，SOT-23</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>U1</td>
+                                        <td>电压检测芯片</td>
+                                        <td>3.3V基准，1%精度</td>
+                                        <td>SOT-23</td>
+                                        <td>Texas Instruments</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('TPS3813K33DBVR_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'mosfet')">
+                                                    IRFB4115PBF
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-mosfet">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'IRFB4115PBF', 'Infineon')">
+                                                        <div class="alternative-name">IRFB4115PBF <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - 150V/104A，Rds=8.7mΩ</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'IRFP4468PBF', 'Infineon')">
+                                                        <div class="alternative-name">IRFP4468PBF <span class="alternative-tag tag-same-manufacturer">同厂家</span></div>
+                                                        <div class="alternative-desc">100V/195A，Rds=2.8mΩ，更低阻抗</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'STB80NF10T4', 'STMicroelectronics')">
+                                                        <div class="alternative-name">STB80NF10T4 <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                        <div class="alternative-desc">100V/80A，Rds=9.5mΩ，性价比高</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>Q1,Q2</td>
+                                        <td>功率MOSFET</td>
+                                        <td>150V/104A，Rds=8.7mΩ</td>
+                                        <td>TO-220</td>
+                                        <td>Infineon</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('IRFB4115PBF_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'dcdc')">
+                                                    TMR 3-2412WI
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-dcdc">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'TMR 3-2412WI', 'TRACO POWER')">
+                                                        <div class="alternative-name">TMR 3-2412WI <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - 24V转12V/3A，87%效率</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'IB2412S-3W', 'XP Power')">
+                                                        <div class="alternative-name">IB2412S-3W <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">24V转12V/3W，85%效率，SIP封装</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'NME2412SC', 'Murata')">
+                                                        <div class="alternative-name">NME2412SC <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                        <div class="alternative-desc">24V转12V/2W，88%效率，SMD封装</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>U2</td>
+                                        <td>DC-DC转换器</td>
+                                        <td>24V转12V/3A，87%效率</td>
+                                        <td>DIP24</td>
+                                        <td>TRACO POWER</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('TMR3-2412WI_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'mcu')">
+                                                    STM32F030C8T6
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-mcu">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'STM32F030C8T6', 'STMicroelectronics')">
+                                                        <div class="alternative-name">STM32F030C8T6 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - Cortex-M0，64KB Flash</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'STM32F072CBT6', 'STMicroelectronics')">
+                                                        <div class="alternative-name">STM32F072CBT6 <span class="alternative-tag tag-same-manufacturer">同厂家</span></div>
+                                                        <div class="alternative-desc">Cortex-M0，128KB Flash，更多外设</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'GD32F130C8T6', 'GigaDevice')">
+                                                        <div class="alternative-name">GD32F130C8T6 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">Cortex-M3，64KB Flash，兼容STM32</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>U3</td>
+                                        <td>控制MCU</td>
+                                        <td>Cortex-M0，64KB Flash</td>
+                                        <td>LQFP48</td>
+                                        <td>STMicroelectronics</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('STM32F030C8T6_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'resistor')">
+                                                    WSL2512R0100FEA
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-resistor">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'WSL2512R0100FEA', 'Vishay')">
+                                                        <div class="alternative-name">WSL2512R0100FEA <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - 10mΩ/2W，±1%精度</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'CRCW2512R010FKEAC', 'Vishay')">
+                                                        <div class="alternative-name">CRCW2512R010FKEAC <span class="alternative-tag tag-same-manufacturer">同厂家</span></div>
+                                                        <div class="alternative-desc">10mΩ/1W，±1%精度，厚膜工艺</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'LVR10R010FER', 'Rohm')">
+                                                        <div class="alternative-name">LVR10R010FER <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                        <div class="alternative-desc">10mΩ/3W，±1%精度，金属箔工艺</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>R1,R2</td>
+                                        <td>电流检测电阻</td>
+                                        <td>10mΩ/2W，±1%精度</td>
+                                        <td>2512</td>
+                                        <td>Vishay</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('WSL2512R0100FEA_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="component-select">
+                                                <span class="component-name" onclick="showAlternatives(this, 'diode')">
+                                                    MBRS340T3G
+                                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <polyline points="6,9 12,15 18,9"/>
+                                                    </svg>
+                                                </span>
+                                                <div class="alternatives-dropdown" id="dropdown-diode">
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'MBRS340T3G', 'ON Semiconductor')">
+                                                        <div class="alternative-name">MBRS340T3G <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">当前选择 - 40V/3A，Vf=0.45V</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'SS34', 'Vishay')">
+                                                        <div class="alternative-name">SS34 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                        <div class="alternative-desc">40V/3A，Vf=0.55V，SMA封装</div>
+                                                    </div>
+                                                    <div class="alternative-option" onclick="selectAlternative(this, 'B340A-13-F', 'Diodes Inc')">
+                                                        <div class="alternative-name">B340A-13-F <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                        <div class="alternative-desc">40V/3A，Vf=0.5V，SMA封装</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>D1,D2</td>
+                                        <td>保护二极管</td>
+                                        <td>40V/3A，Vf=0.45V</td>
+                                        <td>SMA</td>
+                                        <td>ON Semiconductor</td>
+                                        <td><a href="#" class="pdf-link" onclick="openPdf('MBRS340T3G_datasheet.pdf')">查看规格说明书</a></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="bom-actions">
+                                <button class="bom-btn" onclick="archiveBom()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 8v13H3V8"/>
+                                        <path d="M1 3h22v5H1z"/>
+                                        <path d="M10 12h4"/>
+                                    </svg>
+                                    归档BOM
+                                </button>
+                                <button class="bom-btn primary" onclick="downloadBom()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7,10 12,15 17,10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    下载BOM
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="message-text">
+                            BOM生成完成！您可以：<br>
+                            • 点击器件型号旁的下拉箭头查看替代方案并切换<br>
+                            • 点击"查看规格说明书"预览完整的器件参数文档<br>
+                            • 使用"归档BOM"保存到档案库<br>
+                            • 使用"下载BOM"导出Excel文件
+                        </div>
+                        
+                        <div class="message-time">14:28</div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(bomMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 显示替代方案下拉菜单
+        function showAlternatives(element, type) {
+            // 隐藏所有其他下拉菜单
+            document.querySelectorAll('.alternatives-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+            
+            // 显示当前下拉菜单
+            const dropdown = document.getElementById(`dropdown-${type}`);
+            dropdown.classList.add('show');
+            
+            // 点击其他地方关闭下拉菜单
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!element.closest('.component-select').contains(e.target)) {
+                        dropdown.classList.remove('show');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }, 100);
+        }
+
+        // 选择替代方案
+        function selectAlternative(element, partNumber, manufacturer) {
+            const componentSelect = element.closest('.component-select');
+            const componentName = componentSelect.querySelector('.component-name');
+            const manufacturerCell = componentSelect.closest('tr').cells[4];
+            
+            // 更新显示
+            componentName.textContent = partNumber;
+            manufacturerCell.textContent = manufacturer;
+            
+            // 隐藏下拉菜单
+            componentSelect.querySelector('.alternatives-dropdown').classList.remove('show');
+            
+            // 显示更新提示
+            const row = componentSelect.closest('tr');
+            row.style.backgroundColor = '#F0FDF4';
+            setTimeout(() => {
+                row.style.backgroundColor = '';
+            }, 2000);
+        }
+
+        // 打开PDF预览
+        function openPdf(filename) {
+            alert(`正在打开 ${filename} 预览...`);
+        }
+
+        // 归档BOM
+        function archiveBom() {
+            alert('BOM已成功归档到档案库！');
+        }
+
+        // 下载BOM
+        function downloadBom() {
+            alert('BOM Excel文件下载中...');
+        }
+
+        // 自动滚动到底部
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // PDF抽屉功能
+        function openPdf(filename) {
+            const pdfDrawer = document.getElementById('pdfDrawer');
+            const pdfDrawerOverlay = document.getElementById('pdfDrawerOverlay');
+            const pdfDrawerTitle = document.getElementById('pdfDrawerTitle');
+            const pdfViewerContent = document.getElementById('pdfViewerContent');
+            
+            // 设置标题
+            pdfDrawerTitle.textContent = filename.replace('_datasheet.pdf', ' - 规格说明书');
+            
+            // 模拟PDF内容加载
+            setTimeout(() => {
+                pdfViewerContent.innerHTML = `
+                    <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <h2 style="color: var(--text-main); margin-bottom: 8px;">${filename.replace('_datasheet.pdf', '')}</h2>
+                            <p style="color: var(--text-secondary); font-size: 14px;">产品规格说明书</p>
+                        </div>
+                        
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📋 产品概述</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 14px;">
+                                这是一款高性能的电子元器件，广泛应用于各种工业和消费类电子产品中。
+                                产品采用先进的工艺技术，具有高可靠性、低功耗、优异的电气特性等特点。
+                            </p>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">⚡ 主要特性</h3>
+                            <ul style="color: var(--text-secondary); line-height: 1.8; font-size: 14px; padding-left: 20px;">
+                                <li>优异的电气性能参数</li>
+                                <li>宽工作温度范围</li>
+                                <li>高可靠性和稳定性</li>
+                                <li>符合RoHS环保标准</li>
+                                <li>完善的过压、过流保护</li>
+                                <li>低功耗设计</li>
+                                <li>长使用寿命</li>
+                            </ul>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📐 电气参数</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                <div><strong>工作电压:</strong> 按规格要求</div>
+                                <div><strong>工作电流:</strong> 按规格要求</div>
+                                <div><strong>工作温度:</strong> -40°C ~ +85°C</div>
+                                <div><strong>存储温度:</strong> -55°C ~ +125°C</div>
+                            </div>
+                        </div>
+
+                        <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">🔧 应用领域</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: var(--text-secondary);">
+                                <div>• 工业控制系统</div>
+                                <div>• 消费电子产品</div>
+                                <div>• 通信设备</div>
+                                <div>• 汽车电子</div>
+                                <div>• 医疗设备</div>
+                                <div>• 电源管理</div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+                            <p style="color: var(--text-secondary); font-size: 12px;">
+                                © 2024 制造商 版权所有 | 本文档仅供参考
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }, 300);
+            
+            // 显示抽屉
+            pdfDrawerOverlay.classList.add('show');
+            pdfDrawer.classList.add('open');
+            
+            // 禁止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePdfDrawer() {
+            const pdfDrawer = document.getElementById('pdfDrawer');
+            const pdfDrawerOverlay = document.getElementById('pdfDrawerOverlay');
+            
+            // 隐藏抽屉
+            pdfDrawerOverlay.classList.remove('show');
+            pdfDrawer.classList.remove('open');
+            
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }
+
+        // ESC键关闭抽屉
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePdfDrawer();
+            }
+        });
+    </script>
+
+    <!-- PDF抽屉遮罩 -->
+    <div class="pdf-drawer-overlay" id="pdfDrawerOverlay" onclick="closePdfDrawer()"></div>
+    
+    <!-- PDF抽屉 -->
+    <div class="pdf-drawer" id="pdfDrawer">
+        <div class="pdf-drawer-header">
+            <div class="pdf-drawer-title" id="pdfDrawerTitle">规格说明书</div>
+            <button class="pdf-drawer-close" onclick="closePdfDrawer()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="pdf-drawer-content">
+            <div id="pdfViewerContent">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 16px; opacity: 0.5;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <p>正在加载规格说明书...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 研发偏好设置弹窗 -->
+    <div class="settings-modal-overlay" id="bomChatSettingsModal">
+        <div class="settings-modal">
+            <div class="settings-modal-header">
+                <h2 class="settings-modal-title">
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝" class="settings-modal-title-icon">
+                    <span>研发偏好</span>
+                </h2>
+                <button class="settings-modal-close" id="bomChatSettingsClose">×</button>
+            </div>
+            <div class="settings-modal-content">
+                <div class="settings-form-section">
+                    <div class="settings-form-section-title">研发风格</div>
+                    <div class="settings-tags-container">
+                        <div class="settings-preference-tag selected" data-mode="balanced">
+                            <span class="settings-preference-tag-icon">⚖️</span>
+                            <span>均衡模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                在任务深度和时间上做了平衡，适用于大多数工程师
+                            </div>
+                        </div>
+                        <div class="settings-preference-tag" data-mode="efficiency">
+                            <span class="settings-preference-tag-icon">⚡</span>
+                            <span>效率模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                硅宝将专注于执行你发出的指令，速度最快，但不会帮你思考过多内容
+                            </div>
+                        </div>
+                        <div class="settings-preference-tag" data-mode="inspiration">
+                            <span class="settings-preference-tag-icon">💡</span>
+                            <span>启发模式</span>
+                            <div class="settings-preference-tag-tooltip">
+                                硅宝将使用更复杂的模型和更多的数据与你协作，结果更丰富和全面，但耗时更久
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-form-section">
+                    <div class="settings-form-section-title">选型偏好</div>
+                    <textarea 
+                        class="settings-preference-textarea" 
+                        id="bomChatSelectionPreference"
+                        placeholder="描述你的选型倾向，例如：&#10;• 偏好的品牌（TI、ADI、国产等）&#10;• 技术参数要求（功耗、精度、速度等）&#10;• 应用场景特点（车规、工业、消费级）&#10;• 其他考虑因素"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="settings-modal-footer">
+                <button class="settings-btn settings-btn-cancel" id="bomChatSettingsCancel">取消</button>
+                <button class="settings-btn settings-btn-save" id="bomChatSettingsSave">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 研发偏好设置逻辑
+        (function() {
+            const modeConfig = {
+                balanced: { icon: '⚖️', text: '均衡模式', class: 'balanced' },
+                efficiency: { icon: '⚡', text: '效率模式', class: 'efficiency' },
+                inspiration: { icon: '💡', text: '启发模式', class: 'inspiration' }
+            };
+
+            const modeBadge = document.getElementById('bomChatModeBadge');
+            const modeBadgeText = document.getElementById('bomChatModeBadgeText');
+            const settingsModal = document.getElementById('bomChatSettingsModal');
+            const closeBtn = document.getElementById('bomChatSettingsClose');
+            const cancelBtn = document.getElementById('bomChatSettingsCancel');
+            const saveBtn = document.getElementById('bomChatSettingsSave');
+            const preferenceTags = document.querySelectorAll('#bomChatSettingsModal .settings-preference-tag');
+            const selectionPreference = document.getElementById('bomChatSelectionPreference');
+
+            let selectedMode = 'balanced';
+
+            function loadSettings() {
+                const savedMode = localStorage.getItem('developmentMode');
+                const savedPreference = localStorage.getItem('selectionPreference');
+
+                if (savedMode && modeConfig[savedMode]) {
+                    selectedMode = savedMode;
+                    updateModeBadge(savedMode);
+                    preferenceTags.forEach(tag => {
+                        tag.classList.remove('selected');
+                        if (tag.getAttribute('data-mode') === savedMode) {
+                            tag.classList.add('selected');
+                        }
+                    });
+                }
+
+                if (savedPreference) {
+                    selectionPreference.value = savedPreference;
+                }
+            }
+
+            function updateModeBadge(mode) {
+                const config = modeConfig[mode];
+                modeBadge.className = `mode-badge ${config.class}`;
+                modeBadge.querySelector('.mode-badge-icon').textContent = config.icon;
+                modeBadgeText.textContent = config.text;
+            }
+
+            modeBadge.addEventListener('click', function() {
+                settingsModal.classList.add('show');
+            });
+
+            function closeModal() {
+                settingsModal.classList.remove('show');
+            }
+
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            settingsModal.addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+
+            document.querySelector('#bomChatSettingsModal .settings-modal').addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            preferenceTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const mode = this.getAttribute('data-mode');
+                    if (selectedMode === mode) {
+                        this.classList.remove('selected');
+                        selectedMode = null;
+                    } else {
+                        preferenceTags.forEach(t => t.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedMode = mode;
+                    }
+                });
+            });
+
+            saveBtn.addEventListener('click', function() {
+                const preference = selectionPreference.value.trim();
+                if (selectedMode) {
+                    localStorage.setItem('developmentMode', selectedMode);
+                    updateModeBadge(selectedMode);
+                } else {
+                    localStorage.removeItem('developmentMode');
+                }
+                if (preference) {
+                    localStorage.setItem('selectionPreference', preference);
+                } else {
+                    localStorage.removeItem('selectionPreference');
+                }
+                closeModal();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && settingsModal.classList.contains('show')) {
+                    closeModal();
+                }
+            });
+
+            loadSettings();
+        })();
+    </script>
+</body>
+</html>
