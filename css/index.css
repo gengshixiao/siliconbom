@@ -499,6 +499,8 @@
     width: 100%; height: 100%;
     pointer-events: none; /* 让点击穿透 */
     z-index: 1;
+    will-change: contents; /* 提示浏览器优化SVG内容变化 */
+    transform: translateZ(0); /* 启用硬件加速 */
 }
 
  /* 线路样式 */

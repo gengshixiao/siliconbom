@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>BOM档案 - SiliconBom 硅宝</title>
+    
+    <!-- 引入公共CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/settings-feedback.css">
+    <link rel="stylesheet" href="css/user-block.css">
+    <link rel="stylesheet" href="css/bom-archive.css">
+</head>
+<body>
+    <div class="layout-wrapper">
+        <!-- 左侧侧边栏 -->
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索" id="sidebarSearchInput">
+                    </div>
+                </div>
+
+                <!-- 新建会话 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史会话列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">R26系列同规格产品推荐</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item active" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息（登录状态） -->
+            <div class="user-block" id="userBlock" style="display: none;">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+            <!-- 登录按钮（未登录状态） -->
+            <div class="login-prompt" id="loginButton">
+                <button class="login-btn-sidebar">登录</button>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 项目列表视图 -->
+            <div class="bom-archive-view" id="projectListView">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <img class="page-title-icon" src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案">
+                        BOM档案管理
+                    </h1>
+                    <p class="page-description">按项目管理BOM多版本，支持版本对比和变更分析</p>
+                </div>
+
+                <!-- 工具栏 -->
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="search-filter-bar">
+                            <div class="search-wrapper">
+                                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
+                                </svg>
+                                <input type="text" class="search-input" placeholder="搜索项目..." id="projectSearchInput">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-secondary" id="exportProjectsBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            导出BOM
+                        </button>
+                        <button class="btn btn-primary" id="createProjectBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            新建项目
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 项目表格容器 -->
+                <div class="project-table-container">
+                    <table class="project-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" id="selectAllProjects">
+                                </th>
+                                <th>项目名称</th>
+                                <th>项目描述</th>
+                                <th style="text-align: center;">版本数量</th>
+                                <th style="text-align: center;">最新版本</th>
+                                <th style="text-align: center;">更新时间</th>
+                                <th style="text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectTableBody">
+                            <!-- 项目列表将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 项目详情视图 -->
+            <div class="bom-archive-view" id="projectDetailView" style="display: none;">
+                <!-- 详情页头部 -->
+                <div class="page-header">
+                    <div class="detail-header-left">
+                        <button class="back-btn" id="backToListBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H6m6-7l-7 7 7 7"/>
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 class="page-title" id="projectDetailTitle">
+                                <img class="page-title-icon" src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案">
+                                <span id="projectNameDisplay">项目名称</span>
+                            </h1>
+                            <p class="page-description" id="projectDescription">查看和管理项目的BOM版本</p>
+                        </div>
+                    </div>
+                    <div class="detail-header-right">
+                        <button class="btn btn-secondary" id="importBomBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            导入BOM
+                        </button>
+                        <button class="btn btn-primary" id="analyzeBomBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                <line x1="12" y1="22.08" x2="12" y2="12"/>
+                            </svg>
+                            BOM变更分析
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 版本标签页 -->
+                <div class="version-tabs-container">
+                    <div class="version-tabs">
+                        <div class="version-tab active" data-tab="current">
+                            <span>当前版本</span>
+                            <span class="version-badge" id="currentVersionBadge">v1.0</span>
+                        </div>
+                        <div class="version-tab" data-tab="history">
+                            <span>版本列表</span>
+                            <span class="version-count" id="historyVersionCount">(0)</span>
+                        </div>
+                    </div>
+                    <div class="version-tabs-actions" id="versionTabsActions" style="display: none;">
+                        <button class="btn-icon" id="exportVersionsBtn" title="导出BOM" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 当前版本内容 -->
+                <div class="version-content" id="currentVersionContent">
+                    <div class="bom-table-container">
+                        <table class="bom-table">
+                            <thead>
+                                <tr>
+                                    <th>位号<br><span style="font-weight: normal; font-size: 11px;">Ref. Des.</span></th>
+                                    <th>分类<br><span style="font-weight: normal; font-size: 11px;">category</span></th>
+                                    <th>核心参数<br><span style="font-weight: normal; font-size: 11px;">Value</span></th>
+                                    <th>封装<br><span style="font-weight: normal; font-size: 11px;">Package</span></th>
+                                    <th>制造商<br><span style="font-weight: normal; font-size: 11px;">Manufacturer</span></th>
+                                    <th>制造商料号<br><span style="font-weight: normal; font-size: 11px;">MPN</span></th>
+                                    <th style="text-align: center; width: 120px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bomTableBody">
+                                <!-- BOM表格内容将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="current-version-footer">
+                        <button class="btn btn-primary" id="saveAsNewVersionBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            保存为新版本
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 历史版本内容 -->
+                <div class="version-content" id="historyVersionContent" style="display: none;">
+                    <div class="history-version-list" id="historyVersionList">
+                        <!-- 历史版本列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 版本查看弹窗 -->
+    <div class="modal-overlay" id="versionViewModalOverlay" style="display: none;">
+        <div class="modal version-view-modal" id="versionViewModal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="versionViewModalTitle">版本号</h2>
+                <button class="modal-close" id="versionViewModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body version-view-body">
+                <div class="bom-table-container">
+                    <table class="bom-table">
+                        <thead>
+                            <tr>
+                                <th>位号<br><span style="font-weight: normal; font-size: 11px;">Ref. Des.</span></th>
+                                <th>分类<br><span style="font-weight: normal; font-size: 11px;">category</span></th>
+                                <th>核心参数<br><span style="font-weight: normal; font-size: 11px;">Value</span></th>
+                                <th>封装<br><span style="font-weight: normal; font-size: 11px;">Package</span></th>
+                                <th>制造商<br><span style="font-weight: normal; font-size: 11px;">Manufacturer</span></th>
+                                <th>制造商料号<br><span style="font-weight: normal; font-size: 11px;">MPN</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="versionViewBomTableBody">
+                            <!-- BOM表格内容将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 发布新版本弹窗 -->
+    <div class="modal-overlay" id="newVersionModalOverlay" style="display: none;">
+        <div class="modal" id="newVersionModal">
+            <div class="modal-header">
+                <h2 class="modal-title">发布新版本</h2>
+                <button class="modal-close" id="newVersionModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">版本号</label>
+                    <input type="text" class="form-input" id="newVersionNumberInput" placeholder="如：v2.2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">版本描述</label>
+                    <textarea class="form-textarea" id="newVersionDescInput" placeholder="请输入版本描述，说明本次更新的内容和原因" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="newVersionModalCancel">取消</button>
+                <button class="btn btn-primary" id="newVersionModalConfirm">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建/编辑项目模态框 -->
+    <div class="modal-overlay" id="projectModalOverlay" style="display: none;">
+        <div class="modal" id="projectModal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="projectModalTitle">新建项目</h2>
+                <button class="modal-close" id="projectModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">项目名称</label>
+                    <input type="text" class="form-input" id="projectNameInput" placeholder="请输入项目名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label optional">项目描述（可选）</label>
+                    <textarea class="form-textarea" id="projectDescInput" placeholder="请输入项目描述，用于说明项目的用途和特点" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="projectModalCancel">取消</button>
+                <button class="btn btn-primary" id="projectModalConfirm">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入公共JavaScript -->
+    <script src="js/sidebar.js"></script>
+    <script src="js/tooltip.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/sidebar-navigation.js"></script>
+    <script src="js/project-item-menu.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/confirm-dialog.js"></script>
+    <script src="js/login-modal.js"></script>
+    <script src="js/settings-modal.js"></script>
+    <script src="js/feedback-modal.js"></script>
+    <script src="js/user-menu.js"></script>
+    <script src="js/bom-archive.js"></script>
+</body>
+</html>
+

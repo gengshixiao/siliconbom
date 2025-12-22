@@ -34,10 +34,8 @@
         // BOM档案
         const bomArchiveBtn = document.getElementById('bomArchive');
         if (bomArchiveBtn) {
-            bomArchiveBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                // 显示toast提示
-                showToast('功能开发中，敬请期待');
+            bomArchiveBtn.addEventListener('click', function() {
+                window.location.href = menuItems.bomArchive;
             });
         }
 

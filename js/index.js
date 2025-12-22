@@ -572,6 +572,24 @@ function setActiveFloor(target) {
      
      if (!svg || !chipPackage || !floor) return;
      
+     // 创建或获取隐藏的文本测量容器（避免频繁创建/删除DOM元素）
+     let measureContainer = svg.querySelector('.text-measure-container');
+     if (!measureContainer) {
+         measureContainer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+         measureContainer.setAttribute('class', 'text-measure-container');
+         measureContainer.setAttribute('style', 'visibility: hidden; pointer-events: none;');
+         // 将测量容器放在一个不影响布局的位置
+         measureContainer.setAttribute('transform', 'translate(-10000, -10000)');
+         svg.appendChild(measureContainer);
+     }
+     
+     // 获取侧边栏状态和可用空间
+     const sidebarUnit = document.getElementById('sidebarUnit');
+     const isSidebarCollapsed = sidebarUnit?.classList.contains('collapsed') || false;
+     const sidebarWidth = isSidebarCollapsed ? 64 : 260; // 从 CSS 变量获取，这里硬编码对应值
+     const windowWidth = window.innerWidth;
+     const availableWidth = windowWidth - sidebarWidth;
+     
      // 获取所有引脚元素
      const topPins = Array.from(chipPackage.querySelectorAll('.pin-array.top .pin-lead'));
      const bottomPins = Array.from(chipPackage.querySelectorAll('.pin-array.bottom .pin-lead'));
@@ -584,6 +602,12 @@ function setActiveFloor(target) {
      const viewBox = svg.viewBox.baseVal;
      const scaleX = viewBox.width / svgRect.width;
      const scaleY = viewBox.height / svgRect.height;
+     
+     // 计算可用空间的 SVG 坐标
+     // SVG 的 viewBox 是相对于 floor 的，所以左边界是 0，右边界是 viewBox.width
+     // 但需要留出一些边距，避免推荐问题被侧边栏遮挡或超出屏幕
+     const leftBoundarySVG = 10; // 左侧留出 10px 边距（SVG 坐标系）
+     const rightBoundarySVG = viewBox.width - 10; // 右侧留出 10px 边距（SVG 坐标系）
      
      // 将DOM坐标转换为SVG坐标
      const toSVGCoords = (element) => {
@@ -640,6 +664,49 @@ function setActiveFloor(target) {
          return circle;
      };
      
+     // 计算文本实际宽度的函数（优化版：使用测量容器，避免频繁DOM操作）
+     const calculateTextWidth = (text, fontSize = 11, fontFamily = 'system-ui, -apple-system, sans-serif') => {
+         if (!text || text.length === 0) return 120;
+         
+         // 使用已存在的测量容器，避免频繁创建/删除DOM元素
+         const tempText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+         tempText.setAttribute('font-size', fontSize);
+         tempText.setAttribute('font-weight', '500');
+         tempText.setAttribute('font-family', fontFamily);
+         tempText.setAttribute('text-anchor', 'start'); // 确保从起点测量
+         tempText.textContent = text;
+         measureContainer.appendChild(tempText);
+         
+         let actualWidth = 0;
+         try {
+             // 强制浏览器计算布局
+             const bbox = tempText.getBBox();
+             actualWidth = bbox.width;
+             
+             // 如果测量结果异常小，使用估算值
+             if (actualWidth < 10) {
+                 throw new Error('Measurement too small');
+             }
+         } catch (e) {
+             // 如果测量失败，使用估算值（中文字符按11px，英文字符按6.5px计算）
+             for (let i = 0; i < text.length; i++) {
+                 const char = text[i];
+                 // 判断是否为中文字符（包括中文标点）
+                 if (/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(char)) {
+                     actualWidth += 11; // 中文字符宽度
+                 } else {
+                     actualWidth += 6.5; // 英文字符和数字宽度
+                 }
+             }
+         } finally {
+             measureContainer.removeChild(tempText);
+         }
+         
+         // 返回实际宽度加上左右内边距（各20px，确保文本不会紧贴边缘）
+         // 增加一些额外的安全边距，避免文本溢出
+         return Math.max(actualWidth + 40, 120); // 最小宽度120px，内边距40px
+     };
+     
     // 获取芯片输入框的位置，用于确定推荐问题节点的位置
     const searchWrapper = chipPackage?.querySelector('.search-wrapper');
     let searchWrapperY = chipCenterY;
@@ -651,9 +718,9 @@ function setActiveFloor(target) {
     // 从侧边栏到芯片左侧引脚的走线 - 对称实现，与右侧风格一致
     // 左侧推荐问题列表
     const leftQuestions = [
-        '查找GD25Q64ESIGR的详细参数',
+        'GD25Q64ESIGR',
         '基于产品需求，生成BOM',
-        'R26110692的内阻是多少'
+        'R26110692的内阻多大'
     ];
     
     leftPinCoords.forEach((pin, i) => {
@@ -686,26 +753,53 @@ function setActiveFloor(target) {
             const questionX = bendX2 - 15; // 气泡在拐角点左侧
             const branchX = bendX2; // 分支从拐角点 bendX2 开始（与右侧相同）
             
-            // 从主线拐角点连接到问题节点的线条（带拐角）- 完全对称于右侧
-            svg.appendChild(createPath(
-                `M${branchX} ${questionY} L${questionX - 110} ${questionY} L${questionX - 110} ${questionY}`,
-                'trace-path',
-                1.5,
-                0.8
-            ));
+            // 使用准确的方法计算文本宽度
+            const textWidth = calculateTextWidth(questionText);
+            const textHeight = 32;
+            
+            // 检查左侧边界，确保气泡不超出
+            const bubbleLeftEdge = questionX - textWidth;
+            const minLeftEdge = leftBoundarySVG; // 使用已定义的左边界
+            const adjustedQuestionX = bubbleLeftEdge < minLeftEdge 
+                ? minLeftEdge + textWidth 
+                : questionX;
+            
+            // 优化连接线路径，避免交叉
+            // 对于底部气泡（i=2），使用更平滑的路径，稍微向下偏移避免交叉
+            const isBottomBubble = i === leftQuestions.length - 1;
+            const connectionOffsetY = isBottomBubble ? 8 : 0; // 底部气泡向下偏移8px
+            const branchEndX = adjustedQuestionX - 110;
+            const connectionY = questionY + connectionOffsetY;
+            
+            // 从主线拐角点连接到问题节点的线条（带平滑拐角）
+            // 使用二次贝塞尔曲线或平滑的L型路径
+            if (isBottomBubble) {
+                // 底部气泡：先水平延伸，再垂直向下，最后水平连接到气泡
+                const midX = branchX - 50; // 中间点X坐标
+                svg.appendChild(createPath(
+                    `M${branchX} ${questionY} L${midX} ${questionY} L${midX} ${connectionY} L${branchEndX} ${connectionY}`,
+                    'trace-path',
+                    1.5,
+                    0.8
+                ));
+            } else {
+                // 其他气泡：直接水平连接
+                svg.appendChild(createPath(
+                    `M${branchX} ${questionY} L${branchEndX} ${questionY}`,
+                    'trace-path',
+                    1.5,
+                    0.8
+                ));
+            }
             
             // 问题气泡节点 - 完全复用右侧的样式
             const questionGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             questionGroup.setAttribute('class', 'question-node');
             questionGroup.setAttribute('style', 'cursor: pointer;');
             
-            // 计算文本宽度（增加宽度，确保文字不超出）- 与右侧相同
-            const textWidth = Math.max(questionText.length * 8 + 30, 160);
-            const textHeight = 32;
-            
             // 气泡背景
             const bubbleRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bubbleRect.setAttribute('x', questionX - textWidth);
+            bubbleRect.setAttribute('x', adjustedQuestionX - textWidth);
             bubbleRect.setAttribute('y', questionY - textHeight / 2);
             bubbleRect.setAttribute('width', textWidth);
             bubbleRect.setAttribute('height', textHeight);
@@ -718,7 +812,7 @@ function setActiveFloor(target) {
             
             // 文本
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', questionX - textWidth / 2);
+            text.setAttribute('x', adjustedQuestionX - textWidth / 2);
             text.setAttribute('y', questionY);
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
@@ -728,8 +822,8 @@ function setActiveFloor(target) {
             text.textContent = questionText;
             questionGroup.appendChild(text);
             
-            // 连接点（在分支线上）
-            svg.appendChild(createCircle(questionX - 110, questionY, 3, '#6DD5E8', 0.9));
+            // 连接点（在分支线上，根据是否为底部气泡调整位置）
+            svg.appendChild(createCircle(branchEndX, connectionY, 3, '#6DD5E8', 0.9));
             
             svg.appendChild(questionGroup);
         }
@@ -883,9 +977,9 @@ function setActiveFloor(target) {
     // 从芯片右侧引脚到页面右侧 - 基于芯片宽度计算间距
     // 右侧推荐问题列表
     const rightQuestions = [
-        '品牌为 infineon，内阻小于 100mΩ的mos',
+        '品牌为英飞凌，内阻小于 100mΩ的mos',
         'R26112362推荐同规格产品',
-        'SCT1000N170弥勒平台怎么理解'
+        'SCT1000N170平台解读'
     ];
     
     rightPinCoords.forEach((pin, i) => {
@@ -913,26 +1007,52 @@ function setActiveFloor(target) {
             const questionX = bendX2 + 15; // 气泡在拐角点右侧
             const branchX = bendX2; // 分支从拐角点 bendX2 开始
             
-            // 从主线拐角点连接到问题节点的线条（带拐角）
-            svg.appendChild(createPath(
-                `M${branchX} ${questionY} L${questionX + 110} ${questionY} L${questionX + 110} ${questionY}`,
-                'trace-path',
-                1.5,
-                0.8
-            ));
+            // 使用准确的方法计算文本宽度
+            const textWidth = calculateTextWidth(questionText);
+            const textHeight = 32;
+            
+            // 检查右侧边界，确保气泡不超出
+            const bubbleRightEdge = questionX + textWidth;
+            const maxRightEdge = rightBoundarySVG; // 使用已定义的右边界
+            const adjustedQuestionX = bubbleRightEdge > maxRightEdge 
+                ? maxRightEdge - textWidth 
+                : questionX;
+            
+            // 优化连接线路径，避免交叉
+            // 对于底部气泡（i=2），使用更平滑的路径，稍微向下偏移避免交叉
+            const isBottomBubble = i === rightQuestions.length - 1;
+            const connectionOffsetY = isBottomBubble ? 8 : 0; // 底部气泡向下偏移8px
+            const branchEndX = adjustedQuestionX + 110;
+            const connectionY = questionY + connectionOffsetY;
+            
+            // 从主线拐角点连接到问题节点的线条（带平滑拐角）
+            if (isBottomBubble) {
+                // 底部气泡：先水平延伸，再垂直向下，最后水平连接到气泡
+                const midX = branchX + 50; // 中间点X坐标
+                svg.appendChild(createPath(
+                    `M${branchX} ${questionY} L${midX} ${questionY} L${midX} ${connectionY} L${branchEndX} ${connectionY}`,
+                    'trace-path',
+                    1.5,
+                    0.8
+                ));
+            } else {
+                // 其他气泡：直接水平连接
+                svg.appendChild(createPath(
+                    `M${branchX} ${questionY} L${branchEndX} ${questionY}`,
+                    'trace-path',
+                    1.5,
+                    0.8
+                ));
+            }
             
             // 问题气泡节点
             const questionGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             questionGroup.setAttribute('class', 'question-node');
             questionGroup.setAttribute('style', 'cursor: pointer;');
             
-            // 计算文本宽度（增加宽度，确保文字不超出）
-            const textWidth = Math.max(questionText.length * 8 + 30, 160);
-            const textHeight = 32;
-            
             // 气泡背景
             const bubbleRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bubbleRect.setAttribute('x', questionX);
+            bubbleRect.setAttribute('x', adjustedQuestionX);
             bubbleRect.setAttribute('y', questionY - textHeight / 2);
             bubbleRect.setAttribute('width', textWidth);
             bubbleRect.setAttribute('height', textHeight);
@@ -945,7 +1065,7 @@ function setActiveFloor(target) {
             
             // 文本
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', questionX + textWidth / 2);
+            text.setAttribute('x', adjustedQuestionX + textWidth / 2);
             text.setAttribute('y', questionY);
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
@@ -955,8 +1075,8 @@ function setActiveFloor(target) {
             text.textContent = questionText;
             questionGroup.appendChild(text);
             
-            // 连接点（在分支线上）
-            svg.appendChild(createCircle(questionX + 110, questionY, 3, '#6DD5E8', 0.9));
+            // 连接点（在分支线上，根据是否为底部气泡调整位置）
+            svg.appendChild(createCircle(branchEndX, connectionY, 3, '#6DD5E8', 0.9));
             
             svg.appendChild(questionGroup);
         }
@@ -2713,6 +2833,36 @@ window.addEventListener('load', () => {
      }, ANIMATION_CONFIG.resizeDelay);
  });
  
+ // 防抖函数，用于优化性能
+ function debounce(func, wait) {
+     let timeout;
+     return function executedFunction(...args) {
+         const later = () => {
+             clearTimeout(timeout);
+             func(...args);
+         };
+         clearTimeout(timeout);
+         timeout = setTimeout(later, wait);
+     };
+ }
+ 
+ // 使用 requestAnimationFrame 优化的更新函数
+ function updateTracesOptimized() {
+     // 使用 requestAnimationFrame 确保在下一帧执行，与浏览器渲染同步
+     requestAnimationFrame(() => {
+         updateTraces();
+     });
+ }
+ 
+ // 监听侧边栏折叠/展开事件，使用防抖和 requestAnimationFrame 优化性能
+ // 使用较短的防抖时间（50ms），让响应更快，同时避免频繁调用
+ const debouncedUpdateTraces = debounce(updateTracesOptimized, 50);
+ window.addEventListener('sidebarToggle', () => {
+     // 立即使用 requestAnimationFrame 开始准备，但实际更新会延迟
+     // 这样可以在侧边栏动画进行时就开始准备，让过渡更流畅
+     debouncedUpdateTraces();
+ });
+ 
  // 页面交互逻辑
  const btnSend = document.querySelector('.btn-send');
  if (btnSend) {
@@ -3329,8 +3479,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (savedMode && modeConfig[savedMode]) {
             selectedMode = savedMode;
             updateModeBadge(savedMode);
+        } else {
+            // 如果没有保存的模式，使用默认值
+            updateModeBadge(selectedMode);
         }
     }
+    
+    // 监听模式改变事件，当设置保存后自动更新
+    window.addEventListener('developmentModeChanged', function(event) {
+        const newMode = event.detail.mode;
+        if (newMode && modeConfig[newMode]) {
+            selectedMode = newMode;
+            updateModeBadge(newMode);
+        }
+    });
 
     function updateModeBadge(mode) {
         const config = modeConfig[mode];
@@ -3393,4 +3555,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // 加载保存的设置
     loadSettings();
 })();
+
 

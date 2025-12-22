@@ -30,6 +30,12 @@
             const collapsed = sidebarUnit.classList.contains('collapsed');
             localStorage.setItem('sidebarCollapsed', collapsed);
             updateToggleIcon(collapsed);
+            
+            // 触发自定义事件，通知其他模块侧边栏状态已改变
+            const event = new CustomEvent('sidebarToggle', {
+                detail: { collapsed: collapsed }
+            });
+            window.dispatchEvent(event);
         });
         
         // 初始化按钮图标方向

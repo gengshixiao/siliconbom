@@ -323,13 +323,23 @@
 
         // 研发风格标签选择
         const preferenceTags = settingsModal.querySelectorAll('.preference-tag');
-        let selectedMode = 'balanced';
+        // 从 localStorage 加载当前模式，如果没有则使用默认值
+        let selectedMode = localStorage.getItem('developmentMode') || 'balanced';
+        
+        // 初始化选中状态
+        preferenceTags.forEach(tag => {
+            if (tag.getAttribute('data-mode') === selectedMode) {
+                tag.classList.add('selected');
+            }
+        });
+        
         preferenceTags.forEach(tag => {
             tag.addEventListener('click', function() {
                 const mode = this.getAttribute('data-mode');
                 if (selectedMode === mode) {
-                    this.classList.remove('selected');
-                    selectedMode = null;
+                    // 如果点击已选中的，取消选中（可选行为）
+                    // this.classList.remove('selected');
+                    // selectedMode = null;
                 } else {
                     preferenceTags.forEach(t => t.classList.remove('selected'));
                     this.classList.add('selected');
@@ -370,6 +380,27 @@
 
         function handlePreferencesSave() {
             const selectionPreference = settingsModal.querySelector('#selectionPreference').value.trim();
+            
+            // 保存研发风格模式
+            const selectedTag = settingsModal.querySelector('.preference-tag.selected');
+            if (selectedTag) {
+                const modeToSave = selectedTag.getAttribute('data-mode');
+                if (modeToSave) {
+                    localStorage.setItem('developmentMode', modeToSave);
+                    selectedMode = modeToSave; // 更新局部变量
+                    // 触发自定义事件，通知其他模块模式已改变
+                    const event = new CustomEvent('developmentModeChanged', {
+                        detail: { mode: modeToSave }
+                    });
+                    window.dispatchEvent(event);
+                }
+            }
+            
+            // 保存选型偏好
+            if (selectionPreference) {
+                localStorage.setItem('selectionPreference', selectionPreference);
+            }
+            
             // 保存逻辑
             if (window.showToast) {
                 window.showToast('研发偏好保存成功！');
@@ -439,6 +470,24 @@
 
     function openSettingsModal() {
         createSettingsModal();
+        
+        // 加载并显示当前保存的模式
+        const savedMode = localStorage.getItem('developmentMode') || 'balanced';
+        const preferenceTags = settingsModal.querySelectorAll('.preference-tag');
+        preferenceTags.forEach(tag => {
+            tag.classList.remove('selected');
+            if (tag.getAttribute('data-mode') === savedMode) {
+                tag.classList.add('selected');
+            }
+        });
+        
+        // 加载选型偏好
+        const savedPreference = localStorage.getItem('selectionPreference');
+        const selectionPreferenceInput = settingsModal.querySelector('#selectionPreference');
+        if (selectionPreferenceInput && savedPreference) {
+            selectionPreferenceInput.value = savedPreference;
+        }
+        
         settingsModal.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
