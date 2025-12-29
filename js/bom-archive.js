@@ -85,6 +85,7 @@
         initProjectModal();
         initVersionViewModal();
         initNewVersionModal();
+        initImportBomModal();
     }
 
     // 绑定事件
@@ -133,15 +134,6 @@
                 switchVersionTab(tabType);
             });
         });
-
-        // 导入BOM按钮
-        const importBomBtn = document.getElementById('importBomBtn');
-        if (importBomBtn) {
-            importBomBtn.addEventListener('click', function() {
-                importBOM();
-            });
-        }
-
 
         // BOM变更分析按钮
         const analyzeBomBtn = document.getElementById('analyzeBomBtn');
@@ -395,7 +387,23 @@
         tbody.innerHTML = latestVersion.bomItems.map((item, index) => `
             <tr data-item-id="${item.id}">
                 <td><input type="text" value="${escapeHtml(item.refDes || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'refDes', this.value)" placeholder="如：C3,C4,C5"></td>
-                <td><input type="text" value="${escapeHtml(item.category || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'category', this.value)" placeholder="如：IC"></td>
+                <td>
+                    <select onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'category', this.value)" class="category-select">
+                        <option value="">请选择</option>
+                        <option value="电阻" ${item.category === '电阻' ? 'selected' : ''}>电阻</option>
+                        <option value="电容" ${item.category === '电容' ? 'selected' : ''}>电容</option>
+                        <option value="电感" ${item.category === '电感' ? 'selected' : ''}>电感</option>
+                        <option value="二极管" ${item.category === '二极管' ? 'selected' : ''}>二极管</option>
+                        <option value="三极管" ${item.category === '三极管' ? 'selected' : ''}>三极管</option>
+                        <option value="MOSFET" ${item.category === 'MOSFET' ? 'selected' : ''}>MOSFET</option>
+                        <option value="IC" ${item.category === 'IC' ? 'selected' : ''}>IC</option>
+                        <option value="连接器" ${item.category === '连接器' ? 'selected' : ''}>连接器</option>
+                        <option value="晶振" ${item.category === '晶振' ? 'selected' : ''}>晶振</option>
+                        <option value="LED" ${item.category === 'LED' ? 'selected' : ''}>LED</option>
+                        <option value="保险丝" ${item.category === '保险丝' ? 'selected' : ''}>保险丝</option>
+                        <option value="开关" ${item.category === '开关' ? 'selected' : ''}>开关</option>
+                    </select>
+                </td>
                 <td><input type="text" value="${escapeHtml(item.value || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'value', this.value)" placeholder="核心参数"></td>
                 <td><input type="text" value="${escapeHtml(item.package || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'package', this.value)" placeholder="如：0805"></td>
                 <td><input type="text" value="${escapeHtml(item.manufacturer || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'manufacturer', this.value)" placeholder="制造商名称"></td>
@@ -1127,6 +1135,168 @@
         }
         if (confirmBtn) {
             confirmBtn.addEventListener('click', saveAsNewVersion);
+        }
+    }
+
+    // 初始化导入BOM弹窗
+    function initImportBomModal() {
+        const importBomBtn = document.getElementById('importBomBtn');
+        const overlay = document.getElementById('importBomModalOverlay');
+        const closeBtn = document.getElementById('importBomModalClose');
+        const cancelBtn = document.getElementById('importBomModalCancel');
+        const confirmBtn = document.getElementById('importBomModalConfirm');
+        const fileSelectBox = document.getElementById('fileSelectBox');
+        const fileSelectLabel = document.getElementById('fileSelectLabel');
+        const btnClearFile = document.getElementById('btnClearFile');
+        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+
+        let hasFile = false;
+
+        // 打开导入弹窗
+        if (importBomBtn) {
+            importBomBtn.addEventListener('click', function() {
+                openImportBomModal();
+            });
+        }
+
+        // 关闭弹窗
+        if (closeBtn) closeBtn.addEventListener('click', closeImportBomModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeImportBomModal);
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeImportBomModal();
+            });
+        }
+
+        // 点击文件选择框 - 模拟选择文件
+        if (fileSelectBox) {
+            fileSelectBox.addEventListener('click', function(e) {
+                if (!e.target.closest('.btn-clear-file') && !hasFile) {
+                    selectFile();
+                }
+            });
+        }
+
+        // 清除文件
+        if (btnClearFile) {
+            btnClearFile.addEventListener('click', function(e) {
+                e.stopPropagation();
+                clearFile();
+            });
+        }
+
+        // 下载模板
+        if (downloadTemplateBtn) {
+            downloadTemplateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                downloadTemplate();
+            });
+        }
+
+        // 确认导入
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                importBom();
+            });
+        }
+
+        // 模拟选择文件
+        function selectFile() {
+            hasFile = true;
+            fileSelectBox.classList.add('has-file');
+            if (fileSelectLabel) {
+                fileSelectLabel.textContent = 'BOM数据表.xlsx';
+            }
+            if (btnClearFile) {
+                btnClearFile.style.display = 'flex';
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+            }
+            if (window.showToast) {
+                window.showToast('文件已选择', 'success');
+            }
+        }
+
+        // 清除文件
+        function clearFile() {
+            hasFile = false;
+            fileSelectBox.classList.remove('has-file');
+            if (fileSelectLabel) {
+                fileSelectLabel.textContent = '点击选择Excel文件';
+            }
+            if (btnClearFile) {
+                btnClearFile.style.display = 'none';
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+            }
+        }
+
+        // 下载模板
+        function downloadTemplate() {
+            if (window.showToast) {
+                window.showToast('BOM导入模板下载成功！', 'success');
+            }
+        }
+
+        // 导入BOM
+        function importBom() {
+            if (!hasFile) {
+                if (window.showToast) {
+                    window.showToast('请先选择文件', 'error');
+                }
+                return;
+            }
+
+            // 显示加载状态
+            confirmBtn.disabled = true;
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '<span>导入中...</span>';
+
+            // 模拟导入过程
+            setTimeout(function() {
+                if (window.showToast) {
+                    window.showToast('BOM导入成功！', 'success');
+                }
+                
+                // 模拟添加新的BOM数据
+                const project = projects.find(p => p.id === currentProjectId);
+                if (project && project.versions.length > 0) {
+                    // 添加一些示例数据到当前版本
+                    const currentVersion = project.versions[0];
+                    const newItems = [
+                        { id: Date.now(), refDes: 'C7,C8', category: '电容', value: '100uF', package: '0805', manufacturer: 'Samsung', mpn: 'CL21A107MQCLQNC', detailSpec: '' },
+                        { id: Date.now() + 1, refDes: 'R3,R4,R5', category: '电阻', value: '4.7K', package: '0603', manufacturer: 'YAGEO', mpn: 'RC0603FR-074K7L', detailSpec: '' }
+                    ];
+                    currentVersion.bomItems.push(...newItems);
+                    
+                    // 重新渲染当前版本
+                    renderCurrentVersion();
+                }
+                
+                confirmBtn.innerHTML = originalText;
+                closeImportBomModal();
+            }, 1500);
+        }
+
+        // 打开弹窗
+        function openImportBomModal() {
+            if (overlay) overlay.style.display = 'flex';
+            setTimeout(function() {
+                const modal = document.getElementById('importBomModal');
+                if (modal) modal.style.opacity = '1';
+            }, 10);
+        }
+
+        // 关闭弹窗
+        function closeImportBomModal() {
+            const modal = document.getElementById('importBomModal');
+            if (modal) modal.style.opacity = '0';
+            setTimeout(function() {
+                if (overlay) overlay.style.display = 'none';
+                clearFile();
+            }, 300);
         }
     }
 

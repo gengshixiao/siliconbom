@@ -480,6 +480,29 @@
     box-shadow: 0 0 0 2px rgba(109, 213, 232, 0.1);
 }
 
+/* BOM表格下拉框样式 */
+.bom-table select.category-select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--text-main);
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bom-table select.category-select:focus {
+    outline: none;
+    border-color: var(--trace-active);
+    box-shadow: 0 0 0 2px rgba(109, 213, 232, 0.1);
+}
+
+.bom-table select.category-select:hover {
+    border-color: #CBD5E1;
+}
+
 .bom-action-btn {
     width: 28px;
     height: 28px;
@@ -696,6 +719,7 @@
     justify-content: space-between;
     background: linear-gradient(to bottom, #FAFBFC 0%, #FFFFFF 100%);
 }
+
 
 .modal-title {
     font-size: 22px;
@@ -1046,5 +1070,112 @@
     transform: none;
     box-shadow: none;
     opacity: 1;
+}
+
+/* 导入BOM弹窗 - 文件选择框 */
+.file-select-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-select-box:hover {
+    background: #F1F5F9;
+    border-color: var(--trace-active);
+}
+
+.file-select-box.has-file {
+    background: rgba(109, 213, 232, 0.05);
+    border-color: var(--trace-active);
+}
+
+.file-select-icon {
+    width: 40px;
+    height: 40px;
+    color: #94A3B8;
+    flex-shrink: 0;
+}
+
+.file-select-box.has-file .file-select-icon {
+    color: var(--trace-active);
+}
+
+.file-select-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-select-text span:first-child {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.file-select-box.has-file .file-select-text span:first-child {
+    color: var(--trace-active);
+    font-weight: 600;
+}
+
+.file-select-hint {
+    font-size: 12px;
+    color: #94A3B8;
+}
+
+.btn-clear-file {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #FEE2E2;
+    color: #EF4444;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-clear-file:hover {
+    background: #FCA5A5;
+    transform: scale(1.05);
+}
+
+.btn-clear-file svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-link-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    color: var(--trace-active);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-link-download:hover {
+    background: rgba(109, 213, 232, 0.05);
+    border-color: var(--trace-active);
+}
+
+.btn-link-download svg {
+    width: 16px;
+    height: 16px;
 }
 

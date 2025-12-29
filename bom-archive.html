@@ -531,6 +531,58 @@
         </div>
     </div>
 
+    <!-- 导入BOM模态框 -->
+    <div class="modal-overlay" id="importBomModalOverlay" style="display: none;">
+        <div class="modal" id="importBomModal">
+            <div class="modal-header">
+                <h2 class="modal-title">导入BOM</h2>
+                <button class="modal-close" id="importBomModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">选择文件</label>
+                    <div class="file-select-box" id="fileSelectBox">
+                        <svg class="file-select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <div class="file-select-text">
+                            <span id="fileSelectLabel">点击选择Excel文件</span>
+                            <span class="file-select-hint">支持 .xlsx、.xls、.csv 格式</span>
+                        </div>
+                        <button class="btn-clear-file" id="btnClearFile" style="display: none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">导入模板</label>
+                    <button class="btn-link-download" id="downloadTemplateBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        下载BOM导入模板
+                    </button>
+                    <p class="form-hint">请按照模板格式填写BOM数据，确保导入成功</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="importBomModalCancel">取消</button>
+                <button class="btn btn-primary" id="importBomModalConfirm" disabled>确认导入</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 新建/编辑项目模态框 -->
     <div class="modal-overlay" id="projectModalOverlay" style="display: none;">
         <div class="modal" id="projectModal">
