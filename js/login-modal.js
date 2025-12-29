@@ -58,6 +58,9 @@
                                     <button class="password-toggle" id="togglePassword" type="button">👁</button>
                                 </div>
                             </div>
+                            <div class="forgot-password-wrapper">
+                                <a href="#" class="forgot-password-link" id="forgotPasswordLink">忘记密码？</a>
+                            </div>
                             <button class="login-btn" id="accountLoginBtn">登录</button>
                         </div>
                     </div>
@@ -201,6 +204,19 @@
         const closeBtn = loginModal.querySelector('#loginCloseBtn');
         if (closeBtn) {
             closeBtn.addEventListener('click', closeLoginModal);
+        }
+
+        // 忘记密码
+        const forgotPasswordLink = loginModal.querySelector('#forgotPasswordLink');
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeLoginModal();
+                // 打开重置密码弹窗
+                if (window.openResetPasswordModal) {
+                    window.openResetPasswordModal();
+                }
+            });
         }
 
         // 点击遮罩层关闭

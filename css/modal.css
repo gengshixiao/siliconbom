@@ -252,6 +252,80 @@
     flex-shrink: 0;
 }
 
+/* 忘记密码链接 */
+.forgot-password-wrapper {
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.forgot-password-link {
+    color: var(--trace-active);
+    font-size: 13px;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.forgot-password-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* 重置密码弹窗 */
+.reset-password-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    overflow: hidden;
+}
+
+.reset-password-header {
+    text-align: center;
+    padding: 40px 40px 30px;
+}
+
+.reset-password-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 8px;
+}
+
+.reset-password-subtitle {
+    font-size: 14px;
+    color: #64748B;
+    margin: 0;
+}
+
+.reset-password-content {
+    padding: 0 40px 40px;
+}
+
+.password-hint {
+    font-size: 12px;
+    color: #94A3B8;
+    margin-top: 6px;
+}
+
+.back-to-login {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.back-to-login a {
+    color: var(--trace-active);
+    font-size: 14px;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.back-to-login a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
 /* 个人中心弹窗 */
 .user-menu-popup {
     position: fixed;
