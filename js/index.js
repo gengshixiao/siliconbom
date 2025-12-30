@@ -1721,6 +1721,10 @@ function initChatDemo() {
             item.addEventListener('click', () => {
                 showChatDemo('chengong');
             });
+        } else if (index === 1) { // 第二个卡片是"BOM管理员小陈"
+            item.addEventListener('click', () => {
+                showChatDemo('bomreview');
+            });
         } else if (index === 2) { // 第三个卡片是"产品大佬"
             item.addEventListener('click', () => {
                 showChatDemo('product');
@@ -1750,6 +1754,11 @@ function initChatDemo() {
                 practicesChatTitle.textContent = '@奋斗小青年陈工';
             }
             renderChatMessages();
+        } else if (type === 'bomreview') {
+            if (practicesChatTitle) {
+                practicesChatTitle.textContent = '@BOM管理员小陈';
+            }
+            renderBomReviewChatMessages();
         } else if (type === 'product') {
             if (practicesChatTitle) {
                 practicesChatTitle.textContent = '@不愿意透露姓名的产品大佬';
@@ -1938,6 +1947,557 @@ function initChatDemo() {
                 openPdfDrawer('GD25Q64ESIGR_datasheet.pdf');
             });
         }
+    }
+    
+    // 渲染BOM评审对话内容
+    function renderBomReviewChatMessages() {
+        if (!practicesMessagesContainer) return;
+        
+        practicesMessagesContainer.innerHTML = `
+            <!-- 用户消息 - @项目调用 -->
+            <div class="message user">
+                <div class="message-avatar">📋</div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            <span class="mention-tag">
+                                <span class="mention-tag-icon">B</span>
+                                <span class="mention-tag-text">电源切换模块BOM(v2.1)</span>
+                            </span>
+                            这个项目现在需要提升耐高温性能，并且要纯国产，直接生成BOM
+                        </div>
+                        <div class="message-time">14:28</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 助手消息 - 第一步 -->
+            <div class="message assistant">
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            收到！我将基于 <strong>电源切换模块BOM</strong> 项目的历史版本，分析并生成满足<strong>耐高温</strong>和<strong>纯国产</strong>要求的新BOM方案。
+                        </div>
+                        
+                        <!-- 工具调用 - 读取BOM版本 -->
+                        <div class="tool-call">
+                            <div class="tool-call-header">
+                                <div class="tool-call-icon">📚</div>
+                                <div class="tool-call-name">BOM档案读取工具</div>
+                                <div class="tool-call-status">执行中...</div>
+                            </div>
+                            <div class="tool-call-content" id="bomReadContent">
+                                正在读取项目所有版本...
+                            </div>
+                        </div>
+
+                        <div class="message-time">14:28</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 模拟读取BOM版本过程
+        setTimeout(() => {
+            showBomVersionsRead();
+        }, 1500);
+    }
+    
+    // 显示读取的BOM版本信息
+    function showBomVersionsRead() {
+        const bomReadContent = document.getElementById('bomReadContent');
+        const toolCallStatus = document.querySelector('.tool-call-status');
+        
+        if (bomReadContent && toolCallStatus) {
+            toolCallStatus.textContent = '已完成';
+            bomReadContent.innerHTML = `
+                ✅ 已读取项目 <strong>电源切换模块BOM</strong><br>
+                📂 共找到 <strong>3个</strong> 历史版本：<br>
+                　• v1.0 (2024-01-15) - 初版设计<br>
+                　• v2.0 (2024-03-20) - 优化电源效率<br>
+                　• v2.1 (2024-05-10) - 当前版本，降低成本<br>
+                <br>
+                正在分析各版本BOM差异...
+            `;
+        }
+        
+        // 继续显示对比分析
+        setTimeout(() => {
+            showBomComparison();
+        }, 2000);
+    }
+    
+    // 显示BOM对比分析
+    function showBomComparison() {
+        if (!practicesMessagesContainer) return;
+        
+        const analysisMessage = document.createElement('div');
+        analysisMessage.className = 'message assistant';
+        
+        analysisMessage.innerHTML = `
+            <div class="message-avatar"></div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <div class="message-text">
+                        已完成版本对比分析！基于您的新需求（<strong>耐高温 + 纯国产</strong>），我发现需要替换以下关键器件：
+                    </div>
+                    
+                    <!-- 对比分析表 -->
+                    <div class="chip-info-table">
+                        <div class="chip-info-header">
+                            🔄 器件替换分析
+                        </div>
+                        <div class="chip-info-body">
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">电压检测芯片</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">TPS3813K33DBVR (TI)</span> → 
+                                    <span style="color: #10B981;">SGM809 (圣邦微)</span>
+                                </div>
+                            </div>
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">功率MOSFET</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">IRFB4115PBF (Infineon)</span> → 
+                                    <span style="color: #10B981;">NCE100N15 (新洁能)</span>
+                                </div>
+                            </div>
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">DC-DC转换器</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">TMR 3-2412WI (TRACO)</span> → 
+                                    <span style="color: #10B981;">B2412LS-1WR3 (金升阳)</span>
+                                </div>
+                            </div>
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">控制MCU</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">STM32F030C8T6 (ST)</span> → 
+                                    <span style="color: #10B981;">HC32F030C8TA (华大半导体)</span>
+                                </div>
+                            </div>
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">电流检测电阻</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">WSL2512R0100FEA (Vishay)</span> → 
+                                    <span style="color: #10B981;">LR2512-01R010FL (丽智)</span>
+                                </div>
+                            </div>
+                            <div class="chip-param-row">
+                                <div class="chip-param-label">保护二极管</div>
+                                <div class="chip-param-value">
+                                    <span style="color: #EF4444;">MBRS340T3G (ON Semi)</span> → 
+                                    <span style="color: #10B981;">SS34 (长电)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-text">
+                        📊 <strong>关键性能提升：</strong><br>
+                        • 工作温度范围：-40°C ~ +85°C → <strong>-40°C ~ +125°C</strong><br>
+                        • 国产化率：约35% → <strong>100%</strong><br>
+                        • 供应链风险：中等 → <strong>低</strong><br>
+                        • 预计成本变化：<strong>-15%</strong> (国产器件性价比更高)
+                    </div>
+
+                    <div class="message-time">14:29</div>
+                </div>
+            </div>
+        `;
+        
+        practicesMessagesContainer.appendChild(analysisMessage);
+        
+        // 滚动到最新消息
+        setTimeout(() => {
+            if (practicesMessagesContainer) {
+                analysisMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }, 100);
+        
+        // 继续生成新BOM
+        setTimeout(() => {
+            showBomGenerationForReview();
+        }, 2000);
+    }
+    
+    // 显示BOM生成过程
+    function showBomGenerationForReview() {
+        if (!practicesMessagesContainer) return;
+        
+        const generationMessage = document.createElement('div');
+        generationMessage.className = 'message assistant';
+        generationMessage.id = 'bomReviewGenerationMessage';
+        
+        generationMessage.innerHTML = `
+            <div class="message-avatar"></div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <div class="message-text">
+                        现在开始生成符合新要求的BOM清单...
+                    </div>
+                    
+                    <div class="bom-loading">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在生成BOM清单</div>
+                        <div class="loading-progress" id="reviewLoadingProgress">正在整理器件信息...</div>
+                        
+                        <div class="loading-steps">
+                            <div class="loading-step active" id="reviewStep1">
+                                <div class="loading-step-icon"></div>
+                                <span>验证国产器件兼容性</span>
+                            </div>
+                            <div class="loading-step" id="reviewStep2">
+                                <div class="loading-step-icon"></div>
+                                <span>确认高温特性参数</span>
+                            </div>
+                            <div class="loading-step" id="reviewStep3">
+                                <div class="loading-step-icon"></div>
+                                <span>生成BOM表格结构</span>
+                            </div>
+                            <div class="loading-step" id="reviewStep4">
+                                <div class="loading-step-icon"></div>
+                                <span>完成BOM清单</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-time">14:29</div>
+                </div>
+            </div>
+        `;
+        
+        practicesMessagesContainer.appendChild(generationMessage);
+        
+        // 滚动到最新消息
+        setTimeout(() => {
+            if (practicesMessagesContainer) {
+                generationMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }, 100);
+        
+        // 模拟生成步骤
+        simulateReviewLoadingSteps();
+    }
+    
+    // 模拟BOM评审生成步骤
+    function simulateReviewLoadingSteps() {
+        const steps = ['reviewStep1', 'reviewStep2', 'reviewStep3', 'reviewStep4'];
+        const progressTexts = [
+            '正在验证国产器件兼容性...',
+            '正在确认高温特性参数...',
+            '正在生成BOM表格结构...',
+            '即将完成...'
+        ];
+        
+        let currentStep = 0;
+        
+        const stepInterval = setInterval(() => {
+            if (currentStep > 0) {
+                const prevStep = document.getElementById(steps[currentStep - 1]);
+                if (prevStep) {
+                    prevStep.classList.remove('active');
+                    prevStep.classList.add('completed');
+                }
+            }
+            
+            if (currentStep < steps.length) {
+                const currentStepEl = document.getElementById(steps[currentStep]);
+                if (currentStepEl) {
+                    currentStepEl.classList.add('active');
+                }
+                
+                const progressEl = document.getElementById('reviewLoadingProgress');
+                if (progressEl) {
+                    progressEl.textContent = progressTexts[currentStep];
+                }
+                
+                currentStep++;
+            } else {
+                const lastStep = document.getElementById(steps[steps.length - 1]);
+                if (lastStep) {
+                    lastStep.classList.remove('active');
+                    lastStep.classList.add('completed');
+                }
+                
+                clearInterval(stepInterval);
+                
+                setTimeout(() => {
+                    const loadingMsg = document.getElementById('bomReviewGenerationMessage');
+                    if (loadingMsg) {
+                        loadingMsg.remove();
+                    }
+                    generateReviewBomTable();
+                }, 800);
+            }
+        }, 1000);
+    }
+    
+    // 生成BOM评审的BOM表格（使用相同的表格结构）
+    function generateReviewBomTable() {
+        if (!practicesMessagesContainer) return;
+        
+        const bomMessage = document.createElement('div');
+        bomMessage.className = 'message assistant';
+        
+        bomMessage.innerHTML = `
+            <div class="message-avatar"></div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <div class="message-text">
+                        🎉 BOM生成完成！基于原项目v2.1，我为您生成了符合<strong>耐高温</strong>和<strong>纯国产</strong>要求的新版BOM清单。所有器件均为国产品牌，工作温度达到-40°C ~ +125°C：
+                    </div>
+                    
+                    <div class="bom-table-container">
+                        <div class="bom-table-header">
+                            📋 电源切换模块 BOM清单 v3.0 (高温国产版)
+                        </div>
+                        <table class="bom-table">
+                            <thead>
+                                <tr>
+                                    <th>型号</th>
+                                    <th>位号</th>
+                                    <th>分类</th>
+                                    <th>核心参数</th>
+                                    <th>封装</th>
+                                    <th>制造商</th>
+                                    <th>规格书</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-voltage-monitor')">
+                                                SGM809
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-voltage-monitor">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'SGM809', '圣邦微')">
+                                                    <div class="alternative-name">SGM809 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - 3.3V基准，1%精度，SOT-23，-40~+125°C</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'HT7530', '合泰')">
+                                                    <div class="alternative-name">HT7530 <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">3.0V基准，2%精度，SOT-23，工业级</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'FM809', '复旦微电')">
+                                                    <div class="alternative-name">FM809 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">3.3V基准，1.5%精度，SOT-23，宽温范围</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>U1</td>
+                                    <td>电压检测芯片</td>
+                                    <td>3.3V基准，1%精度，-40~+125°C</td>
+                                    <td>SOT-23</td>
+                                    <td>圣邦微</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('SGM809_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-mosfet')">
+                                                NCE100N15
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-mosfet">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'NCE100N15', '新洁能')">
+                                                    <div class="alternative-name">NCE100N15 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - 150V/100A，Rds=7.5mΩ，TO-220</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'AO4468', '万国半导体')">
+                                                    <div class="alternative-name">AO4468 <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">100V/85A，Rds=9mΩ，TO-220，性价比高</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'FHP840N', '华润微')">
+                                                    <div class="alternative-name">FHP840N <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">150V/110A，Rds=6.8mΩ，TO-220</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>Q1,Q2</td>
+                                    <td>功率MOSFET</td>
+                                    <td>150V/100A，Rds=7.5mΩ</td>
+                                    <td>TO-220</td>
+                                    <td>新洁能</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('NCE100N15_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-dcdc')">
+                                                B2412LS-1WR3
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-dcdc">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'B2412LS-1WR3', '金升阳')">
+                                                    <div class="alternative-name">B2412LS-1WR3 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - 24V转12V/3W，效率85%，SIP</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'TD301D2412', '拓尔微')">
+                                                    <div class="alternative-name">TD301D2412 <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">24V转12V/3W，效率83%，DIP封装</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'R-78E12-1.0', '睿能')">
+                                                    <div class="alternative-name">R-78E12-1.0 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">宽输入，12V/1A输出，TO-220封装</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>U2</td>
+                                    <td>DC-DC转换器</td>
+                                    <td>24V转12V/3W，85%效率</td>
+                                    <td>SIP-4</td>
+                                    <td>金升阳</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('B2412LS_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-mcu')">
+                                                HC32F030C8TA
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-mcu">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'HC32F030C8TA', '华大半导体')">
+                                                    <div class="alternative-name">HC32F030C8TA <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - Cortex-M0+，64KB Flash，LQFP48</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'GD32F130C8T6', '兆易创新')">
+                                                    <div class="alternative-name">GD32F130C8T6 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">Cortex-M3，64KB Flash，兼容STM32</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'MM32F031C8T6', '灵动微')">
+                                                    <div class="alternative-name">MM32F031C8T6 <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">Cortex-M0，64KB Flash，LQFP48</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>U3</td>
+                                    <td>控制MCU</td>
+                                    <td>Cortex-M0+，64KB Flash</td>
+                                    <td>LQFP48</td>
+                                    <td>华大半导体</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('HC32F030_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-resistor')">
+                                                LR2512-01R010FL
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-resistor">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'LR2512-01R010FL', '丽智')">
+                                                    <div class="alternative-name">LR2512-01R010FL <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - 10mΩ/2W，±1%精度</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'RL2512FK-070R01L', '厚声')">
+                                                    <div class="alternative-name">RL2512FK-070R01L <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">10mΩ/1W，±1%精度，厚膜工艺</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'WR25L010JTL', '旺诠')">
+                                                    <div class="alternative-name">WR25L010JTL <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">10mΩ/3W，±1%精度，金属膜工艺</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>R1,R2</td>
+                                    <td>电流检测电阻</td>
+                                    <td>10mΩ/2W，±1%精度</td>
+                                    <td>2512</td>
+                                    <td>丽智</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('LR2512_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="component-select">
+                                            <span class="component-name" onclick="showBomAlternatives(this, 'review-diode')">
+                                                SS34
+                                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"/>
+                                                </svg>
+                                            </span>
+                                            <div class="alternatives-dropdown" id="dropdown-review-diode">
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'SS34', '长电')">
+                                                    <div class="alternative-name">SS34 <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">当前选择 - 40V/3A，Vf=0.45V</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'B340A', '佑风微')">
+                                                    <div class="alternative-name">B340A <span class="alternative-tag tag-cost-effective">性价比高</span></div>
+                                                    <div class="alternative-desc">40V/3A，Vf=0.5V，SMA封装</div>
+                                                </div>
+                                                <div class="alternative-option" onclick="selectBomAlternative(this, 'RS3M', '捷捷微')">
+                                                    <div class="alternative-name">RS3M <span class="alternative-tag tag-high-compatible">高兼容</span></div>
+                                                    <div class="alternative-desc">1000V/3A，超快恢复，SMA封装</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>D1,D2</td>
+                                    <td>保护二极管</td>
+                                    <td>40V/3A，Vf=0.45V</td>
+                                    <td>SMA</td>
+                                    <td>长电</td>
+                                    <td><a href="#" class="pdf-link" onclick="openBomPdf('SS34_datasheet.pdf'); return false;">查看规格说明书</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- BOM操作按钮区域 -->
+                        <div class="bom-table-actions">
+                            <button class="bom-action-btn bom-btn-download">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                下载
+                            </button>
+                            <button class="bom-action-btn bom-btn-save primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                保存BOM版本
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="message-time">14:30</div>
+                </div>
+            </div>
+        `;
+        
+        practicesMessagesContainer.appendChild(bomMessage);
+        
+        // 滚动到底部显示最新内容
+        setTimeout(() => {
+            if (practicesMessagesContainer) {
+                practicesMessagesContainer.scrollTop = practicesMessagesContainer.scrollHeight;
+            }
+        }, 100);
+        
+        // 初始化BOM操作按钮事件
+        initBomActions(bomMessage);
     }
     
     // 渲染BOM对话内容
