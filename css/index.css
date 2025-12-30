@@ -2698,5 +2698,119 @@
     font-size: 13px;
 }
 
+/* BOM版本卡片 */
+.bom-version-card {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.bom-version-card:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.bom-version-icon {
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.bom-version-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E293B;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.bom-version-date {
+    font-size: 11px;
+    color: #94A3B8;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.bom-version-info {
+    font-size: 12px;
+    color: #64748B;
+    text-align: center;
+}
+
+/* BOM版本详情弹窗 */
+.bom-version-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 900px;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.bom-version-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748B;
+    font-size: 28px;
+    line-height: 1;
+    z-index: 10;
+    transition: color 0.2s;
+}
+
+.bom-version-modal .close-btn:hover {
+    color: #334155;
+}
+
+.bom-version-header {
+    padding: 30px 40px 20px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.bom-version-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #0F172A;
+    margin: 0;
+}
+
+.bom-version-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.bom-version-body .bom-table-container {
+    margin: 0;
+    border: none;
+}
+
  
 

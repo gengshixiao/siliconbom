@@ -1962,7 +1962,7 @@ function initChatDemo() {
                         <div class="message-text">
                             <span class="mention-tag">
                                 <span class="mention-tag-icon">B</span>
-                                <span class="mention-tag-text">电源切换模块BOM(v2.1)</span>
+                                <span class="mention-tag-text">双电源自动切换系统</span>
                             </span>
                             这个项目现在需要提升耐高温性能，并且要纯国产，直接生成BOM
                         </div>
@@ -1976,9 +1976,9 @@ function initChatDemo() {
                 <div class="message-avatar"></div>
                 <div class="message-content">
                     <div class="message-bubble">
-                        <div class="message-text">
-                            收到！我将基于 <strong>电源切换模块BOM</strong> 项目的历史版本，分析并生成满足<strong>耐高温</strong>和<strong>纯国产</strong>要求的新BOM方案。
-                        </div>
+                    <div class="message-text">
+                        收到！我将基于 <strong>双电源自动切换系统</strong> 项目的历史版本，分析并生成满足<strong>耐高温</strong>和<strong>纯国产</strong>要求的新BOM方案。
+                    </div>
                         
                         <!-- 工具调用 - 读取BOM版本 -->
                         <div class="tool-call">
@@ -2012,32 +2012,34 @@ function initChatDemo() {
         if (bomReadContent && toolCallStatus) {
             toolCallStatus.textContent = '已完成';
             bomReadContent.innerHTML = `
-                ✅ 已读取项目 <strong>电源切换模块BOM</strong><br>
-                📂 共找到 <strong>3个</strong> 历史版本：<br>
-                <br>
-                <strong>v1.0 (2024-01-15)</strong> - 初版设计<br>
-                　• 器件数量: 6个<br>
-                　• 工作温度: -20°C ~ +70°C<br>
-                　• 国产化率: 0%<br>
-                <br>
-                <strong>v2.0 (2024-03-20)</strong> - 优化电源效率<br>
-                　• 器件数量: 6个<br>
-                　• 工作温度: -20°C ~ +70°C<br>
-                　• 国产化率: 16.7% (1个国产MCU替代方案)<br>
-                <br>
-                <strong>v2.1 (2024-05-10)</strong> - 降低成本<br>
-                　• 器件数量: 6个<br>
-                　• 工作温度: -40°C ~ +85°C<br>
-                　• 国产化率: 33.3% (2个国产器件)<br>
-                <br>
-                正在分析各版本与新需求的匹配度...
+                已读取项目 <strong>双电源自动切换系统</strong>，共找到 <strong>3个</strong> 历史版本：
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <div class="bom-version-card" onclick="showBomVersionDetail('v1.0')" style="cursor: pointer;">
+                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-name">v1.0</div>
+                        <div class="bom-version-date">2024-01-15</div>
+                        <div class="bom-version-info">初版设计 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-card" onclick="showBomVersionDetail('v2.0')" style="cursor: pointer;">
+                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-name">v2.0</div>
+                        <div class="bom-version-date">2024-03-20</div>
+                        <div class="bom-version-info">优化电源 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-card" onclick="showBomVersionDetail('v2.1')" style="cursor: pointer;">
+                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-name">v2.1</div>
+                        <div class="bom-version-date">2024-05-10</div>
+                        <div class="bom-version-info">降低成本 · 6个器件</div>
+                    </div>
+                </div>
             `;
         }
         
         // 继续显示分析结论
         setTimeout(() => {
             showVersionAnalysisConclusion();
-        }, 2500);
+        }, 2000);
     }
     
     // 显示版本分析结论
@@ -2052,28 +2054,26 @@ function initChatDemo() {
             <div class="message-content">
                 <div class="message-bubble">
                     <div class="message-text">
-                        分析完成！综合考虑您的新需求（<strong>耐高温性能</strong> + <strong>纯国产</strong>），我建议：
+                        分析完成。综合考虑新需求（耐高温性能 + 纯国产），建议基于 <strong>v2.1</strong> 版本进行改动。
                     </div>
                     
-                    <div class="message-text" style="background: #F0F9FF; padding: 12px; border-radius: 8px; border-left: 3px solid #0EA5E9;">
-                        💡 <strong>结论：</strong>基于 <strong>v2.1</strong> 版本进行改动<br>
-                        <br>
-                        <strong>原因：</strong><br>
-                        • v2.1已具备-40°C ~ +85°C工作温度范围，是较好的起点<br>
-                        • v2.1已有部分国产器件，改动成本相对较低<br>
-                        • v2.1在成本控制上已做优化，符合经济性要求<br>
-                        <br>
-                        <strong>需要改动的器件（共6个）：</strong><br>
-                        1. <strong>电压检测芯片</strong>: TPS3813K33DBVR (TI) → 需替换为支持-40~+125°C的国产芯片<br>
-                        2. <strong>功率MOSFET</strong>: IRFB4115PBF (Infineon) → 需替换为耐高温国产MOS管<br>
-                        3. <strong>DC-DC转换器</strong>: TMR 3-2412WI (TRACO) → 需替换为国产隔离电源模块<br>
-                        4. <strong>控制MCU</strong>: STM32F030C8T6 (ST) → 需替换为兼容的国产MCU<br>
-                        5. <strong>电流检测电阻</strong>: WSL2512R0100FEA (Vishay) → 需替换为国产精密电阻<br>
-                        6. <strong>保护二极管</strong>: MBRS340T3G (ON Semi) → 需替换为国产肖特基二极管
+                    <div class="message-text">
+                        <strong>选择理由：</strong><br>
+                        v2.1 已具备 -40°C ~ +85°C 工作温度范围，是较好的起点；已有部分国产器件，改动成本相对较低；在成本控制上已做优化，符合经济性要求。
                     </div>
 
                     <div class="message-text">
-                        现在我将调用<strong>物料查询与选型工具</strong>，为这6个器件逐一寻找最优的国产替代方案...
+                        <strong>需要改动的关键器件：</strong><br>
+                        1. <strong>控制MCU</strong>: STM32F030C8T6 (ST) → 需替换为兼容的国产MCU，要求支持 -40~+125°C<br>
+                        2. <strong>功率MOSFET</strong>: IRFB4115PBF (Infineon) → 需替换为耐高温国产MOS管
+                    </div>
+
+                    <div class="message-text">
+                        其他器件（电压检测芯片、DC-DC转换器、电阻、二极管）沿用 v2.1 现有方案即可满足要求。
+                    </div>
+
+                    <div class="message-text">
+                        现在调用物料查询与选型工具，为这2个关键器件寻找最优的国产替代方案。
                     </div>
 
                     <div class="message-time">14:29</div>
@@ -2093,10 +2093,10 @@ function initChatDemo() {
         // 继续显示并行选型任务
         setTimeout(() => {
             showParallelSelectionTasks();
-        }, 2000);
+        }, 1500);
     }
     
-    // 显示并行选型任务（参考第三个实践）
+    // 显示并行选型任务（只选型2个关键器件）
     function showParallelSelectionTasks() {
         if (!practicesMessagesContainer) return;
         
@@ -2108,17 +2108,17 @@ function initChatDemo() {
             <div class="message-content">
                 <div class="message-bubble">
                     <div class="message-text">
-                        开始并行执行物料查询和选型任务，同时为6个器件寻找最优国产替代方案：
+                        开始并行执行物料查询和选型任务：
                     </div>
                     
                     <div class="parallel-tasks" id="reviewParallelTasks">
                         <div class="task-card processing" id="reviewTask1">
                             <div class="task-header">
                                 <div class="task-status processing"></div>
-                                <div class="task-title">电压检测芯片选型</div>
+                                <div class="task-title">控制MCU选型</div>
                             </div>
                             <div class="task-content">
-                                <div class="task-progress">正在搜索国产电压监控芯片...</div>
+                                <div class="task-progress">正在匹配国产ARM MCU...</div>
                             </div>
                         </div>
                         
@@ -2129,46 +2129,6 @@ function initChatDemo() {
                             </div>
                             <div class="task-content">
                                 <div class="task-progress">正在筛选耐高温国产MOS管...</div>
-                            </div>
-                        </div>
-                        
-                        <div class="task-card processing" id="reviewTask3">
-                            <div class="task-header">
-                                <div class="task-status processing"></div>
-                                <div class="task-title">DC-DC转换器选型</div>
-                            </div>
-                            <div class="task-content">
-                                <div class="task-progress">正在查询国产隔离电源模块...</div>
-                            </div>
-                        </div>
-                        
-                        <div class="task-card processing" id="reviewTask4">
-                            <div class="task-header">
-                                <div class="task-status processing"></div>
-                                <div class="task-title">控制MCU选型</div>
-                            </div>
-                            <div class="task-content">
-                                <div class="task-progress">正在匹配国产ARM MCU...</div>
-                            </div>
-                        </div>
-                        
-                        <div class="task-card processing" id="reviewTask5">
-                            <div class="task-header">
-                                <div class="task-status processing"></div>
-                                <div class="task-title">电流检测电阻选型</div>
-                            </div>
-                            <div class="task-content">
-                                <div class="task-progress">正在查询国产精密电阻...</div>
-                            </div>
-                        </div>
-                        
-                        <div class="task-card processing" id="reviewTask6">
-                            <div class="task-header">
-                                <div class="task-status processing"></div>
-                                <div class="task-title">保护二极管选型</div>
-                            </div>
-                            <div class="task-content">
-                                <div class="task-progress">正在筛选国产肖特基二极管...</div>
                             </div>
                         </div>
                     </div>
@@ -2191,55 +2151,23 @@ function initChatDemo() {
         simulateReviewTaskCompletion();
     }
     
-    // 模拟选型任务完成
+    // 模拟选型任务完成（只有2个任务）
     function simulateReviewTaskCompletion() {
         const tasks = [
             {
                 id: 'reviewTask1',
-                delay: 1800,
+                delay: 1500,
                 result: {
-                    component: 'SGM809',
-                    reason: '圣邦微，3.3V基准，1%精度，SOT-23，-40~+125°C，完全兼容'
+                    component: 'HC32F030C8TA',
+                    reason: '华大半导体，Cortex-M0+，64KB Flash，LQFP48，pin-to-pin兼容STM32'
                 }
             },
             {
                 id: 'reviewTask2', 
-                delay: 2200,
+                delay: 2000,
                 result: {
                     component: 'NCE100N15',
                     reason: '新洁能，150V/100A，Rds=7.5mΩ，TO-220，-55~+175°C'
-                }
-            },
-            {
-                id: 'reviewTask3',
-                delay: 2600,
-                result: {
-                    component: 'B2412LS-1WR3',
-                    reason: '金升阳，24V转12V/3W，效率85%，SIP-4，-40~+105°C'
-                }
-            },
-            {
-                id: 'reviewTask4',
-                delay: 3000,
-                result: {
-                    component: 'HC32F030C8TA',
-                    reason: '华大半导体，Cortex-M0+，64KB Flash，LQFP48，pin-to-pin兼容'
-                }
-            },
-            {
-                id: 'reviewTask5',
-                delay: 3400,
-                result: {
-                    component: 'LR2512-01R010FL',
-                    reason: '丽智，10mΩ/2W，±1%精度，2512，TCR≤50ppm/°C'
-                }
-            },
-            {
-                id: 'reviewTask6',
-                delay: 3800,
-                result: {
-                    component: 'SS34',
-                    reason: '长电，40V/3A，Vf=0.45V，SMA，-55~+150°C'
                 }
             }
         ];
@@ -2253,7 +2181,7 @@ function initChatDemo() {
         // 所有任务完成后显示BOM生成
         setTimeout(() => {
             showBomGenerationForReview();
-        }, 4500);
+        }, 2800);
     }
     
     // 完成单个选型任务
@@ -2406,7 +2334,7 @@ function initChatDemo() {
             <div class="message-content">
                 <div class="message-bubble">
                     <div class="message-text">
-                        🎉 BOM生成完成！基于原项目v2.1，我为您生成了符合<strong>耐高温</strong>和<strong>纯国产</strong>要求的新版BOM清单。所有器件均为国产品牌，工作温度达到-40°C ~ +125°C：
+                        BOM生成完成。基于原项目v2.1，替换了2个关键器件，生成了符合耐高温和纯国产要求的新版BOM清单（v3.0）：
                     </div>
                     
                     <div class="bom-table-container">
@@ -3357,7 +3285,7 @@ function initChatDemo() {
         }, 100);
         
         // 初始化BOM操作按钮事件（BOM评审模式，直接保存到当前项目）
-        initBomActions(bomMessage, 'bomreview', '电源切换模块BOM');
+        initBomActions(bomMessage, 'bomreview', '双电源自动切换系统');
     }
     
     // 初始化BOM操作按钮
@@ -3538,6 +3466,128 @@ function initChatDemo() {
         console.log('保存BOM到项目:', projectName);
         // TODO: 实际保存BOM的逻辑
     }
+    
+    // 全局函数：显示BOM版本详情弹窗
+    window.showBomVersionDetail = function(version) {
+        // 创建或获取弹窗覆盖层
+        let overlay = document.getElementById('bomVersionOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'bomVersionOverlay';
+            overlay.className = 'modal-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        // 创建或获取弹窗
+        let modal = document.getElementById('bomVersionModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'bomVersionModal';
+            modal.className = 'bom-version-modal';
+            overlay.appendChild(modal);
+        }
+        
+        // 根据版本号设置内容
+        const versionData = {
+            'v1.0': {
+                title: 'v1.0 (2024-01-15) - 初版设计',
+                items: [
+                    { refDes: 'U1', category: '电压检测芯片', value: '3.3V基准，1%精度', package: 'SOT-23', manufacturer: 'Texas Instruments', mpn: 'TPS3813K33DBVR' },
+                    { refDes: 'Q1,Q2', category: '功率MOSFET', value: '150V/104A，Rds=8.7mΩ', package: 'TO-220', manufacturer: 'Infineon', mpn: 'IRFB4115PBF' },
+                    { refDes: 'U2', category: 'DC-DC转换器', value: '24V转12V/3A，87%效率', package: 'DIP24', manufacturer: 'TRACO POWER', mpn: 'TMR 3-2412WI' },
+                    { refDes: 'U3', category: '控制MCU', value: 'Cortex-M0，64KB Flash', package: 'LQFP48', manufacturer: 'STMicroelectronics', mpn: 'STM32F030C8T6' },
+                    { refDes: 'R1,R2', category: '电流检测电阻', value: '10mΩ/2W，±1%精度', package: '2512', manufacturer: 'Vishay', mpn: 'WSL2512R0100FEA' },
+                    { refDes: 'D1,D2', category: '保护二极管', value: '40V/3A，Vf=0.45V', package: 'SMA', manufacturer: 'ON Semi', mpn: 'MBRS340T3G' }
+                ]
+            },
+            'v2.0': {
+                title: 'v2.0 (2024-03-20) - 优化电源效率',
+                items: [
+                    { refDes: 'U1', category: '电压检测芯片', value: '3.3V基准，1%精度', package: 'SOT-23', manufacturer: 'Texas Instruments', mpn: 'TPS3813K33DBVR' },
+                    { refDes: 'Q1,Q2', category: '功率MOSFET', value: '150V/104A，Rds=8.7mΩ', package: 'TO-220', manufacturer: 'Infineon', mpn: 'IRFB4115PBF' },
+                    { refDes: 'U2', category: 'DC-DC转换器', value: '24V转12V/3A，87%效率', package: 'DIP24', manufacturer: 'TRACO POWER', mpn: 'TMR 3-2412WI' },
+                    { refDes: 'U3', category: '控制MCU', value: 'Cortex-M0，64KB Flash', package: 'LQFP48', manufacturer: 'GigaDevice', mpn: 'GD32F130C8T6' },
+                    { refDes: 'R1,R2', category: '电流检测电阻', value: '10mΩ/2W，±1%精度', package: '2512', manufacturer: 'Vishay', mpn: 'WSL2512R0100FEA' },
+                    { refDes: 'D1,D2', category: '保护二极管', value: '40V/3A，Vf=0.45V', package: 'SMA', manufacturer: 'ON Semi', mpn: 'MBRS340T3G' }
+                ]
+            },
+            'v2.1': {
+                title: 'v2.1 (2024-05-10) - 降低成本',
+                items: [
+                    { refDes: 'U1', category: '电压检测芯片', value: '3.3V基准，1%精度', package: 'SOT-23', manufacturer: 'Texas Instruments', mpn: 'TPS3813K33DBVR' },
+                    { refDes: 'Q1,Q2', category: '功率MOSFET', value: '150V/104A，Rds=8.7mΩ', package: 'TO-220', manufacturer: 'Infineon', mpn: 'IRFB4115PBF' },
+                    { refDes: 'U2', category: 'DC-DC转换器', value: '24V转12V/3W，85%效率', package: 'SIP-4', manufacturer: '金升阳', mpn: 'B2412LS-1WR3' },
+                    { refDes: 'U3', category: '控制MCU', value: 'Cortex-M0，64KB Flash', package: 'LQFP48', manufacturer: 'STMicroelectronics', mpn: 'STM32F030C8T6' },
+                    { refDes: 'R1,R2', category: '电流检测电阻', value: '10mΩ/2W，±1%精度', package: '2512', manufacturer: '丽智', mpn: 'LR2512-01R010FL' },
+                    { refDes: 'D1,D2', category: '保护二极管', value: '40V/3A，Vf=0.45V', package: 'SMA', manufacturer: 'ON Semi', mpn: 'MBRS340T3G' }
+                ]
+            }
+        };
+        
+        const data = versionData[version];
+        if (!data) return;
+        
+        // 生成表格HTML
+        const tableRows = data.items.map(item => `
+            <tr>
+                <td>${item.refDes}</td>
+                <td>${item.category}</td>
+                <td>${item.value}</td>
+                <td>${item.package}</td>
+                <td>${item.manufacturer}</td>
+                <td>${item.mpn}</td>
+            </tr>
+        `).join('');
+        
+        modal.innerHTML = `
+            <button class="close-btn" onclick="closeBomVersionModal()">×</button>
+            <div class="bom-version-header">
+                <h2 class="bom-version-title">${data.title}</h2>
+            </div>
+            <div class="bom-version-body">
+                <div class="bom-table-container">
+                    <table class="bom-table">
+                        <thead>
+                            <tr>
+                                <th>位号</th>
+                                <th>分类</th>
+                                <th>核心参数</th>
+                                <th>封装</th>
+                                <th>制造商</th>
+                                <th>制造商料号</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        // 显示弹窗
+        overlay.classList.add('show');
+        
+        // 点击覆盖层关闭
+        overlay.onclick = function(e) {
+            if (e.target === overlay) {
+                closeBomVersionModal();
+            }
+        };
+        
+        // 阻止弹窗内容点击事件冒泡
+        modal.onclick = function(e) {
+            e.stopPropagation();
+        };
+    };
+    
+    // 全局函数：关闭BOM版本详情弹窗
+    window.closeBomVersionModal = function() {
+        const overlay = document.getElementById('bomVersionOverlay');
+        if (overlay) {
+            overlay.classList.remove('show');
+        }
+    };
     
     // 显示替代料下拉框
     function showBomAlternatives(element, type) {
