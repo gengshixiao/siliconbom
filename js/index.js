@@ -2600,6 +2600,26 @@ function initChatDemo() {
                                 </tr>
                             </tbody>
                         </table>
+                        
+                        <!-- BOM操作按钮区域 -->
+                        <div class="bom-table-actions">
+                            <button class="bom-action-btn bom-btn-download">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                下载
+                            </button>
+                            <button class="bom-action-btn bom-btn-save primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                保存BOM版本
+                            </button>
+                        </div>
                     </div>
 
                     <div class="message-time">14:30</div>
@@ -2615,6 +2635,181 @@ function initChatDemo() {
                 practicesMessagesContainer.scrollTop = practicesMessagesContainer.scrollHeight;
             }
         }, 100);
+        
+        // 初始化BOM操作按钮事件
+        initBomActions(bomMessage);
+    }
+    
+    // 初始化BOM操作按钮
+    function initBomActions(bomMessage) {
+        const downloadBtn = bomMessage.querySelector('.bom-btn-download');
+        const saveBtn = bomMessage.querySelector('.bom-btn-save');
+        const projectSelectDropdown = document.getElementById('projectSelectDropdown');
+        
+        // 下载按钮（仅展示，不触发下载）
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                // 仅展示，不做任何操作
+            });
+        }
+        
+        // 保存BOM版本按钮
+        if (saveBtn && projectSelectDropdown) {
+            saveBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                showProjectSelectDropdown(saveBtn);
+            });
+        }
+    }
+    
+    // HTML转义函数
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // 显示项目选择弹窗
+    function showProjectSelectDropdown(triggerBtn) {
+        const dropdown = document.getElementById('projectSelectDropdown');
+        if (!dropdown) return;
+        
+        // 获取项目列表数据（从侧边栏的项目列表获取）
+        const projectItems = document.querySelectorAll('.project-item-text');
+        const projects = [];
+        projectItems.forEach(item => {
+            const projectText = item.textContent.trim();
+            if (projectText) {
+                projects.push({
+                    name: projectText,
+                    id: projects.length + 1
+                });
+            }
+        });
+        
+        // 如果没有项目，显示空状态
+        if (projects.length === 0) {
+            dropdown.innerHTML = '<div class="project-select-empty">暂无项目</div>';
+        } else {
+            // 渲染项目列表
+            dropdown.innerHTML = projects.map((project, index) => `
+                <div class="project-select-item ${index === 0 ? 'selected' : ''}" data-project-id="${project.id}" data-project-name="${escapeHtml(project.name)}">
+                    <span class="project-select-item-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18M9 21V9"/>
+                        </svg>
+                    </span>
+                    <span class="project-select-item-text">${escapeHtml(project.name)}</span>
+                </div>
+            `).join('');
+            
+            // 添加项目选择事件
+            const items = dropdown.querySelectorAll('.project-select-item');
+            let selectedIndex = 0;
+            
+            items.forEach((item, index) => {
+                item.addEventListener('click', function() {
+                    // 更新选中状态
+                    items.forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedIndex = index;
+                    
+                    // 选择项目
+                    const projectName = this.dataset.projectName;
+                    selectProjectForBom(projectName);
+                    hideProjectSelectDropdown();
+                });
+                
+                // 鼠标悬停高亮
+                item.addEventListener('mouseenter', function() {
+                    items.forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // 键盘导航支持
+            dropdown.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                    updateSelectedItem();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, 0);
+                    updateSelectedItem();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (items[selectedIndex]) {
+                        items[selectedIndex].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideProjectSelectDropdown();
+                }
+            });
+            
+            function updateSelectedItem() {
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === selectedIndex);
+                });
+                if (items[selectedIndex]) {
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+        }
+        
+        // 显示弹窗
+        dropdown.classList.add('show');
+        
+        // 计算位置（在按钮下方）
+        const rect = triggerBtn.getBoundingClientRect();
+        dropdown.style.left = (rect.right - 280) + 'px'; // 280是弹窗的最小宽度
+        dropdown.style.top = (rect.bottom + 8) + 'px';
+        
+        // 确保弹窗在视口内
+        const dropdownRect = dropdown.getBoundingClientRect();
+        if (dropdownRect.right > window.innerWidth) {
+            dropdown.style.left = (window.innerWidth - 280 - 16) + 'px';
+        }
+        if (dropdownRect.bottom > window.innerHeight) {
+            dropdown.style.top = (rect.top - dropdownRect.height - 8) + 'px';
+        }
+        
+        // 点击外部关闭
+        setTimeout(() => {
+            const clickHandler = function(e) {
+                if (!dropdown.contains(e.target) && !triggerBtn.contains(e.target)) {
+                    hideProjectSelectDropdown();
+                    document.removeEventListener('click', clickHandler);
+                }
+            };
+            document.addEventListener('click', clickHandler);
+        }, 0);
+        
+        // 聚焦弹窗以便键盘导航（设置tabindex使其可聚焦）
+        dropdown.setAttribute('tabindex', '-1');
+        dropdown.focus();
+    }
+    
+    // 隐藏项目选择弹窗
+    function hideProjectSelectDropdown() {
+        const dropdown = document.getElementById('projectSelectDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('show');
+            dropdown.removeAttribute('tabindex');
+        }
+    }
+    
+    // 选择项目保存BOM
+    function selectProjectForBom(projectName) {
+        // 这里可以添加保存BOM的逻辑
+        console.log('保存BOM到项目:', projectName);
+        // TODO: 实际保存BOM的逻辑
     }
     
     // 显示替代料下拉框

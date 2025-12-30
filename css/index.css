@@ -2578,5 +2578,125 @@
     text-decoration: underline;
 }
 
+/* BOM表格操作按钮区域 */
+.bom-table-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFBFC;
+}
+
+.bom-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    background: #fff;
+    color: #64748B;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bom-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.bom-action-btn:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #334155;
+}
+
+.bom-action-btn.primary {
+    background: #6DD5E8;
+    border-color: #6DD5E8;
+    color: #fff;
+}
+
+.bom-action-btn.primary:hover {
+    background: #5BC5D8;
+    border-color: #5BC5D8;
+}
+
+.bom-btn-download {
+    /* 次要按钮样式已通过默认样式设置 */
+}
+
+/* 项目选择弹窗 */
+.project-select-dropdown {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 10001;
+    display: none;
+    min-width: 280px;
+    font-size: 13px;
+    outline: none;
+}
+
+.project-select-dropdown.show {
+    display: block;
+}
+
+.project-select-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+    font-size: 13px;
+    color: #334155;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.project-select-item:last-child {
+    border-bottom: none;
+}
+
+.project-select-item:hover,
+.project-select-item.selected {
+    background: #E0F2FE;
+    color: #0369A1;
+}
+
+.project-select-item-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+}
+
+.project-select-item.selected .project-select-item-icon {
+    color: #0369A1;
+}
+
+.project-select-item-text {
+    flex: 1;
+    font-size: 13px;
+}
+
+.project-select-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94A3B8;
+    font-size: 13px;
+}
+
  
 
