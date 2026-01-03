@@ -257,5 +257,13 @@
     } else {
         renderConversations();
     }
+
+    // 暴露全局函数：获取会话列表
+    window.getConversationsList = function() {
+        return conversations.map(conv => ({
+            id: conv.id,
+            title: conv.title
+        }));
+    };
 })();
 

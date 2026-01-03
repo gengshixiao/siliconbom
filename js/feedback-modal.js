@@ -4,6 +4,45 @@
 (function() {
     let feedbackModal = null;
 
+    // 填充会话下拉框
+    function populateConversationSelect() {
+        if (!feedbackModal) return;
+        const select = feedbackModal.querySelector('#conversationSelect');
+        if (!select) return;
+
+        // 清空现有选项（保留第一个默认选项）
+        select.innerHTML = '<option value="">请选择会话</option>';
+
+        // 优先从全局函数获取会话列表
+        if (window.getConversationsList) {
+            const conversations = window.getConversationsList();
+            conversations.forEach(conv => {
+                const option = document.createElement('option');
+                option.value = conv.id;
+                option.textContent = conv.title;
+                select.appendChild(option);
+            });
+        } else {
+            // 如果全局函数不存在，从侧边栏的会话列表中获取
+            const projectList = document.getElementById('projectList');
+            if (projectList) {
+                const projectItems = projectList.querySelectorAll('.project-item');
+                projectItems.forEach((item, index) => {
+                    const titleElement = item.querySelector('.project-item-text');
+                    if (titleElement) {
+                        const title = titleElement.textContent.trim();
+                        if (title) {
+                            const option = document.createElement('option');
+                            option.value = index + 1; // 使用索引作为ID
+                            option.textContent = title;
+                            select.appendChild(option);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     function createFeedbackModal() {
         if (feedbackModal) return feedbackModal;
 
@@ -37,6 +76,18 @@
                         id="feedbackText"
                         placeholder="畅所欲言，期待你的真知灼见"
                     ></textarea>
+
+                    <div class="conversation-select-section">
+                        <label class="conversation-select-label">
+                            <svg class="conversation-select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span>选择出现问题的会话</span>
+                        </label>
+                        <select class="conversation-select" id="conversationSelect">
+                            <option value="">请选择会话</option>
+                        </select>
+                    </div>
 
                     <div class="tags-section">
                         <div class="tags-container">
@@ -83,6 +134,15 @@
 
         let uploadedImages = [];
         let selectedTags = [];
+        let selectedConversationId = null;
+
+        // 会话选择变化事件
+        const conversationSelect = feedbackModal.querySelector('#conversationSelect');
+        if (conversationSelect) {
+            conversationSelect.addEventListener('change', function() {
+                selectedConversationId = this.value || null;
+            });
+        }
 
         // 标签点击事件
         feedbackModal.querySelectorAll('.tag-item').forEach(tag => {
@@ -212,7 +272,8 @@
             const feedbackData = {
                 text: text,
                 tags: selectedTags,
-                images: uploadedImages.map(img => img.url)
+                images: uploadedImages.map(img => img.url),
+                conversationId: selectedConversationId
             };
 
             console.log('提交反馈:', feedbackData);
@@ -225,6 +286,10 @@
             feedbackText.value = '';
             uploadedImages = [];
             selectedTags = [];
+            selectedConversationId = null;
+            if (conversationSelect) {
+                conversationSelect.value = '';
+            }
             renderImagePreviews();
             feedbackModal.querySelectorAll('.tag-item').forEach(tag => {
                 tag.classList.remove('selected');
@@ -243,6 +308,8 @@
 
     function openFeedbackModal() {
         createFeedbackModal();
+        // 填充会话下拉框
+        populateConversationSelect();
         feedbackModal.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
