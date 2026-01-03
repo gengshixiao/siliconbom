@@ -135,13 +135,6 @@
             });
         });
 
-        // BOM变更分析按钮
-        const analyzeBomBtn = document.getElementById('analyzeBomBtn');
-        if (analyzeBomBtn) {
-            analyzeBomBtn.addEventListener('click', function() {
-                analyzeBOM();
-            });
-        }
 
         // 版本列表导出按钮
         const exportVersionsBtn = document.getElementById('exportVersionsBtn');
@@ -913,24 +906,6 @@
 
         if (window.showToast) {
             window.showToast('BOM已导出');
-        }
-    }
-
-    // BOM变更分析
-    function analyzeBOM() {
-        if (!currentProjectId) return;
-        const project = projects.find(p => p.id === currentProjectId);
-        if (!project || project.versions.length < 2) {
-            if (window.showToast) {
-                window.showToast('需要至少2个版本才能进行变更分析');
-            }
-            return;
-        }
-
-        // 这里应该打开变更分析面板或模态框
-        // 暂时显示提示
-        if (window.showToast) {
-            window.showToast('BOM变更分析功能开发中，敬请期待');
         }
     }
 

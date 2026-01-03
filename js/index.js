@@ -32,10 +32,10 @@ function setActiveFloor(target) {
     const centerX = (floorRect.width / 2) * scaleX;
     const buttonY = viewBox.height - 80;
     
-    // 获取教程卡片的位置和尺寸
-    const tutorialCard = floor.querySelector('.tutorial-card');
-    if (!tutorialCard) return;
-    const cardRect = tutorialCard.getBoundingClientRect();
+    // 获取教程容器的位置和尺寸
+    const tutorialContainer = floor.querySelector('.tutorial-container');
+    if (!tutorialContainer) return;
+    const cardRect = tutorialContainer.getBoundingClientRect();
     const cardLeft = (cardRect.left - floorRect.left) * scaleX;
     const cardRight = (cardRect.right - floorRect.left) * scaleX;
     const cardTop = (cardRect.top - floorRect.top) * scaleY;
@@ -1513,7 +1513,8 @@ function setActiveFloor(target) {
  
  // 教程页面特效初始化
  function initTutorialEffects() {
-     initFloorEffects('.floor-tutorial', '.tutorial-card', 'tutorial');
+    initFloorEffects('.floor-tutorial', '.tutorial-container', 'tutorial');
+    initTutorialVideoModal();
  }
  
  // 最佳实践页面特效初始化
@@ -1521,189 +1522,333 @@ function setActiveFloor(target) {
      initFloorEffects('.floor-practices', '.practices-container', 'practices');
  }
  
-// 渲染教程Markdown内容
-function renderTutorialContent() {
-    const tutorialContent = document.getElementById('tutorialContent');
-    if (!tutorialContent || typeof marked === 'undefined') return;
-
-    const markdownContent = `欢迎使用**硅宝**！这是一款专为电子工程师打造的AI助手，帮助您更高效地完成研发任务。 (๑•̀ㅂ•́)و✧
-
----
-
-## 📚 核心功能概览
-
-### 1️⃣ 会话管理
-
-在左侧边栏，您可以：
-
-- **新建会话** ➕：点击"新建会话"按钮，开始一个新的对话任务
-- **历史会话** 📋：查看和管理您之前的所有会话记录
-  - 点击会话名称可以继续之前的对话
-  - 鼠标悬停显示"⋯"菜单，支持**重命名**和**删除**操作
-- **搜索会话** 🔍：使用顶部搜索框快速查找特定会话
-
-> 💡 **小贴士**：会话会自动保存，您可以随时回到之前的对话继续工作！
-
----
-
-### 2️⃣ 知识库管理 📖
-
-知识库是您的文档管理中心：
-
-#### 上传文档
-- 点击工具栏的**"上传文档"**按钮
-- 支持格式：\`PDF\`、\`DOC\`、\`DOCX\`、\`TXT\`、\`MD\`
-- 文件大小限制：50MB以内
-
-#### 文档状态
-文档上传后会显示不同状态：
-
-- ✅ **已就绪**：文档已成功解析，可以进行问答
-- ⏳ **处理中**：文档正在解析中，请稍候
-- ❌ **失败**：解析失败，可以点击状态**重试**
-
-#### 文档操作
-- 👁️ **预览**：点击预览按钮查看文档内容
-- 🗑️ **删除**：删除不需要的文档
-- 🔍 **搜索**：使用搜索框快速查找文档
-
-#### 知识问答 💬
-- 点击**"知识问答"**按钮打开问答面板
-- 基于已上传的文档进行智能问答
-- 支持多轮对话，AI会记住上下文
-
----
-
-### 3️⃣ BOM档案 📦
-
-BOM档案功能帮助您：
-
-- 管理物料清单
-- 快速查找和对比器件
-- 生成和导出BOM表
-
-> ⚠️ **注意**：使用BOM相关功能时，可以在输入框中输入 \`@\` 来调用BOM档案
-
----
-
-### 4️⃣ 工作台对话 💭
-
-在工作台页面，您可以：
-
-#### 输入方式
-- **文本输入**：直接在输入框中描述您的需求
-- **@ 提及**：输入 \`@\` 可以调用BOM档案
-- **附件上传** 📎：点击附件按钮上传文件
-- **语音输入** 🎤：点击麦克风按钮进行语音输入
-
-#### 研发模式
-点击模式徽章可以切换研发风格：
-
-- ⚖️ **均衡模式**：在深度和时间上平衡，适合大多数场景
-- ⚡ **效率模式**：快速响应，专注执行指令
-- 💡 **启发模式**：深度分析，提供更全面的方案
-
-#### 发送消息
-- 点击**发送按钮**或按 \`Enter\` 键发送消息
-- 按 \`Shift + Enter\` 可以换行
-
----
-
-## 🎯 快速开始
-
-### 第一次使用？
-
-1. **创建会话**：点击左侧"新建会话"按钮
-2. **描述需求**：在工作台输入框中描述您的研发任务
-   - 例如："帮我选型一个60V的MOS管，用于电源管理"
-3. **获取方案**：硅宝会为您分析并提供选型建议
-4. **继续对话**：根据结果继续提问或调整需求
-
-### 进阶使用
-
-#### 使用知识库
-1. 上传技术文档到知识库
-2. 等待文档解析完成（状态变为"已就绪"）
-3. 打开"知识问答"面板
-4. 基于文档内容提问，例如："这个芯片的最大工作频率是多少？"
-
-#### 管理会话
-- 为重要会话**重命名**，方便后续查找
-- 定期**删除**不需要的会话，保持界面整洁
-- 使用**搜索功能**快速定位会话
-
----
-
-## 💡 使用技巧
-
-### 高效提问技巧
-
-- ✅ **具体明确**：描述清楚应用场景、参数要求
-  - 好：\`"需要一款用于12V转5V的LDO，输出电流500mA，低功耗"\`
-  - 差：\`"给我找个电源芯片"\`
-
-- ✅ **提供上下文**：说明项目背景和约束条件
-  - 例如：\`"车规级应用，温度范围-40°C到125°C"\`
-
-- ✅ **分步提问**：复杂需求可以分多个问题
-  1. 先确定器件类型
-  2. 再细化参数要求
-  3. 最后对比选型方案
-
-### 知识库使用建议
-
-- 📄 **上传数据手册**：上传芯片数据手册，方便快速查询参数
-- 📚 **整理文档**：按项目或类别整理文档，使用清晰的命名
-- 🔄 **定期更新**：保持知识库文档的时效性
-
----
-
-## ⚙️ 个性化设置
-
-点击用户头像可以访问：
-
-- **研发偏好设置**：调整研发风格和选型偏好
-- **账户信息**：查看会员等级和账户状态
-- **反馈建议**：提交使用反馈，帮助我们改进
-
----
-
-## 🆘 常见问题
-
-### Q: 文档上传后一直显示"处理中"？
-**A:** 文档解析需要一些时间，请耐心等待。如果长时间未完成，可以尝试刷新页面或重新上传。
-
-### Q: 如何删除会话？
-**A:** 鼠标悬停在会话名称上，点击右侧的"⋯"菜单，选择"删除"。
-
-### Q: 知识问答功能如何使用？
-**A:** 
-1. 确保有文档已解析完成（状态为"已就绪"）
-2. 点击工具栏的"知识问答"按钮
-3. 在问答面板中输入问题
-4. AI会基于您的文档内容回答
-
-### Q: 可以同时使用多个知识库文档吗？
-**A:** 可以！知识问答功能会基于所有已解析完成的文档进行回答。
-
----
-
-## 🎉 开始使用
-
-现在您已经了解了硅宝的主要功能，开始您的第一个任务吧！
-
-> 💪 **提示**：如果遇到任何问题，可以随时查看帮助文档或联系客服。
-
----
-
-*最后更新：2025年12月* ✨`;
-
-    try {
-        tutorialContent.innerHTML = marked.parse(markdownContent);
-    } catch (error) {
-        console.error('Markdown渲染失败:', error);
-        tutorialContent.innerHTML = '<p>教程内容加载失败，请刷新页面重试。</p>';
+// 教程步骤数据
+const tutorialSteps = [
+    {
+        id: 1,
+        title: '快速开始',
+        subtitle: '了解硅宝的基本使用方法',
+        features: [
+            {
+                title: '创建会话',
+                description: '点击左侧"新建会话"按钮，开始您的第一个对话任务',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"></path>
+                </svg>`
+            },
+            {
+                title: '描述需求',
+                description: '在工作台输入框中描述您的研发任务，例如："帮我选型一个60V的MOS管，用于电源管理"',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>`
+            },
+            {
+                title: '获取方案',
+                description: '硅宝会为您分析并提供选型建议，根据结果继续提问或调整需求',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`
+            }
+        ]
+    },
+    {
+        id: 2,
+        title: '会话管理',
+        subtitle: '管理和组织您的对话记录',
+        features: [
+            {
+                title: '新建会话',
+                description: '点击"新建会话"按钮，开始一个新的对话任务',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"></path>
+                </svg>`
+            },
+            {
+                title: '历史会话',
+                description: '查看和管理您之前的所有会话记录，点击会话名称可以继续之前的对话',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <path d="M3 9h18M9 21V9"></path>
+                </svg>`
+            },
+            {
+                title: '搜索会话',
+                description: '使用顶部搜索框快速查找特定会话，支持按标题和内容搜索',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>`
+            },
+            {
+                title: '会话操作',
+                description: '鼠标悬停显示菜单，支持重命名和删除操作，会话会自动保存',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="19" cy="12" r="1"></circle>
+                    <circle cx="5" cy="12" r="1"></circle>
+                </svg>`
+            }
+        ]
+    },
+    {
+        id: 3,
+        title: '知识库管理',
+        subtitle: '上传和管理技术文档',
+        features: [
+            {
+                title: '上传文档',
+                description: '点击工具栏的"上传文档"按钮，支持PDF、DOC、DOCX、TXT、MD格式，文件大小限制50MB以内',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>`
+            },
+            {
+                title: '文档状态',
+                description: '文档上传后会显示不同状态：已就绪、处理中或失败，可以点击状态重试',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`
+            },
+            {
+                title: '知识问答',
+                description: '点击"知识问答"按钮打开问答面板，基于已上传的文档进行智能问答，支持多轮对话',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>`
+            }
+        ]
+    },
+    {
+        id: 4,
+        title: '工作台对话',
+        subtitle: '与硅宝进行智能对话',
+        features: [
+            {
+                title: '文本输入',
+                description: '直接在输入框中描述您的需求，支持多行输入，按Enter发送，Shift+Enter换行',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>`
+            },
+            {
+                title: '提及功能',
+                description: '输入@可以调用BOM档案，快速引用物料信息',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>`
+            },
+            {
+                title: '研发模式',
+                description: '点击模式徽章切换研发风格：均衡模式、效率模式或启发模式',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>`
+            },
+            {
+                title: '附件上传',
+                description: '点击附件按钮上传文件，支持多种文档格式',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>`
+            }
+        ]
+    },
+    {
+        id: 5,
+        title: '使用技巧',
+        subtitle: '提升使用效率的最佳实践',
+        features: [
+            {
+                title: '具体明确',
+                description: '描述清楚应用场景、参数要求，例如："需要一款用于12V转5V的LDO，输出电流500mA，低功耗"',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`
+            },
+            {
+                title: '提供上下文',
+                description: '说明项目背景和约束条件，例如："车规级应用，温度范围-40°C到125°C"',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>`
+            },
+            {
+                title: '分步提问',
+                description: '复杂需求可以分多个问题：先确定器件类型，再细化参数要求，最后对比选型方案',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>`
+            }
+        ]
     }
+];
+
+// 当前步骤索引
+let currentStepIndex = 0;
+
+// 渲染教程内容
+function renderTutorialContent() {
+    const tutorialStepsNav = document.getElementById('tutorialSteps');
+    const tutorialContent = document.getElementById('tutorialContent');
+    const prevBtn = document.getElementById('tutorialPrevBtn');
+    const nextBtn = document.getElementById('tutorialNextBtn');
+    const progressText = document.getElementById('tutorialProgressText');
+    
+    if (!tutorialStepsNav || !tutorialContent) return;
+
+    // 渲染步骤导航
+    tutorialStepsNav.innerHTML = tutorialSteps.map((step, index) => `
+        <div class="tutorial-step-item ${index === currentStepIndex ? 'active' : ''}" data-step="${index}">
+            <div class="tutorial-step-number">${step.id}</div>
+            <div class="tutorial-step-text">${step.title}</div>
+        </div>
+    `).join('');
+
+    // 渲染当前步骤内容
+    renderStepContent(tutorialSteps[currentStepIndex]);
+
+    // 更新导航按钮状态
+    if (prevBtn) {
+        prevBtn.disabled = currentStepIndex === 0;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentStepIndex === tutorialSteps.length - 1;
+    }
+    if (progressText) {
+        progressText.textContent = `${currentStepIndex + 1} / ${tutorialSteps.length}`;
+    }
+
+    // 绑定步骤点击事件
+    tutorialStepsNav.querySelectorAll('.tutorial-step-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const stepIndex = parseInt(this.getAttribute('data-step'));
+            switchStep(stepIndex);
+        });
+    });
+
+    // 绑定导航按钮事件
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentStepIndex > 0) {
+                switchStep(currentStepIndex - 1);
+            }
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentStepIndex < tutorialSteps.length - 1) {
+                switchStep(currentStepIndex + 1);
+            }
+        });
+    }
+}
+
+// 渲染步骤内容
+function renderStepContent(step) {
+    const tutorialContent = document.getElementById('tutorialContent');
+    if (!tutorialContent) return;
+
+    const featuresHTML = step.features.map((feature, index) => `
+        <div class="tutorial-feature-card" data-feature-title="${feature.title}" data-feature-description="${feature.description}">
+            <div class="tutorial-feature-card-header">
+                <div class="tutorial-feature-icon">${feature.icon}</div>
+                <h3 class="tutorial-feature-title">${feature.title}</h3>
+            </div>
+            <p class="tutorial-feature-description">${feature.description}</p>
+        </div>
+    `).join('');
+
+    tutorialContent.innerHTML = `
+        <div class="tutorial-content-section active">
+            <h1 class="tutorial-section-title">${step.title}</h1>
+            <p class="tutorial-section-subtitle">${step.subtitle}</p>
+            <div class="tutorial-feature-grid">
+                ${featuresHTML}
+            </div>
+        </div>
+    `;
+
+    // 为每个卡片添加点击事件
+    const featureCards = tutorialContent.querySelectorAll('.tutorial-feature-card');
+    featureCards.forEach((card, index) => {
+        card.addEventListener('click', function() {
+            // 直接从feature对象获取，避免HTML转义问题
+            const feature = step.features[index];
+            if (feature) {
+                openTutorialVideoModal(feature.title, feature.description);
+            }
+        });
+    });
+}
+
+// 打开教程视频弹窗
+function openTutorialVideoModal(title, description) {
+    const overlay = document.getElementById('tutorialVideoModalOverlay');
+    const videoTitle = document.getElementById('tutorialVideoTitle');
+    const videoDescription = document.getElementById('tutorialVideoDescription');
+    
+    if (!overlay || !videoTitle || !videoDescription) return;
+    
+    videoTitle.textContent = title;
+    videoDescription.textContent = description;
+    
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+// 关闭教程视频弹窗
+function closeTutorialVideoModal() {
+    const overlay = document.getElementById('tutorialVideoModalOverlay');
+    if (!overlay) return;
+    
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// 初始化教程视频弹窗事件
+function initTutorialVideoModal() {
+    const overlay = document.getElementById('tutorialVideoModalOverlay');
+    const closeBtn = document.getElementById('tutorialVideoClose');
+    
+    if (!overlay) return;
+    
+    // 关闭按钮点击事件
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeTutorialVideoModal);
+    }
+    
+    // 点击遮罩层关闭
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeTutorialVideoModal();
+        }
+    });
+    
+    // ESC键关闭
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) {
+            closeTutorialVideoModal();
+        }
+    });
+}
+
+// 切换步骤
+function switchStep(stepIndex) {
+    if (stepIndex < 0 || stepIndex >= tutorialSteps.length) return;
+    
+    currentStepIndex = stepIndex;
+    renderTutorialContent();
 }
 
 // 初始化对话展示功能
@@ -3783,6 +3928,7 @@ function initChatDemo() {
 window.addEventListener('load', () => {
     renderTutorialContent();
     initChatDemo();
+    initTutorialVideoModal(); // 初始化视频弹窗
     updateTraces();
      renderTutorialFloor();
      renderPracticesFloor();
