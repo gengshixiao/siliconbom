@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>历史会话 - 硅宝</title>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;
+            --trace-color: #CBD5E1;
+            --trace-active: #6DD5E8;
+            --chip-body: #FFFFFF;
+            --pin-metal: #94A3B8;
+            --text-main: #334155;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 64px;
+            --transition: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', 'PingFang SC', sans-serif; 
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+            background-size: 30px 30px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 布局容器 */
+        .layout-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 左侧侧边栏样式 - 复用现有样式 */
+        .sidebar-unit {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            z-index: 20;
+            position: relative;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed {
+            width: var(--sidebar-w-collapsed);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E2E8F0;
+            min-height: 64px;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-header {
+            justify-content: space-between;
+            padding: 16px 8px;
+        }
+        
+        .user-avatar-header {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-unit.collapsed .user-avatar-header {
+            display: block;
+        }
+        
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .brand-logo {
+            width: auto;
+            height: 40px;
+            display: block;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .sidebar-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .sidebar-unit.collapsed .brand-logo {
+            display: none;
+        }
+
+        /* 搜索框 */
+        .sidebar-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #F8FAFC;
+            font-size: 13px;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-search {
+            display: none;
+        }
+        
+        /* 菜单项 */
+        .menu-section {
+            padding: 8px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-section.project-section {
+            display: none;
+        }
+        
+        .sidebar-unit.collapsed .menu-section {
+            padding: 4px 0;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            padding: 12px;
+            margin: 2px 0;
+        }
+        
+        .menu-section-title {
+            padding: 8px 16px 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-unit.collapsed .menu-section-title {
+            display: none;
+        }
+        
+        .menu-item {
+            position: relative;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 0;
+        }
+        
+        .menu-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item.active {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .menu-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .menu-item-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .sidebar-unit.collapsed .menu-item-text {
+            display: none;
+        }
+        
+        /* 项目列表 */
+        .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .project-item {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .project-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .project-item-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .project-item {
+            padding: 8px;
+            justify-content: center;
+        }
+        
+        .sidebar-unit.collapsed .project-item-icon,
+        .sidebar-unit.collapsed .project-item-text {
+            display: none;
+        }
+        
+        .view-all-link {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: var(--trace-active);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .view-all-link:hover {
+            background: #F1F5F9;
+        }
+
+        /* 用户信息 */
+        .user-block {
+            padding: 16px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 2px;
+        }
+        
+        .user-license {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .user-info {
+            display: none;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 会话搜索区域 */
+        .conversation-search-section {
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .conversation-search-wrapper {
+            position: relative;
+            max-width: 500px;
+        }
+
+        .conversation-search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: #FFFFFF;
+            font-size: 14px;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .conversation-search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .conversation-search-input::placeholder {
+            color: #94A3B8;
+        }
+
+        .conversation-search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+
+        /* 会话列表区域 */
+        .conversation-list-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 24px 24px;
+        }
+
+        .conversation-list {
+            display: grid;
+            gap: 12px;
+            padding: 20px 0;
+        }
+
+        /* 会话项 */
+        .conversation-item {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .conversation-item:hover {
+            border-color: var(--trace-active);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .conversation-item.selected {
+            border-color: var(--trace-active);
+            background: rgba(109, 213, 232, 0.05);
+        }
+
+        .conversation-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .conversation-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .conversation-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .conversation-date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .conversation-preview {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+
+        /* 会话操作按钮 */
+        .conversation-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover .conversation-actions {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .conversation-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .conversation-action-btn:hover {
+            background: #FFFFFF;
+            color: var(--trace-active);
+            transform: scale(1.1);
+        }
+
+        .conversation-action-btn.delete:hover {
+            color: #EF4444;
+        }
+
+        .conversation-action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 选择框 */
+        .conversation-checkbox {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 18px;
+            height: 18px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover .conversation-checkbox,
+        .conversation-item.selected .conversation-checkbox {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .conversation-checkbox input {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* 批量操作栏 */
+        .batch-operations {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-w);
+            right: 0;
+            background: #FFFFFF;
+            border-top: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+            z-index: 30;
+        }
+
+        .sidebar-unit.collapsed ~ .main-content .batch-operations {
+            left: var(--sidebar-w-collapsed);
+        }
+
+        .batch-operations.show {
+            transform: translateY(0);
+        }
+
+        .batch-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .batch-count {
+            font-weight: 600;
+            color: var(--trace-active);
+        }
+
+        .batch-exit-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 16px;
+        }
+
+        .batch-exit-btn:hover {
+            color: var(--text-main);
+            background: #F1F5F9;
+        }
+
+        .batch-exit-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .batch-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #FFFFFF;
+            color: var(--text-main);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .batch-btn:hover {
+            border-color: var(--trace-active);
+            color: var(--trace-active);
+        }
+
+        .batch-btn.danger:hover {
+            border-color: #EF4444;
+            color: #EF4444;
+        }
+
+        .batch-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .empty-state-description {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar-unit {
+                position: fixed;
+                left: -100%;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar-unit.mobile-open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .batch-operations {
+                left: 0;
+            }
+            
+            .page-header,
+            .conversation-search-section,
+            .conversation-list-section {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
+
+        /* Tooltip样式 */
+        .menu-item-tooltip {
+            position: fixed;
+            padding: 6px 10px;
+            background: #1E293B;
+            color: #fff;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .menu-item-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .menu-item-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: #1E293B;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-wrapper">
+        <!-- 左侧侧边栏 -->
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索会话...">
+                    </div>
+                </div>
+
+                
+                <!-- 新建会话 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史会话列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">R26系列同规格产品推荐</span>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="user-block">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 页面头部 -->
+            <div class="page-header">
+                <h1 class="page-title">历史会话</h1>
+                <p class="page-subtitle">管理和查看所有历史对话记录</p>
+            </div>
+
+            <!-- 会话搜索区域 -->
+            <div class="conversation-search-section">
+                <div class="conversation-search-wrapper">
+                    <svg class="conversation-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" class="conversation-search-input" placeholder="搜索会话内容、标题..." id="conversationSearchInput">
+                </div>
+            </div>
+
+            <!-- 会话列表区域 -->
+            <div class="conversation-list-section">
+                <div class="conversation-list" id="conversationList">
+                    <!-- 会话项将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <!-- 批量操作栏 -->
+            <div class="batch-operations" id="batchOperations">
+                <div class="batch-info">
+                    <button class="batch-exit-btn" id="batchExit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H6m6-7l-7 7 7 7"/>
+                        </svg>
+                        退出
+                    </button>
+                    <span>已选择 <span class="batch-count" id="batchCount">0</span> 个会话</span>
+                </div>
+                <div class="batch-actions">
+                    <button class="batch-btn danger" id="batchDelete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                        </svg>
+                        删除
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 真实会话数据 - 基于硅宝系统的电子元器件相关对话
+        const conversationsData = [
+            {
+                id: 1,
+                title: "新电源芯片MOS选型咨询",
+                preview: "我需要为一个12V输入、5V/3A输出的DC-DC转换器选择合适的MOSFET。请推荐几款低Rds(on)、高效率的N沟道MOSFET，封装要求是SO-8或DFN。",
+                date: "2025年12月16日",
+                selected: false
+            },
+            {
+                id: 2,
+                title: "60V耐压MOS管参数查询",
+                preview: "项目需要60V耐压的P沟道MOSFET，电流需求15A，请帮我查找符合要求的器件，并提供详细的电气参数对比表。重点关注导通电阻和开关特性。",
+                date: "2025年12月15日",
+                selected: false
+            },
+            {
+                id: 3,
+                title: "电源切换模块BOM生成",
+                preview: "设计一个双电源自动切换电路，主电源12V，备用电源24V转12V。需要包含电压检测、切换控制和保护电路的完整BOM清单。",
+                date: "2025年12月14日",
+                selected: false
+            },
+            {
+                id: 4,
+                title: "BOM更新需求分析",
+                preview: "现有产品的BOM需要更新，主要是将几个停产的LDO替换为在产器件。请分析替换方案，确保电气特性兼容，并评估成本影响。",
+                date: "2025年12月13日",
+                selected: false
+            },
+            {
+                id: 5,
+                title: "BOM中MOS管替换分析",
+                preview: "当前使用的IRF540N即将停产，需要寻找pin-to-pin兼容的替代方案。要求相同封装(TO-220)，相似的电气参数，并且要有长期供货保证。",
+                date: "2025年12月12日",
+                selected: false
+            },
+            {
+                id: 6,
+                title: "R26系列同规格产品推荐",
+                preview: "需要R26系列电阻的替代产品，规格0402封装，1%精度，功率1/16W。请推荐几个品牌的同规格产品，并提供价格和供货周期对比。",
+                date: "2025年12月11日",
+                selected: false
+            },
+            {
+                id: 7,
+                title: "高频开关电源芯片选型",
+                preview: "设计一个1MHz开关频率的降压转换器，输入24V，输出3.3V/5A。请推荐合适的开关电源控制芯片，要求集成度高，外围器件少。",
+                date: "2025年12月10日",
+                selected: false
+            },
+            {
+                id: 8,
+                title: "贴片电容规格确认和替代",
+                preview: "项目中使用的村田GRM188R71H104KA93D电容缺货，需要寻找替代方案。规格是0603，100nF，50V，X7R介质，请推荐其他品牌的兼容产品。",
+                date: "2025年12月09日",
+                selected: false
+            },
+            {
+                id: 9,
+                title: "运放选型和应用电路设计",
+                preview: "需要设计一个精密仪表放大器电路，增益可调1-1000倍，输入阻抗>1GΩ，CMRR>100dB。请推荐合适的运放芯片并提供参考电路。",
+                date: "2025年12月08日",
+                selected: false
+            },
+            {
+                id: 10,
+                title: "USB-C PD充电芯片方案",
+                preview: "开发支持USB-C PD 3.0的快充方案，需要支持5V/9V/12V/15V/20V输出，最大功率100W。请推荐完整的芯片方案和外围电路设计。",
+                date: "2025年12月07日",
+                selected: false
+            },
+            {
+                id: 11,
+                title: "MCU外围晶振电路设计",
+                preview: "STM32F407的外围晶振电路设计咨询，主晶振25MHz，32.768kHz RTC晶振。请提供标准的晶振电路图和负载电容计算方法。",
+                date: "2025年12月06日",
+                selected: false
+            },
+            {
+                id: 12,
+                title: "EMC滤波器件选型指导",
+                preview: "产品EMC测试不通过，主要是传导发射超标。请推荐合适的共模电感、差模电感和Y电容，并提供滤波电路的设计建议。",
+                date: "2025年12月05日",
+                selected: false
+            }
+        ];
+
+        // DOM元素
+        const conversationList = document.getElementById('conversationList');
+        const conversationSearchInput = document.getElementById('conversationSearchInput');
+        const batchOperations = document.getElementById('batchOperations');
+        const batchCount = document.getElementById('batchCount');
+
+        // 状态管理
+        let conversations = [...conversationsData];
+        let selectedConversations = new Set();
+
+        // 侧边栏折叠/展开功能 - 完全复用首页代码
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebarToggle && sidebarUnit) {
+                // 从localStorage读取折叠状态
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    sidebarUnit.classList.add('collapsed');
+                }
+                
+                // 更新按钮图标方向
+                function updateToggleIcon(collapsed) {
+                    const iconPath = sidebarToggle.querySelector('#toggleIconPath');
+                    if (iconPath) {
+                        if (collapsed) {
+                            // 折叠时显示向右箭头（展开图标）
+                            iconPath.setAttribute('d', 'M15 18l-6-6 6-6');
+                        } else {
+                            // 展开时显示向左箭头（折叠图标）
+                            iconPath.setAttribute('d', 'M9 18l6-6-6-6');
+                        }
+                    }
+                }
+                
+                // 切换折叠状态
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarUnit.classList.toggle('collapsed');
+                    const collapsed = sidebarUnit.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', collapsed);
+                    updateToggleIcon(collapsed);
+                });
+                
+               // 初始化按钮图标方向
+               updateToggleIcon(isCollapsed);
+           }
+        })();
+
+        // Tooltip功能 - 完全复用首页代码
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            let tooltip = null;
+            
+            function createTooltip() {
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'menu-item-tooltip';
+                    document.body.appendChild(tooltip);
+                }
+                return tooltip;
+            }
+            
+            function showTooltip(element, text) {
+                if (!sidebarUnit.classList.contains('collapsed')) {
+                    return;
+                }
+                
+                const tooltipEl = createTooltip();
+                tooltipEl.textContent = text;
+                
+                const rect = element.getBoundingClientRect();
+                const sidebarRect = sidebarUnit.getBoundingClientRect();
+                
+                // 计算tooltip位置：在图标右侧
+                tooltipEl.style.left = (sidebarRect.right + 8) + 'px';
+                tooltipEl.style.top = (rect.top + rect.height / 2) + 'px';
+                tooltipEl.style.transform = 'translateY(-50%)';
+                
+                tooltipEl.classList.add('show');
+            }
+            
+            function hideTooltip() {
+                if (tooltip) {
+                    tooltip.classList.remove('show');
+                }
+            }
+            
+            // 为所有带data-tooltip的菜单项添加事件监听
+            const menuItems = document.querySelectorAll('.menu-item[data-tooltip]');
+            menuItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    const tooltipText = this.getAttribute('data-tooltip');
+                    showTooltip(this, tooltipText);
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+            });
+            
+            // 当侧边栏展开时隐藏tooltip
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        if (!sidebarUnit.classList.contains('collapsed')) {
+                            hideTooltip();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(sidebarUnit, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        })();
+
+        // 渲染会话列表
+        function renderConversations(conversationsToRender = conversations) {
+            if (conversationsToRender.length === 0) {
+                conversationList.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <div class="empty-state-title">暂无会话记录</div>
+                        <div class="empty-state-description">开始新的对话来创建您的第一个会话记录</div>
+                    </div>
+                `;
+                return;
+            }
+
+            conversationList.innerHTML = conversationsToRender.map(conversation => `
+                <div class="conversation-item ${conversation.selected ? 'selected' : ''}" data-id="${conversation.id}">
+                    <div class="conversation-checkbox">
+                        <input type="checkbox" ${conversation.selected ? 'checked' : ''} onchange="toggleConversationSelection(${conversation.id})">
+                    </div>
+                    
+                    <div class="conversation-header">
+                        <div>
+                            <div class="conversation-title">${conversation.title}</div>
+                            <div class="conversation-meta">
+                                <div class="conversation-date">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                    ${conversation.date}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${conversation.preview ? `<div class="conversation-preview">${conversation.preview}</div>` : ''}
+                    
+                    <div class="conversation-actions">
+                        <button class="conversation-action-btn edit" onclick="editConversation(${conversation.id})" title="编辑标题">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="conversation-action-btn delete" onclick="deleteConversation(${conversation.id})" title="删除">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3,6 5,6 21,6"/>
+                                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 切换会话选择状态
+        function toggleConversationSelection(id) {
+            const conversation = conversations.find(c => c.id === id);
+            if (conversation) {
+                conversation.selected = !conversation.selected;
+                if (conversation.selected) {
+                    selectedConversations.add(id);
+                } else {
+                    selectedConversations.delete(id);
+                }
+                updateBatchOperations();
+                renderConversations();
+            }
+        }
+
+        // 更新批量操作栏
+        function updateBatchOperations() {
+            const count = selectedConversations.size;
+            batchCount.textContent = count;
+            
+            if (count > 0) {
+                batchOperations.classList.add('show');
+            } else {
+                batchOperations.classList.remove('show');
+            }
+        }
+
+        // 动态更新批量操作栏位置
+        function updateBatchOperationsPosition() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            if (sidebarUnit && batchOperations) {
+                const isCollapsed = sidebarUnit.classList.contains('collapsed');
+                const leftPosition = isCollapsed ? 'var(--sidebar-w-collapsed)' : 'var(--sidebar-w)';
+                batchOperations.style.left = leftPosition;
+            }
+        }
+
+        // 监听侧边栏状态变化
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            if (sidebarUnit) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.attributeName === 'class') {
+                            updateBatchOperationsPosition();
+                        }
+                    });
+                });
+                
+                observer.observe(sidebarUnit, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+                
+                // 初始化位置
+                updateBatchOperationsPosition();
+            }
+        })();
+
+        // 编辑会话标题
+        function editConversation(id) {
+            const conversation = conversations.find(c => c.id === id);
+            if (conversation) {
+                const newTitle = prompt('编辑会话标题:', conversation.title);
+                if (newTitle && newTitle.trim()) {
+                    conversation.title = newTitle.trim();
+                    renderConversations();
+                }
+            }
+        }
+
+        // 删除单个会话
+        function deleteConversation(id) {
+            if (confirm('确定要删除这个会话吗？')) {
+                conversations = conversations.filter(c => c.id !== id);
+                selectedConversations.delete(id);
+                updateBatchOperations();
+                renderConversations();
+            }
+        }
+
+        // 搜索功能
+        conversationSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                renderConversations();
+                return;
+            }
+            
+            const filteredConversations = conversations.filter(conversation => {
+                return conversation.title.toLowerCase().includes(searchTerm) ||
+                       conversation.preview.toLowerCase().includes(searchTerm);
+            });
+            
+            renderConversations(filteredConversations);
+        });
+
+        // 批量操作功能
+        document.getElementById('batchExit').addEventListener('click', () => {
+            // 清除所有选择
+            conversations.forEach(c => c.selected = false);
+            selectedConversations.clear();
+            updateBatchOperations();
+            renderConversations();
+        });
+
+        document.getElementById('batchDelete').addEventListener('click', () => {
+            const selectedIds = Array.from(selectedConversations);
+            if (confirm(`确定要删除选中的 ${selectedIds.length} 个会话吗？`)) {
+                conversations = conversations.filter(c => !selectedIds.includes(c.id));
+                selectedConversations.clear();
+                updateBatchOperations();
+                renderConversations();
+            }
+        });
+
+        // 会话项点击事件
+        conversationList.addEventListener('click', (e) => {
+            const conversationItem = e.target.closest('.conversation-item');
+            if (conversationItem && !e.target.closest('.conversation-actions') && !e.target.closest('.conversation-checkbox')) {
+                const id = parseInt(conversationItem.dataset.id);
+                console.log('打开会话:', id);
+                // 这里可以添加打开会话的逻辑
+            }
+        });
+
+        // 初始化渲染
+        renderConversations();
+    </script>
+</body>
+</html>

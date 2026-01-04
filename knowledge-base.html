@@ -1,0 +1,3262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>知识库 - SiliconBom 硅宝</title>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;       /* 浅灰底色 */
+            --trace-color: #CBD5E1;    /* 未激活线路颜色 (银灰) */
+            --trace-active: #6DD5E8;   /* 激活线路颜色 (淡青色) */
+            --chip-body: #FFFFFF;      /* 芯片本体白 */
+            --pin-metal: #94A3B8;      /* 引脚金属色 */
+            --text-main: #334155;
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 64px;  /* 折叠时的宽度 */
+            --transition: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'PingFang SC', sans-serif; }
+        
+        body {
+            background-color: var(--bg-color);
+            /* 背景加上极淡的PCB网格 */
+            background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+            background-size: 30px 30px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* --- 布局容器 --- */
+        .layout-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* --- 左侧侧边栏 (作为输入源) --- */
+        .sidebar-unit {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            z-index: 20;
+            position: relative;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed {
+            width: var(--sidebar-w-collapsed);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E2E8F0;
+            min-height: 64px;
+        }
+        
+        .sidebar-unit.collapsed .sidebar-header {
+            justify-content: space-between;
+            padding: 16px 8px;
+        }
+        
+        .user-avatar-header {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-unit.collapsed .user-avatar-header {
+            display: block;
+        }
+        
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .brand-logo {
+            width: auto;
+            height: 40px;
+            display: block;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-toggle:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .sidebar-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .sidebar-unit.collapsed .brand-logo {
+            display: none;
+        }
+
+        /* 搜索框 */
+        .sidebar-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #F8FAFC;
+            font-size: 13px;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+        
+        /* 折叠时隐藏搜索框 */
+        .sidebar-unit.collapsed .sidebar-search {
+            display: none;
+        }
+        
+        /* 菜单项 */
+        .menu-section {
+            padding: 8px 0;
+        }
+        
+        /* 折叠时隐藏包含项目列表的section */
+        .sidebar-unit.collapsed .menu-section.project-section {
+            display: none;
+        }
+        
+        /* 折叠时让菜单项均匀分布，减少间距 */
+        .sidebar-unit.collapsed .menu-section {
+            padding: 4px 0;
+        }
+        
+        /* 折叠时让菜单项之间的间距更均匀 */
+        .sidebar-unit.collapsed .sidebar-content {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 折叠时调整菜单项的内边距，使其更紧凑 */
+        .sidebar-unit.collapsed .menu-item {
+            padding: 12px;
+            margin: 2px 0;
+        }
+        
+        .menu-section-title {
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sidebar-unit.collapsed .menu-section-title {
+            display: none;
+        }
+        
+        .menu-item {
+            position: relative;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 0;
+        }
+        
+        .menu-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item.active {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .menu-item-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .menu-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .menu-item-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .sidebar-unit.collapsed .menu-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .sidebar-unit.collapsed .menu-item-text {
+            display: none;
+        }
+        
+        /* 折叠状态下的tooltip */
+        .sidebar-unit.collapsed .menu-item {
+            position: relative;
+        }
+        
+        .menu-item-tooltip {
+            position: fixed;
+            padding: 6px 10px;
+            background: #1E293B;
+            color: #fff;
+            font-size: 12px;
+            white-space: nowrap;
+            border-radius: 4px;
+            z-index: 10000;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .menu-item-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .menu-item-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-right: 0;
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-right: 5px solid #1E293B;
+        }
+        
+        /* 历史项目列表 */
+        .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .project-item {
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            color: #64748B;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+        
+        .project-item:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        /* 三个点按钮 */
+        .project-item-more {
+            margin-left: auto;
+            width: 20px;
+            height: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #94A3B8;
+            border-radius: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        
+        .project-item:hover .project-item-more {
+            display: flex;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .project-item-more:hover {
+            background: rgba(148, 163, 184, 0.1);
+            color: #64748B;
+        }
+        
+        .project-item-more svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* 气泡菜单 */
+        .project-item-menu {
+            position: fixed;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            min-width: 120px;
+            z-index: 10001;
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s, transform 0.2s;
+            border: 1px solid #E2E8F0;
+        }
+        
+        .project-item-menu.show {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .project-item-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #334155;
+            transition: background 0.2s;
+        }
+        
+        .project-item-menu-item:hover {
+            background: #F1F5F9;
+        }
+        
+        .project-item-menu-item.delete {
+            color: #EF4444;
+        }
+        
+        .project-item-menu-item.delete:hover {
+            background: #FEE2E2;
+        }
+        
+        .project-item-menu-item-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .project-item-menu-item-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .project-item-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            color: #94A3B8;
+        }
+        
+        .sidebar-unit.collapsed .project-item {
+            padding: 8px;
+            justify-content: center;
+        }
+        
+        .sidebar-unit.collapsed .project-item-icon,
+        .sidebar-unit.collapsed .project-item-text {
+            display: none;
+        }
+        
+        .sidebar-unit.collapsed .project-item-more,
+        .sidebar-unit.collapsed .project-item-menu {
+            display: none !important;
+        }
+        
+        .view-all-link {
+            padding: 8px 16px 8px 44px;
+            color: #94A3B8;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .view-all-link:hover {
+            color: var(--trace-active);
+        }
+        
+        .sidebar-unit.collapsed .view-all-link {
+            display: none;
+        }
+        
+        /* 用户信息区域 */
+        .user-block {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .user-license {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-top: 2px;
+        }
+        
+        .sidebar-unit.collapsed .user-info {
+            display: none;
+        }
+        
+        .sidebar-unit.collapsed .user-block {
+            justify-content: center;
+            padding: 16px 8px;
+        }
+
+        /* --- 主内容区域 --- */
+        .main-content {
+            flex: 1;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        /* 文档管理主区域（主体） */
+        .doc-management-main {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 文档管理面板样式 */
+        .doc-management-panel {
+            display: none; /* 隐藏旧的文档管理面板 */
+        }
+
+        /* 页面头部 */
+        .page-header {
+            padding: 28px 32px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid #E2E8F0;
+            flex-shrink: 0;
+        }
+
+        .page-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .page-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title-icon {
+            font-size: 28px;
+        }
+
+        .page-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--trace-active);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #5BC4D7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: var(--text-main);
+            border: 1px solid #E2E8F0;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--trace-active);
+            color: var(--trace-active);
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 搜索和过滤栏 */
+        .search-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 42px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+            color: #334155;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #94A3B8;
+            pointer-events: none;
+        }
+
+        .filter-count {
+            font-size: 14px;
+            color: #64748B;
+            padding: 0 8px;
+        }
+
+        /* 文档表格容器 */
+        .doc-table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 32px 60px;
+            position: relative;
+        }
+
+        /* 文档表格 */
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .doc-table thead {
+            position: sticky;
+            top: 0;
+            background: #F8FAFC;
+            z-index: 10;
+        }
+
+        .doc-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #E2E8F0;
+            vertical-align: middle;
+        }
+
+        .doc-table th:first-child {
+            padding-left: 40px;
+            width: 50px;
+        }
+
+        /* 排序按钮 */
+        .sort-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #94A3B8;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .sort-btn:hover {
+            background: #E2E8F0;
+            color: var(--trace-active);
+        }
+
+        .sort-btn svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .sort-btn.desc svg {
+            transform: rotate(0deg);
+        }
+
+        .sort-btn.asc svg {
+            transform: rotate(180deg);
+        }
+
+        .sort-btn.desc,
+        .sort-btn.asc {
+            color: var(--trace-active);
+        }
+
+        .doc-table th:nth-child(5),
+        .doc-table th:nth-child(6) {
+            text-align: center;
+            padding: 16px 20px;
+        }
+
+        .doc-table tbody tr {
+            border-bottom: 1px solid #E2E8F0;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .doc-table tbody tr:hover {
+            background: #F8FAFC;
+        }
+
+        .doc-table tbody tr.selected {
+            background: rgba(109, 213, 232, 0.08);
+        }
+
+        .doc-table td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .doc-table td:first-child {
+            padding-left: 40px;
+        }
+
+        .doc-table td:nth-child(3),
+        .doc-table td:nth-child(4),
+        .doc-table td:nth-child(5),
+        .doc-table td:nth-child(6) {
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .doc-table td:nth-child(6) {
+            position: relative;
+        }
+
+        .doc-table th:nth-child(3),
+        .doc-table th:nth-child(4) {
+            text-align: center;
+        }
+
+        /* 空状态 */
+        .doc-empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #94A3B8;
+        }
+
+        .doc-empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .doc-empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #64748B;
+            margin-bottom: 8px;
+        }
+
+        .doc-empty-text {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* 表格列样式 */
+        .doc-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--trace-active);
+        }
+
+        .doc-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+        }
+
+        .doc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .doc-name-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-name {
+            font-weight: 500;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .doc-type {
+            font-size: 12px;
+            color: #94A3B8;
+            margin-top: 2px;
+        }
+
+        .doc-size {
+            color: #64748B;
+            white-space: nowrap;
+        }
+
+        .doc-date {
+            color: #64748B;
+            white-space: nowrap;
+        }
+
+        .doc-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: default;
+            transition: all 0.2s;
+        }
+
+        .doc-status.ready {
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .doc-status.processing {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .doc-status.failed {
+            background: #FEE2E2;
+            color: #991B1B;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .doc-status.failed:hover {
+            background: #DC2626;
+            color: #FFFFFF;
+        }
+
+        .doc-status-cell {
+            text-align: center;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 失败状态重试提示 */
+        .doc-status.failed {
+            position: relative;
+        }
+
+        .doc-status-retry-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background: #1E293B;
+            color: #fff;
+            font-size: 12px;
+            white-space: nowrap;
+            border-radius: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .doc-status-retry-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1E293B;
+        }
+
+        .doc-status.failed:hover .doc-status-retry-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .doc-status.failed .doc-status-icon {
+            display: none;
+            vertical-align: middle;
+        }
+
+        .doc-status.failed:hover .doc-status-text {
+            display: none;
+        }
+
+        .doc-status.failed:hover .doc-status-icon {
+            display: inline-block;
+        }
+
+        .doc-status-icon svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+        }
+
+        .doc-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+        }
+
+        .doc-action-btn:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+
+        .doc-action-btn.delete:hover {
+            background: #FEE2E2;
+            color: #EF4444;
+        }
+
+        .doc-action-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 上传进度条 */
+        .upload-progress-item {
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+
+        .upload-progress-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .upload-progress-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .upload-progress-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .upload-progress-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .upload-progress-status {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+
+        .upload-progress-bar-wrapper {
+            width: 100%;
+            height: 4px;
+            background: #E2E8F0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: var(--trace-active);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        /* 空状态 */
+        .doc-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94A3B8;
+        }
+
+        .doc-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .doc-empty-text {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* 知识问答区域（右侧） */
+        /* 知识问答侧边抽屉（默认收起） */
+        .chat-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 480px;
+            height: 100%;
+            background: var(--bg-color);
+            box-shadow: -8px 0 24px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            border-left: 1px solid #E2E8F0;
+        }
+
+        .chat-panel.open {
+            transform: translateX(0);
+        }
+
+        /* 聊天面板的z-index稍高，确保在预览面板之上 */
+        #chatPanel {
+            z-index: 31 !important;
+        }
+
+        #previewPanel {
+            z-index: 30 !important;
+        }
+
+        /* 聊天面板操作按钮组 */
+        .chat-panel-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-panel-action-btn,
+        .chat-panel-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-panel-action-btn:hover,
+        .chat-panel-close:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+
+        .chat-panel-action-btn svg,
+        .chat-panel-close svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 预览面板内容区域 */
+        .preview-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #FFFFFF;
+        }
+
+        .preview-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .preview-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .preview-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #64748B;
+        }
+
+        .preview-body {
+            line-height: 1.8;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .preview-section {
+            margin-bottom: 24px;
+        }
+
+        .preview-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #E2E8F0;
+        }
+
+        .preview-section-content {
+            color: #64748B;
+            line-height: 1.8;
+        }
+
+        .preview-section-content p {
+            margin-bottom: 12px;
+        }
+
+        /* 批量操作栏 */
+        .batch-operations {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-w);
+            right: 0;
+            background: #FFFFFF;
+            border-top: 1px solid #E2E8F0;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+            z-index: 30;
+        }
+
+        .sidebar-unit.collapsed ~ .main-content .batch-operations {
+            left: var(--sidebar-w-collapsed);
+        }
+
+        .batch-operations.show {
+            transform: translateY(0);
+        }
+
+        .batch-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .batch-count {
+            font-weight: 600;
+            color: var(--trace-active);
+        }
+
+        .batch-exit-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748B;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 16px;
+        }
+
+        .batch-exit-btn:hover {
+            color: var(--text-main);
+            background: #F1F5F9;
+        }
+
+        .batch-exit-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .batch-btn {
+            padding: 8px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #FFFFFF;
+            color: var(--text-main);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .batch-btn:hover {
+            border-color: var(--trace-active);
+            color: var(--trace-active);
+        }
+
+        .batch-btn.danger:hover {
+            border-color: #EF4444;
+            color: #EF4444;
+        }
+
+        .batch-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 问答区头部 */
+        .chat-panel-header {
+            padding: 18px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid #E2E8F0;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .chat-panel-title-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 2px solid #E2E8F0;
+            background: white;
+        }
+
+        .chat-panel-title-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-panel-title-icon.preview-icon {
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            border: none;
+            color: #fff;
+        }
+
+        .chat-panel-subtitle {
+            font-size: 12px;
+            color: #64748B;
+            margin-top: 2px;
+        }
+
+        /* 对话消息区域 */
+        .chat-messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        /* 消息项 */
+        .chat-message {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .chat-message.assistant .chat-message-avatar {
+            background: white;
+            border: 2px solid #E2E8F0;
+        }
+
+        .chat-message.assistant .chat-message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-message.user .chat-message-avatar {
+            background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
+        }
+
+        .chat-message-content {
+            flex: 1;
+            max-width: 70%;
+        }
+
+        .chat-message-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        .chat-message.assistant .chat-message-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #E2E8F0;
+        }
+
+        .chat-message.user .chat-message-bubble {
+            background: var(--trace-active);
+            color: #fff;
+        }
+
+        .chat-message-time {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-top: 6px;
+            padding: 0 4px;
+        }
+
+        /* 空状态 */
+        .chat-empty-state {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94A3B8;
+            padding: 40px;
+        }
+
+        .chat-empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .chat-empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #64748B;
+            margin-bottom: 8px;
+        }
+
+        .chat-empty-text {
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.6;
+            max-width: 400px;
+        }
+
+        /* 输入区域 */
+        .chat-input-container {
+            padding: 18px 24px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid #E2E8F0;
+            flex-shrink: 0;
+        }
+
+        .chat-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            background: #F8FAFC;
+            font-size: 14px;
+            color: #334155;
+            resize: none;
+            min-height: 48px;
+            max-height: 120px;
+            line-height: 1.5;
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .chat-input::placeholder {
+            color: #94A3B8;
+        }
+
+        .chat-send-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: var(--trace-active);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover {
+            background: #5BC4D7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .chat-send-btn:disabled {
+            background: #CBD5E1;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 滚动条样式 */
+        .sidebar-content::-webkit-scrollbar,
+        .project-list::-webkit-scrollbar,
+        .main-content::-webkit-scrollbar,
+        .doc-table-container::-webkit-scrollbar,
+        .chat-messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb,
+        .project-list::-webkit-scrollbar-thumb,
+        .main-content::-webkit-scrollbar-thumb,
+        .doc-table-container::-webkit-scrollbar-thumb,
+        .chat-messages-container::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover,
+        .project-list::-webkit-scrollbar-thumb:hover,
+        .main-content::-webkit-scrollbar-thumb:hover,
+        .doc-table-container::-webkit-scrollbar-thumb:hover,
+        .chat-messages-container::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* 通知提示动画 */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-wrapper">
+        
+        <aside class="sidebar-unit" id="sidebarUnit">
+            <div class="sidebar-content">
+                <!-- 头部：Logo和折叠按钮 -->
+                <div class="sidebar-header">
+                    <div class="brand-block">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/6eea20ec6720288f00ee93edfdb0f43d.png" alt="SiliconBom Logo" class="brand-logo">
+                    </div>
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="用户头像" class="user-avatar-header">
+                    <button class="sidebar-toggle" id="sidebarToggle" aria-label="折叠/展开侧边栏">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18l6-6-6-6" id="toggleIconPath"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="搜索" id="searchInput">
+                    </div>
+                </div>
+                
+                <!-- 新建项目 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="newProject" data-tooltip="新建会话">
+                        <div class="menu-item-icon">➕</div>
+                        <span class="menu-item-text">新建会话</span>
+                    </div>
+                </div>
+                
+                <!-- 历史项目列表 -->
+                <div class="menu-section project-section">
+                    <div class="menu-section-title">
+                        <span>会话</span>
+                    </div>
+                    <div class="project-list" id="projectList">
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">新电源芯片mos选型</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">60V参数的mos查询</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">电源切换模块BOM生成</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM更新需求分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">BOM中mos替换分析</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                            <span class="project-item-text">R26系列同规格产品推荐</span>
+                            <div class="project-item-more">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="19" cy="12" r="1"/>
+                                    <circle cx="5" cy="12" r="1"/>
+                                </svg>
+                            </div>
+                            <div class="project-item-menu">
+                                <div class="project-item-menu-item rename">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <span>重命名</span>
+                                </div>
+                                <div class="project-item-menu-item delete">
+                                    <div class="project-item-menu-item-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <span>删除</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="view-all-link" id="viewAllProjects">查看全部</div>
+                </div>
+                
+                <!-- BOM档案 -->
+                <div class="menu-section">
+                    <div class="menu-item" id="bomArchive" data-tooltip="BOM档案">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/394bd0c51a35e3834d4861c2acf52db6.png" alt="BOM档案" /></div>
+                        <span class="menu-item-text">BOM档案</span>
+                    </div>
+                </div>
+                
+                <!-- 知识库 -->
+                <div class="menu-section">
+                    <div class="menu-item active" id="knowledgeBase" data-tooltip="知识库">
+                        <div class="menu-item-icon"><img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/68006159e84e7d640041b45941a1ecf5.png" alt="知识库" /></div>
+                        <span class="menu-item-text">知识库</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="user-block">
+                <div class="user-avatar">L</div>
+                <div class="user-info">
+                    <div class="user-name">Engineer.Li</div>
+                    <div class="user-license">普通会员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 文档管理主区域（主体） -->
+            <div class="doc-management-main">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div class="page-header-top">
+                        <div class="page-title">
+                            <span class="page-title-icon">📚</span>
+                            <span>知识库</span>
+                        </div>
+                        <div class="page-header-actions">
+                            <button class="btn btn-primary" id="uploadBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>上传文档</span>
+                            </button>
+                            <button class="btn btn-secondary" id="toggleChatPanel">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                <span>知识问答</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 搜索和过滤栏 -->
+                    <div class="search-filter-bar">
+                        <div class="search-wrapper">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            <input type="text" class="search-input" placeholder="搜索文档名称..." id="docSearchInput">
+                        </div>
+                        <div class="filter-count" id="docCount">共 <span id="docCountNum">3</span> 个文档</div>
+                    </div>
+                </div>
+
+                <!-- 文档表格容器 -->
+                <div class="doc-table-container">
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="doc-checkbox" id="selectAll">
+                                </th>
+                                <th>文档名称</th>
+                                <th>
+                                    <div style="display: flex; align-items: center; gap: 6px; justify-content: center;">
+                                        <span>大小</span>
+                                        <button class="sort-btn" id="sortBySizeBtn" title="按大小排序">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 5v14M19 12l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th>
+                                    <div style="display: flex; align-items: center; gap: 6px; justify-content: center;">
+                                        <span>上传时间</span>
+                                        <button class="sort-btn" id="sortByTimeBtn" title="按时间排序">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 5v14M19 12l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="docTableBody">
+                            <!-- 示例文档 -->
+                            <tr data-doc-id="1" data-status="ready" data-original-index="0">
+                                <td>
+                                    <input type="checkbox" class="doc-checkbox" data-doc-id="1">
+                                </td>
+                                <td>
+                                    <div class="doc-name-cell">
+                                        <div class="doc-icon">📄</div>
+                                        <div class="doc-name-info">
+                                            <div class="doc-name">STM32参考手册.pdf</div>
+                                            <div class="doc-type">PDF文档</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="doc-size" data-size="5452595">5.2 MB</td>
+                                <td class="doc-date" data-timestamp="1734440400000">2024-12-17 14:20</td>
+                                <td class="doc-status-cell">
+                                    <span class="doc-status ready">就绪</span>
+                                </td>
+                                <td>
+                                    <div class="doc-actions">
+                                        <button class="doc-action-btn preview" title="预览" data-doc-id="1">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
+                                        <button class="doc-action-btn delete" title="删除" data-doc-id="1">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr data-doc-id="2" data-status="processing" data-original-index="1">
+                                <td>
+                                    <input type="checkbox" class="doc-checkbox" data-doc-id="2">
+                                </td>
+                                <td>
+                                    <div class="doc-name-cell">
+                                        <div class="doc-icon">📄</div>
+                                        <div class="doc-name-info">
+                                            <div class="doc-name">LM358运放数据手册.pdf</div>
+                                            <div class="doc-type">PDF文档</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="doc-size" data-size="1887437">1.8 MB</td>
+                                <td class="doc-date" data-timestamp="1734354000000">2024-12-16 14:20</td>
+                                <td class="doc-status-cell">
+                                    <span class="doc-status processing">处理中</span>
+                                </td>
+                                <td>
+                                    <div class="doc-actions">
+                                        <button class="doc-action-btn preview" title="预览" data-doc-id="2">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
+                                        <button class="doc-action-btn delete" title="删除" data-doc-id="2">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr data-doc-id="3" data-status="failed" data-original-index="2">
+                                <td>
+                                    <input type="checkbox" class="doc-checkbox" data-doc-id="3">
+                                </td>
+                                <td>
+                                    <div class="doc-name-cell">
+                                        <div class="doc-icon">📄</div>
+                                        <div class="doc-name-info">
+                                            <div class="doc-name">电源管理设计指南.pdf</div>
+                                            <div class="doc-type">PDF文档</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="doc-size" data-size="3670016">3.5 MB</td>
+                                <td class="doc-date" data-timestamp="1734181200000">2024-12-14 14:20</td>
+                                <td class="doc-status-cell">
+                                    <span class="doc-status failed" data-doc-id="3">
+                                        <span class="doc-status-text">失败</span>
+                                        <span class="doc-status-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                                <polyline points="23 4 23 10 17 10"/>
+                                                <polyline points="1 20 1 14 7 14"/>
+                                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                            </svg>
+                                        </span>
+                                        <span class="doc-status-retry-tooltip">重试</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="doc-actions">
+                                        <button class="doc-action-btn preview" title="预览" data-doc-id="3">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
+                                        <button class="doc-action-btn delete" title="删除" data-doc-id="3">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <input type="file" id="fileInput" style="display: none;" accept=".pdf,.doc,.docx,.txt,.md" multiple>
+
+            <!-- 批量操作栏 -->
+            <div class="batch-operations" id="batchOperations">
+                <div class="batch-info">
+                    <button class="batch-exit-btn" id="batchExit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H6m6-7l-7 7 7 7"/>
+                        </svg>
+                        退出
+                    </button>
+                    <span>已选择 <span class="batch-count" id="batchCount">0</span> 个文档</span>
+                </div>
+                <div class="batch-actions">
+                    <button class="batch-btn danger" id="batchDelete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        删除
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧：预览面板 -->
+            <div class="chat-panel" id="previewPanel">
+                <div class="chat-panel-header">
+                    <div class="chat-panel-title">
+                        <div class="chat-panel-title-icon preview-icon">📄</div>
+                        <div>
+                            <div id="previewTitle">文档预览</div>
+                            <div class="chat-panel-subtitle">查看文档内容</div>
+                        </div>
+                    </div>
+                    <button class="chat-panel-close" id="previewPanelClose" title="关闭">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <!-- 预览内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <!-- 右侧：知识问答面板 -->
+            <div class="chat-panel" id="chatPanel">
+                <div class="chat-panel-header">
+                    <div class="chat-panel-title">
+                        <div class="chat-panel-title-icon">
+                            <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝">
+                        </div>
+                        <div>
+                            <div>硅宝知识管家</div>
+                            <div class="chat-panel-subtitle">基于您的文档进行智能问答</div>
+                        </div>
+                    </div>
+                    <div class="chat-panel-actions">
+                        <button class="chat-panel-action-btn" id="clearChatBtn" title="清空会话">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                        </button>
+                        <button class="chat-panel-close" id="chatPanelClose" title="关闭">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-messages-container" id="chatMessagesContainer">
+                    <!-- 初始欢迎消息 -->
+                    <div class="chat-message assistant">
+                        <div class="chat-message-avatar">
+                            <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝">
+                        </div>
+                        <div class="chat-message-content">
+                            <div class="chat-message-bubble">
+                                您好！我是硅宝知识管家。我可以帮您解答关于已上传文档的问题。我会基于所有已解析完成的文档为您提供答案。
+                            </div>
+                            <div class="chat-message-time">刚刚</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <textarea 
+                            class="chat-input" 
+                            id="chatInput" 
+                            placeholder="请输入您的问题..."
+                            rows="1"
+                        ></textarea>
+                        <button class="chat-send-btn" id="chatSendBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 侧边栏折叠/展开功能
+        (function() {
+            const sidebarUnit = document.getElementById('sidebarUnit');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebarToggle && sidebarUnit) {
+                // 从localStorage读取折叠状态
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    sidebarUnit.classList.add('collapsed');
+                }
+                
+                // 更新按钮图标方向
+                function updateToggleIcon(collapsed) {
+                    const iconPath = sidebarToggle.querySelector('#toggleIconPath');
+                    if (iconPath) {
+                        if (collapsed) {
+                            // 折叠时显示向右箭头（展开图标）
+                            iconPath.setAttribute('d', 'M15 18l-6-6 6-6');
+                        } else {
+                            // 展开时显示向左箭头（折叠图标）
+                            iconPath.setAttribute('d', 'M9 18l6-6-6-6');
+                        }
+                    }
+                }
+                
+                // 切换折叠状态
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarUnit.classList.toggle('collapsed');
+                    const collapsed = sidebarUnit.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', collapsed);
+                    updateToggleIcon(collapsed);
+                });
+                
+               // 初始化按钮图标方向
+               updateToggleIcon(isCollapsed);
+           }
+       })();
+       
+       // Tooltip功能
+       (function() {
+           const sidebarUnit = document.getElementById('sidebarUnit');
+           let tooltip = null;
+           
+           function createTooltip() {
+               if (!tooltip) {
+                   tooltip = document.createElement('div');
+                   tooltip.className = 'menu-item-tooltip';
+                   document.body.appendChild(tooltip);
+               }
+               return tooltip;
+           }
+           
+           function showTooltip(element, text) {
+               if (!sidebarUnit.classList.contains('collapsed')) {
+                   return;
+               }
+               
+               const tooltipEl = createTooltip();
+               tooltipEl.textContent = text;
+               
+               const rect = element.getBoundingClientRect();
+               const sidebarRect = sidebarUnit.getBoundingClientRect();
+               
+               // 计算tooltip位置：在图标右侧
+               tooltipEl.style.left = (sidebarRect.right + 8) + 'px';
+               tooltipEl.style.top = (rect.top + rect.height / 2) + 'px';
+               tooltipEl.style.transform = 'translateY(-50%)';
+               
+               tooltipEl.classList.add('show');
+           }
+           
+           function hideTooltip() {
+               if (tooltip) {
+                   tooltip.classList.remove('show');
+               }
+           }
+           
+           // 为所有带data-tooltip的菜单项添加事件监听
+           const menuItems = document.querySelectorAll('.menu-item[data-tooltip]');
+           menuItems.forEach(item => {
+               item.addEventListener('mouseenter', function() {
+                   const tooltipText = this.getAttribute('data-tooltip');
+                   showTooltip(this, tooltipText);
+               });
+               
+               item.addEventListener('mouseleave', function() {
+                   hideTooltip();
+               });
+           });
+           
+           // 当侧边栏展开时隐藏tooltip
+           const observer = new MutationObserver(function(mutations) {
+               mutations.forEach(function(mutation) {
+                   if (mutation.attributeName === 'class') {
+                       if (!sidebarUnit.classList.contains('collapsed')) {
+                           hideTooltip();
+                       }
+                   }
+               });
+           });
+           
+           if (sidebarUnit) {
+               observer.observe(sidebarUnit, {
+                   attributes: true,
+                   attributeFilter: ['class']
+               });
+           }
+       })();
+       
+       // 菜单项点击事件
+       document.getElementById('newProject')?.addEventListener('click', function() {
+           window.location.href = 'index.html';
+       });
+       
+       document.getElementById('bomArchive')?.addEventListener('click', function() {
+           window.location.href = 'bom-archive.html';
+       });
+       
+       document.getElementById('knowledgeBase')?.addEventListener('click', function() {
+           // 当前页面，不需要跳转
+           console.log('当前在知识库页面');
+       });
+       
+       // 搜索框快捷键
+       const searchInput = document.getElementById('searchInput');
+       if (searchInput) {
+           document.addEventListener('keydown', function(e) {
+               // ⌘ + K 或 Ctrl + K
+              if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                  e.preventDefault();
+                  searchInput.focus();
+              }
+          });
+      }
+      
+      // 处理会话项的气泡菜单
+      document.addEventListener('DOMContentLoaded', function() {
+          const projectItems = document.querySelectorAll('.project-item');
+          let currentOpenMenu = null;
+          
+          // 计算并设置菜单位置
+          function setMenuPosition(menu, item) {
+              const itemRect = item.getBoundingClientRect();
+              const menuWidth = 120; // 菜单宽度
+              const menuHeight = 80; // 估算菜单高度
+              
+              // 计算位置：在项目项的右侧，垂直居中
+              const left = itemRect.right - menuWidth - 8;
+              const top = itemRect.top + (itemRect.height / 2) - (menuHeight / 2);
+              
+              menu.style.left = left + 'px';
+              menu.style.top = top + 'px';
+          }
+          
+          projectItems.forEach(function(item) {
+              const moreBtn = item.querySelector('.project-item-more');
+              const menu = item.querySelector('.project-item-menu');
+              
+              if (moreBtn && menu) {
+                  // 点击三个点按钮，显示/隐藏菜单
+                  moreBtn.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      
+                      // 如果当前菜单已打开，则关闭它
+                      if (currentOpenMenu === menu) {
+                          menu.classList.remove('show');
+                          currentOpenMenu = null;
+                      } else {
+                          // 关闭其他已打开的菜单
+                          if (currentOpenMenu) {
+                              currentOpenMenu.classList.remove('show');
+                          }
+                          // 计算并设置位置
+                          setMenuPosition(menu, item);
+                          // 打开当前菜单
+                          menu.classList.add('show');
+                          currentOpenMenu = menu;
+                      }
+                  });
+              }
+          });
+          
+          // 点击页面其他地方时关闭菜单
+          document.addEventListener('click', function(e) {
+              if (currentOpenMenu && !currentOpenMenu.contains(e.target)) {
+                  const moreBtn = currentOpenMenu.parentElement.querySelector('.project-item-more');
+                  if (moreBtn && !moreBtn.contains(e.target)) {
+                      currentOpenMenu.classList.remove('show');
+                      currentOpenMenu = null;
+                  }
+              }
+          });
+          
+          // 滚动时重新计算菜单位置
+          const projectList = document.getElementById('projectList');
+          if (projectList) {
+              projectList.addEventListener('scroll', function() {
+                  if (currentOpenMenu) {
+                      const item = currentOpenMenu.parentElement;
+                      setMenuPosition(currentOpenMenu, item);
+                  }
+              });
+          }
+      });
+
+      // ========== 知识库功能 ==========
+      
+      // 聊天面板展开/折叠功能
+      (function() {
+          const chatPanel = document.getElementById('chatPanel');
+          const previewPanel = document.getElementById('previewPanel');
+          const toggleChatBtn = document.getElementById('toggleChatPanel');
+          const chatPanelClose = document.getElementById('chatPanelClose');
+          
+          if (toggleChatBtn && chatPanel) {
+              toggleChatBtn.addEventListener('click', function() {
+                  // 关闭预览面板（如果打开）
+                  if (previewPanel) {
+                      previewPanel.classList.remove('open');
+                  }
+                  // 打开聊天面板
+                  chatPanel.classList.add('open');
+              });
+          }
+          
+          if (chatPanelClose && chatPanel) {
+              chatPanelClose.addEventListener('click', function() {
+                  chatPanel.classList.remove('open');
+              });
+          }
+      })();
+      
+      // 清空会话功能
+      (function() {
+          const clearChatBtn = document.getElementById('clearChatBtn');
+          const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+          
+          if (clearChatBtn && chatMessagesContainer) {
+              clearChatBtn.addEventListener('click', function() {
+                  // 显示确认对话框
+                  if (confirm('确定要清空当前会话吗？此操作不可恢复。')) {
+                      // 清空聊天消息，恢复初始欢迎消息
+                      chatMessagesContainer.innerHTML = `
+                          <div class="chat-message assistant">
+                              <div class="chat-message-avatar">
+                                  <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝">
+                              </div>
+                              <div class="chat-message-content">
+                                  <div class="chat-message-bubble">
+                                      您好！我是硅宝知识管家。我可以帮您解答关于已上传文档的问题。我会基于所有已解析完成的文档为您提供答案。
+                                  </div>
+                                  <div class="chat-message-time">刚刚</div>
+                              </div>
+                          </div>
+                      `;
+                      
+                      // 显示提示
+                      const notification = document.createElement('div');
+                      notification.style.cssText = `
+                          position: fixed;
+                          top: 80px;
+                          right: 24px;
+                          background: white;
+                          padding: 12px 20px;
+                          border-radius: 8px;
+                          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                          color: #10B981;
+                          font-size: 14px;
+                          font-weight: 500;
+                          z-index: 10000;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          animation: slideIn 0.3s ease;
+                      `;
+                      notification.innerHTML = `
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          会话已清空
+                      `;
+                      document.body.appendChild(notification);
+                      
+                      // 3秒后自动移除提示
+                      setTimeout(() => {
+                          notification.style.animation = 'slideOut 0.3s ease';
+                          setTimeout(() => {
+                              document.body.removeChild(notification);
+                          }, 300);
+                      }, 3000);
+                  }
+              });
+          }
+      })();
+      
+      // 文档上传功能
+      (function() {
+          const uploadBtn = document.getElementById('uploadBtn');
+          const fileInput = document.getElementById('fileInput');
+          const docTableBody = document.getElementById('docTableBody');
+          
+          if (uploadBtn && fileInput) {
+              uploadBtn.addEventListener('click', function() {
+                  fileInput.click();
+              });
+              
+              fileInput.addEventListener('change', function(e) {
+                  const files = e.target.files;
+                  if (files.length > 0) {
+                      handleFileUpload(files);
+                  }
+                  // 清空input，允许重复上传同一文件
+                  fileInput.value = '';
+              });
+          }
+          
+          function handleFileUpload(files) {
+              Array.from(files).forEach((file, index) => {
+                  // 模拟上传进度
+                  setTimeout(() => {
+                      addDocumentRow(file);
+                      updateDocCount();
+                  }, 500 + index * 200);
+              });
+          }
+          
+          function addDocumentRow(file) {
+              const docId = Date.now() + Math.random();
+              const fileSize = formatFileSize(file.size);
+              const fileType = getFileType(file.name);
+              const now = new Date();
+              const timestamp = now.getTime();
+              const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+              
+              // 计算新行的原始索引（当前最大索引 + 1）
+              const existingRows = docTableBody.querySelectorAll('tr');
+              let maxIndex = -1;
+              existingRows.forEach(r => {
+                  const index = parseInt(r.getAttribute('data-original-index') || '0');
+                  if (index > maxIndex) maxIndex = index;
+              });
+              const originalIndex = maxIndex + 1;
+              
+              const row = document.createElement('tr');
+              row.setAttribute('data-doc-id', docId);
+              row.setAttribute('data-status', 'processing');
+              row.setAttribute('data-original-index', originalIndex);
+              
+              row.innerHTML = `
+                  <td>
+                      <input type="checkbox" class="doc-checkbox" data-doc-id="${docId}">
+                  </td>
+                  <td>
+                      <div class="doc-name-cell">
+                          <div class="doc-icon">📄</div>
+                          <div class="doc-name-info">
+                              <div class="doc-name">${file.name}</div>
+                              <div class="doc-type">${fileType}</div>
+                          </div>
+                      </div>
+                  </td>
+                  <td class="doc-size" data-size="${file.size}">${fileSize}</td>
+                  <td class="doc-date" data-timestamp="${timestamp}">${formattedDate}</td>
+                  <td class="doc-status-cell">
+                      <span class="doc-status processing">处理中</span>
+                  </td>
+                  <td>
+                      <div class="doc-actions">
+                          <button class="doc-action-btn preview" title="预览" data-doc-id="${docId}">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                          </button>
+                          <button class="doc-action-btn delete" title="删除" data-doc-id="${docId}">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/>
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                              </svg>
+                          </button>
+                      </div>
+                  </td>
+              `;
+              
+              // 插入到表格顶部
+              docTableBody.insertBefore(row, docTableBody.firstChild);
+              
+              // 绑定事件
+              bindDocRowEvents(row);
+              
+              // 模拟处理过程，3秒后变为就绪
+              setTimeout(() => {
+                  const statusSpan = row.querySelector('.doc-status');
+                  if (statusSpan) {
+                      statusSpan.classList.remove('processing');
+                      statusSpan.classList.add('ready');
+                      statusSpan.textContent = '已就绪';
+                      statusSpan.setAttribute('data-status-text', '已就绪');
+                      row.setAttribute('data-status', 'ready');
+                  }
+              }, 3000);
+          }
+          
+          function getFileType(fileName) {
+              const ext = fileName.split('.').pop().toLowerCase();
+              const typeMap = {
+                  'pdf': 'PDF文档',
+                  'doc': 'Word文档',
+                  'docx': 'Word文档',
+                  'txt': '文本文件',
+                  'md': 'Markdown文档'
+              };
+              return typeMap[ext] || '文档';
+          }
+          
+          function formatFileSize(bytes) {
+              if (bytes < 1024) return bytes + ' B';
+              if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+              return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+          }
+          
+          function updateDocCount() {
+              const rows = document.querySelectorAll('#docTableBody tr');
+              const count = Array.from(rows).filter(row => row.style.display !== 'none').length;
+              const countEl = document.getElementById('docCountNum');
+              if (countEl) {
+                  countEl.textContent = count;
+              }
+              
+              // 显示/隐藏空状态
+              const tableContainer = document.querySelector('.doc-table-container');
+              const table = document.querySelector('.doc-table');
+              const hasVisibleRows = count > 0;
+              
+              if (!hasVisibleRows && !tableContainer.querySelector('.doc-empty-state')) {
+                  const emptyState = document.createElement('div');
+                  emptyState.className = 'doc-empty-state';
+                  emptyState.innerHTML = `
+                      <div class="doc-empty-icon">📄</div>
+                      <div class="doc-empty-title">暂无文档</div>
+                      <div class="doc-empty-text">点击"上传文档"按钮开始上传您的第一个文档</div>
+                  `;
+                  table.style.display = 'none';
+                  tableContainer.appendChild(emptyState);
+              } else if (hasVisibleRows) {
+                  const emptyState = tableContainer.querySelector('.doc-empty-state');
+                  if (emptyState) {
+                      emptyState.remove();
+                  }
+                  table.style.display = 'table';
+              }
+          }
+          
+          // 导出更新函数供删除时使用
+          window.updateDocCount = updateDocCount;
+          
+          // 初始化时检查空状态
+          setTimeout(() => {
+              updateDocCount();
+          }, 100);
+      })();
+      
+      // 预览面板功能
+      function openPreviewPanel(docId, docName) {
+          const previewPanel = document.getElementById('previewPanel');
+          const previewTitle = document.getElementById('previewTitle');
+          const previewContent = document.getElementById('previewContent');
+          
+          if (previewPanel && previewTitle && previewContent) {
+              previewTitle.textContent = docName;
+              
+              // 模拟加载效果
+              previewContent.innerHTML = `
+                  <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 16px; opacity: 0.5;">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14,2 14,8 20,8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <polyline points="10,9 9,9 8,9"/>
+                      </svg>
+                      <p>正在加载文档...</p>
+                  </div>
+              `;
+              
+              // 模拟PDF内容加载
+              setTimeout(() => {
+                  previewContent.innerHTML = `
+                      <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                          <div style="text-align: center; margin-bottom: 24px;">
+                              <h2 style="color: var(--text-main); margin-bottom: 8px;">${docName.replace('.pdf', '')}</h2>
+                              <p style="color: var(--text-secondary); font-size: 14px;">技术文档</p>
+                          </div>
+                          
+                          <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                              <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📋 文档概述</h3>
+                              <p style="color: var(--text-secondary); line-height: 1.6; font-size: 14px;">
+                                  这是关于 ${docName.replace('.pdf', '')} 的技术文档。
+                                  该文档包含了详细的技术规格、应用说明和使用指南，为工程师提供全面的参考资料。
+                              </p>
+                          </div>
+
+                          <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                              <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">⚡ 主要特性</h3>
+                              <ul style="color: var(--text-secondary); line-height: 1.8; font-size: 14px; padding-left: 20px;">
+                                  <li>详细的技术规格说明</li>
+                                  <li>完整的参数表格和性能指标</li>
+                                  <li>实用的应用电路设计指南</li>
+                                  <li>封装信息和尺寸规格</li>
+                                  <li>使用注意事项和常见问题解答</li>
+                                  <li>参考设计和应用案例</li>
+                              </ul>
+                          </div>
+
+                          <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                              <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📐 技术参数</h3>
+                              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                  <div style="color: var(--text-secondary);"><strong>文档类型:</strong> PDF文档</div>
+                                  <div style="color: var(--text-secondary);"><strong>文档ID:</strong> ${docId}</div>
+                                  <div style="color: var(--text-secondary);"><strong>上传日期:</strong> ${new Date().toLocaleDateString('zh-CN')}</div>
+                                  <div style="color: var(--text-secondary);"><strong>文件大小:</strong> 5.2 MB</div>
+                              </div>
+                          </div>
+
+                          <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
+                              <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">🔧 应用领域</h3>
+                              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: var(--text-secondary);">
+                                  <div>• 嵌入式系统开发</div>
+                                  <div>• 物联网设备</div>
+                                  <div>• 工业控制系统</div>
+                                  <div>• 消费电子产品</div>
+                                  <div>• 通信设备</div>
+                                  <div>• 汽车电子</div>
+                              </div>
+                          </div>
+
+                          <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+                              <p style="color: var(--text-secondary); font-size: 12px;">
+                                  文档预览 • 实际使用时将显示完整的PDF内容
+                              </p>
+                          </div>
+                      </div>
+                  `;
+              }, 800);
+              
+              // 关闭其他面板
+              document.getElementById('chatPanel')?.classList.remove('open');
+              previewPanel.classList.add('open');
+          }
+      }
+      
+      // 预览面板关闭功能
+      (function() {
+          const previewPanel = document.getElementById('previewPanel');
+          const previewPanelClose = document.getElementById('previewPanelClose');
+          
+          if (previewPanelClose && previewPanel) {
+              previewPanelClose.addEventListener('click', function() {
+                  previewPanel.classList.remove('open');
+              });
+          }
+      })();
+      
+      // 批量操作相关变量
+      let selectedDocs = new Set();
+      
+      // 更新批量操作栏
+      function updateBatchOperations() {
+          const count = selectedDocs.size;
+          const batchCount = document.getElementById('batchCount');
+          const batchOperations = document.getElementById('batchOperations');
+          
+          if (batchCount) {
+              batchCount.textContent = count;
+          }
+          
+          if (batchOperations) {
+              if (count > 0) {
+                  batchOperations.classList.add('show');
+              } else {
+                  batchOperations.classList.remove('show');
+              }
+          }
+      }
+      
+      // 动态更新批量操作栏位置
+      function updateBatchOperationsPosition() {
+          const sidebarUnit = document.getElementById('sidebarUnit');
+          const batchOperations = document.getElementById('batchOperations');
+          if (sidebarUnit && batchOperations) {
+              const isCollapsed = sidebarUnit.classList.contains('collapsed');
+              const leftPosition = isCollapsed ? 'var(--sidebar-w-collapsed)' : 'var(--sidebar-w)';
+              batchOperations.style.left = leftPosition;
+          }
+      }
+      
+      // 监听侧边栏状态变化
+      (function() {
+          const sidebarUnit = document.getElementById('sidebarUnit');
+          if (sidebarUnit) {
+              const observer = new MutationObserver(function(mutations) {
+                  mutations.forEach(function(mutation) {
+                      if (mutation.attributeName === 'class') {
+                          updateBatchOperationsPosition();
+                      }
+                  });
+              });
+              
+              observer.observe(sidebarUnit, {
+                  attributes: true,
+                  attributeFilter: ['class']
+              });
+              
+              // 初始化位置
+              updateBatchOperationsPosition();
+          }
+      })();
+      
+      // 文档行事件绑定
+      function bindDocRowEvents(row) {
+          const docId = row.getAttribute('data-doc-id');
+          
+          // 预览按钮
+          const previewBtn = row.querySelector('.doc-action-btn.preview');
+          if (previewBtn) {
+              previewBtn.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  const docName = row.querySelector('.doc-name').textContent;
+                  openPreviewPanel(docId, docName);
+              });
+          }
+          
+          // 删除按钮
+          const deleteBtn = row.querySelector('.doc-action-btn.delete');
+          if (deleteBtn) {
+              deleteBtn.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  const docName = row.querySelector('.doc-name').textContent;
+                  if (confirm(`确定要删除文档"${docName}"吗？`)) {
+                      row.remove();
+                      selectedDocs.delete(docId);
+                      updateBatchOperations();
+                      // 更新文档计数和空状态
+                      if (window.updateDocCount) {
+                          window.updateDocCount();
+                      }
+                  }
+              });
+          }
+          
+          // 复选框
+          const checkbox = row.querySelector('.doc-checkbox');
+          if (checkbox) {
+              checkbox.addEventListener('change', function(e) {
+                  e.stopPropagation();
+                  if (this.checked) {
+                      selectedDocs.add(docId);
+                      row.classList.add('selected');
+                  } else {
+                      selectedDocs.delete(docId);
+                      row.classList.remove('selected');
+                  }
+                  updateBatchOperations();
+              });
+          }
+          
+          // 失败状态的重试功能
+          const statusSpan = row.querySelector('.doc-status.failed');
+          if (statusSpan) {
+              // 点击重试
+              statusSpan.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  if (this.classList.contains('failed')) {
+                      // 改为处理中状态
+                      this.classList.remove('failed');
+                      this.classList.add('processing');
+                      const statusText = this.querySelector('.doc-status-text');
+                      const statusIcon = this.querySelector('.doc-status-icon');
+                      const tooltip = this.querySelector('.doc-status-retry-tooltip');
+                      
+                      if (statusText) {
+                          statusText.textContent = '处理中';
+                          statusText.style.display = '';
+                      }
+                      if (statusIcon) {
+                          statusIcon.style.display = 'none';
+                      }
+                      if (tooltip) {
+                          tooltip.style.display = 'none';
+                      }
+                      
+                      row.setAttribute('data-status', 'processing');
+                      
+                      // 模拟处理完成，3秒后变为就绪
+                      setTimeout(() => {
+                          this.classList.remove('processing');
+                          this.classList.add('ready');
+                          if (statusText) {
+                              statusText.textContent = '就绪';
+                              statusText.style.display = '';
+                          }
+                          row.setAttribute('data-status', 'ready');
+                      }, 3000);
+                  }
+              });
+          }
+          
+          // 行点击选中（不选中复选框时）
+          row.addEventListener('click', function(e) {
+              if (!e.target.closest('.doc-action-btn') && !e.target.closest('.doc-checkbox') && !e.target.closest('.doc-status')) {
+                  // 不自动选中，只高亮显示
+                  document.querySelectorAll('#docTableBody tr').forEach(r => {
+                      if (!r.querySelector('.doc-checkbox')?.checked) {
+                          r.classList.remove('selected');
+                      }
+                  });
+                  if (!checkbox?.checked) {
+                      this.classList.add('selected');
+                  }
+              }
+          });
+      }
+      
+      // 初始化绑定已有文档行的事件
+      document.querySelectorAll('#docTableBody tr').forEach(bindDocRowEvents);
+      
+      // 初始化绑定已有文档行的事件
+      document.querySelectorAll('#docTableBody tr').forEach(bindDocRowEvents);
+      
+      // 全选功能
+      (function() {
+          const selectAll = document.getElementById('selectAll');
+          if (selectAll) {
+              selectAll.addEventListener('change', function() {
+                  const checkboxes = document.querySelectorAll('#docTableBody .doc-checkbox');
+                  const rows = document.querySelectorAll('#docTableBody tr');
+                  
+                  if (this.checked) {
+                      // 全选
+                      checkboxes.forEach(cb => {
+                          cb.checked = true;
+                          const docId = cb.getAttribute('data-doc-id');
+                          selectedDocs.add(docId);
+                          const row = cb.closest('tr');
+                          if (row) row.classList.add('selected');
+                      });
+                  } else {
+                      // 取消全选
+                      checkboxes.forEach(cb => {
+                          cb.checked = false;
+                          const docId = cb.getAttribute('data-doc-id');
+                          selectedDocs.delete(docId);
+                          const row = cb.closest('tr');
+                          if (row) row.classList.remove('selected');
+                      });
+                  }
+                  
+                  updateBatchOperations();
+              });
+          }
+      })();
+      
+      // 批量操作功能
+      (function() {
+          const batchExit = document.getElementById('batchExit');
+          const batchDelete = document.getElementById('batchDelete');
+          
+          if (batchExit) {
+              batchExit.addEventListener('click', function() {
+                  // 清除所有选择
+                  const checkboxes = document.querySelectorAll('#docTableBody .doc-checkbox');
+                  checkboxes.forEach(cb => {
+                      cb.checked = false;
+                      const row = cb.closest('tr');
+                      if (row) row.classList.remove('selected');
+                  });
+                  selectedDocs.clear();
+                  updateBatchOperations();
+                  
+                  // 取消全选复选框
+                  const selectAll = document.getElementById('selectAll');
+                  if (selectAll) {
+                      selectAll.checked = false;
+                  }
+              });
+          }
+          
+          if (batchDelete) {
+              batchDelete.addEventListener('click', function() {
+                  const selectedIds = Array.from(selectedDocs);
+                  if (selectedIds.length === 0) return;
+                  
+                  if (confirm(`确定要删除选中的 ${selectedIds.length} 个文档吗？`)) {
+                      selectedIds.forEach(docId => {
+                          const row = document.querySelector(`#docTableBody tr[data-doc-id="${docId}"]`);
+                          if (row) {
+                              row.remove();
+                          }
+                      });
+                      
+                      selectedDocs.clear();
+                      updateBatchOperations();
+                      updateDocCount();
+                      
+                      // 取消全选复选框
+                      const selectAll = document.getElementById('selectAll');
+                      if (selectAll) {
+                          selectAll.checked = false;
+                      }
+                  }
+              });
+          }
+      })();
+      
+      // 文档搜索功能
+      (function() {
+          const searchInput = document.getElementById('docSearchInput');
+          
+          if (searchInput) {
+              searchInput.addEventListener('input', function() {
+                  const keyword = this.value.toLowerCase().trim();
+                  const rows = document.querySelectorAll('#docTableBody tr');
+                  let visibleCount = 0;
+                  
+                  rows.forEach(row => {
+                      const fileName = row.querySelector('.doc-name').textContent.toLowerCase();
+                      if (fileName.includes(keyword)) {
+                          row.style.display = '';
+                          visibleCount++;
+                      } else {
+                          row.style.display = 'none';
+                      }
+                  });
+                  
+                  // 更新文档计数
+                  const countEl = document.getElementById('docCountNum');
+                  if (countEl) {
+                      countEl.textContent = visibleCount;
+                  }
+              });
+          }
+      })();
+      
+      // 文档排序功能（时间和大小）- 三态循环：不排序 → 降序 → 升序 → 不排序
+      (function() {
+          const sortByTimeBtn = document.getElementById('sortByTimeBtn');
+          const sortBySizeBtn = document.getElementById('sortBySizeBtn');
+          const docTableBody = document.getElementById('docTableBody');
+          
+          // 排序状态：null（不排序）、'desc'（降序）、'asc'（升序）
+          let timeSortOrder = null;
+          let sizeSortOrder = null;
+          
+          // 恢复原始顺序
+          function restoreOriginalOrder() {
+              const rows = Array.from(docTableBody.querySelectorAll('tr'));
+              rows.sort((a, b) => {
+                  const indexA = parseInt(a.getAttribute('data-original-index') || '0');
+                  const indexB = parseInt(b.getAttribute('data-original-index') || '0');
+                  return indexA - indexB;
+              });
+              rows.forEach(row => {
+                  docTableBody.appendChild(row);
+              });
+          }
+          
+          // 更新按钮样式
+          function updateButtonStyle(btn, sortOrder, sortType) {
+              if (sortOrder === null) {
+                  btn.classList.remove('asc', 'desc');
+                  btn.title = sortType === 'time' ? '按时间排序' : '按大小排序';
+              } else if (sortOrder === 'desc') {
+                  btn.classList.remove('asc');
+                  btn.classList.add('desc');
+                  btn.title = sortType === 'time' ? '按时间降序（最新在前）' : '按大小降序（最大在前）';
+              } else if (sortOrder === 'asc') {
+                  btn.classList.remove('desc');
+                  btn.classList.add('asc');
+                  btn.title = sortType === 'time' ? '按时间升序（最旧在前）' : '按大小升序（最小在前）';
+              }
+          }
+          
+          // 按时间排序
+          if (sortByTimeBtn && docTableBody) {
+              sortByTimeBtn.addEventListener('click', function() {
+                  // 三态循环：null → desc → asc → null
+                  if (timeSortOrder === null) {
+                      timeSortOrder = 'desc';
+                  } else if (timeSortOrder === 'desc') {
+                      timeSortOrder = 'asc';
+                  } else {
+                      timeSortOrder = null;
+                  }
+                  
+                  // 清除大小排序状态
+                  sizeSortOrder = null;
+                  if (sortBySizeBtn) {
+                      updateButtonStyle(sortBySizeBtn, null, 'size');
+                  }
+                  
+                  // 更新时间按钮样式
+                  updateButtonStyle(sortByTimeBtn, timeSortOrder, 'time');
+                  
+                  // 获取所有行
+                  const rows = Array.from(docTableBody.querySelectorAll('tr'));
+                  
+                  if (timeSortOrder === null) {
+                      // 恢复原始顺序
+                      restoreOriginalOrder();
+                  } else {
+                      // 按时间戳排序
+                      rows.sort((a, b) => {
+                          const dateA = a.querySelector('.doc-date');
+                          const dateB = b.querySelector('.doc-date');
+                          
+                          if (!dateA || !dateB) return 0;
+                          
+                          const timestampA = parseInt(dateA.getAttribute('data-timestamp') || '0');
+                          const timestampB = parseInt(dateB.getAttribute('data-timestamp') || '0');
+                          
+                          if (timeSortOrder === 'desc') {
+                              return timestampB - timestampA; // 降序：最新在前
+                          } else {
+                              return timestampA - timestampB; // 升序：最旧在前
+                          }
+                      });
+                      
+                      // 重新插入排序后的行
+                      rows.forEach(row => {
+                          docTableBody.appendChild(row);
+                      });
+                  }
+              });
+          }
+          
+          // 按大小排序
+          if (sortBySizeBtn && docTableBody) {
+              sortBySizeBtn.addEventListener('click', function() {
+                  // 三态循环：null → desc → asc → null
+                  if (sizeSortOrder === null) {
+                      sizeSortOrder = 'desc';
+                  } else if (sizeSortOrder === 'desc') {
+                      sizeSortOrder = 'asc';
+                  } else {
+                      sizeSortOrder = null;
+                  }
+                  
+                  // 清除时间排序状态
+                  timeSortOrder = null;
+                  if (sortByTimeBtn) {
+                      updateButtonStyle(sortByTimeBtn, null, 'time');
+                  }
+                  
+                  // 更新大小按钮样式
+                  updateButtonStyle(sortBySizeBtn, sizeSortOrder, 'size');
+                  
+                  // 获取所有行
+                  const rows = Array.from(docTableBody.querySelectorAll('tr'));
+                  
+                  if (sizeSortOrder === null) {
+                      // 恢复原始顺序
+                      restoreOriginalOrder();
+                  } else {
+                      // 按文件大小排序
+                      rows.sort((a, b) => {
+                          const sizeA = a.querySelector('.doc-size');
+                          const sizeB = b.querySelector('.doc-size');
+                          
+                          if (!sizeA || !sizeB) return 0;
+                          
+                          const bytesA = parseInt(sizeA.getAttribute('data-size') || '0');
+                          const bytesB = parseInt(sizeB.getAttribute('data-size') || '0');
+                          
+                          if (sizeSortOrder === 'desc') {
+                              return bytesB - bytesA; // 降序：最大在前
+                          } else {
+                              return bytesA - bytesB; // 升序：最小在前
+                          }
+                      });
+                      
+                      // 重新插入排序后的行
+                      rows.forEach(row => {
+                          docTableBody.appendChild(row);
+                      });
+                  }
+              });
+          }
+      })();
+      
+      // 知识问答功能
+      (function() {
+          const chatInput = document.getElementById('chatInput');
+          const chatSendBtn = document.getElementById('chatSendBtn');
+          const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+          
+          // 自动调整textarea高度
+          if (chatInput) {
+              chatInput.addEventListener('input', function() {
+                  this.style.height = 'auto';
+                  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+              });
+              
+              // 回车发送消息（Shift+Enter换行）
+              chatInput.addEventListener('keydown', function(e) {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                  }
+              });
+          }
+          
+          if (chatSendBtn) {
+              chatSendBtn.addEventListener('click', sendMessage);
+          }
+          
+          function sendMessage() {
+              const message = chatInput.value.trim();
+              if (!message) return;
+              
+              // 检查是否选中文档
+              const selectedRow = document.querySelector('#docTableBody tr.selected');
+              if (!selectedRow) {
+                  alert('请先在文档列表中选择一个文档');
+                  return;
+              }
+              
+              // 添加用户消息
+              addChatMessage('user', message);
+              
+              // 清空输入框
+              chatInput.value = '';
+              chatInput.style.height = 'auto';
+              
+              // 模拟AI回复
+              setTimeout(() => {
+                  const docName = selectedRow.querySelector('.doc-name').textContent;
+                  const reply = `我正在分析《${docName}》的内容来回答您的问题："${message}"。\n\n这是一个模拟回复。实际使用时，这里会调用AI模型基于文档内容生成回答。`;
+                  addChatMessage('assistant', reply);
+              }, 1000);
+          }
+          
+          function addChatMessage(role, content) {
+              const messageDiv = document.createElement('div');
+              messageDiv.className = `chat-message ${role}`;
+              
+              const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+              
+              messageDiv.innerHTML = `
+                  <div class="chat-message-avatar">
+                      ${role === 'user' ? 'L' : '<img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝">'}
+                  </div>
+                  <div class="chat-message-content">
+                      <div class="chat-message-bubble">${content.replace(/\n/g, '<br>')}</div>
+                      <div class="chat-message-time">${time}</div>
+                  </div>
+              `;
+              
+              chatMessagesContainer.appendChild(messageDiv);
+              
+              // 滚动到底部
+              chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+          }
+      })();
+    </script>
+</body>
+</html>
+
