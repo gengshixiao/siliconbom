@@ -18,7 +18,8 @@
         newProject: basePath + 'index.html',
         bomArchive: basePath + 'bom-archive.html',
         knowledgeBase: basePath + 'knowledge-base.html',
-        viewAllProjects: basePath + 'conversation-list.html'
+        viewAllProjects: basePath + 'conversation-list.html',
+        designMode: basePath + 'design-mode.html'
     };
 
     // 检查登录状态并拦截
@@ -77,6 +78,16 @@
             viewAllProjectsBtn.addEventListener('click', function() {
                 checkLoginAndIntercept(function() {
                     window.location.href = menuItems.viewAllProjects;
+                });
+            });
+        }
+
+        // 设计模式（内测功能）
+        const designModeBtn = document.getElementById('designMode');
+        if (designModeBtn) {
+            designModeBtn.addEventListener('click', function() {
+                checkLoginAndIntercept(function() {
+                    window.location.href = menuItems.designMode;
                 });
             });
         }
