@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png">
     <title>登录 - 硅宝</title>
     <style>
         :root {
@@ -364,6 +364,111 @@
             color: var(--trace-active);
         }
 
+        .demo-scan-btn {
+            width: 100%;
+            padding: 10px 16px;
+            background: #F1F5F9;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #64748B;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .demo-scan-btn:hover {
+            background: #E2E8F0;
+            color: var(--trace-active);
+            border-color: var(--trace-active);
+        }
+
+        /* 手机号绑定弹窗 */
+        .phone-bind-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phone-bind-modal.show {
+            display: flex;
+        }
+
+        .phone-bind-content {
+            background: #FFFFFF;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 450px;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .phone-bind-header {
+            text-align: center;
+            padding: 30px 30px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .phone-bind-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+        .phone-bind-subtitle {
+            font-size: 14px;
+            color: #64748B;
+            margin: 0;
+        }
+
+        .phone-bind-body {
+            padding: 30px;
+        }
+
+        .phone-bind-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            font-size: 24px;
+            z-index: 10;
+            transition: color 0.2s;
+        }
+
+        .phone-bind-close:hover {
+            color: #334155;
+        }
+
         .agreement {
             display: flex;
             align-items: flex-start;
@@ -443,7 +548,7 @@
         
         <div class="login-header">
             <div class="logo-container">
-                <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝 Logo" class="logo">
+                <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" alt="硅宝 Logo" class="logo">
             </div>
             <h1 class="welcome-title">欢迎使用硅宝</h1>
         </div>
@@ -463,7 +568,7 @@
                     </div>
                     <div class="form-group">
                         <div class="verification-wrapper">
-                            <input type="text" class="form-input" id="smsCode" placeholder="请输入验证码">
+                            <input type="text" class="form-input" id="smsCode" placeholder="请输入验证码" value="847392">
                             <button class="get-code-btn" id="getSmsCode">获取验证码</button>
                         </div>
                     </div>
@@ -499,6 +604,7 @@
                         </svg>
                     </button>
                 </div>
+                <button class="demo-scan-btn" id="demoScanBtn" style="margin-bottom: 12px;">模拟扫码登录（开发演示）</button>
                 <a class="quick-login-link" href="#">快捷登录</a>
             </div>
         </div>
@@ -567,6 +673,29 @@
             <div class="agreement-text">
                 我已阅读并同意<a class="agreement-link" href="#">《服务条款》</a>和<a class="agreement-link" href="#">《隐私政策》</a>新用户将自动注册并申请资格
             </div>
+        </div>
+    </div>
+
+    <!-- 手机号绑定弹窗 -->
+    <div class="phone-bind-modal" id="phoneBindModal">
+        <div class="phone-bind-content">
+            <button class="phone-bind-close" id="phoneBindClose">×</button>
+            <div class="phone-bind-header">
+                <h2 class="phone-bind-title">绑定手机号</h2>
+                <p class="phone-bind-subtitle">微信登录需要绑定手机号以完成注册</p>
+            </div>
+                <div class="phone-bind-body">
+                    <div class="form-group">
+                        <input type="tel" class="form-input" id="bindPhone" placeholder="请输入手机号" value="18100617218">
+                    </div>
+                    <div class="form-group">
+                        <div class="verification-wrapper">
+                            <input type="text" class="form-input" id="bindCode" placeholder="请输入验证码" value="847392">
+                            <button class="get-code-btn" id="getBindCode">获取验证码</button>
+                        </div>
+                    </div>
+                    <button class="login-btn" id="bindSubmitBtn">确认绑定</button>
+                </div>
         </div>
     </div>
 
@@ -678,7 +807,28 @@
                 alert('请先同意服务条款和隐私政策');
                 return;
             }
-            alert('短信登录功能待实现');
+            
+            // 模拟登录验证（开发演示：验证码为 847392）
+            if (code === '847392') {
+                // 调用登录逻辑
+                if (window.Auth) {
+                    window.Auth.setLoggedIn(true);
+                }
+                // 关闭登录弹窗
+                if (window.closeLoginModal) {
+                    window.closeLoginModal();
+                }
+                // 显示toast提示
+                if (window.showToast) {
+                    window.showToast('登录成功！');
+                }
+            } else {
+                if (window.showToast) {
+                    window.showToast('验证码错误（开发演示：正确验证码为 847392）');
+                } else {
+                    alert('验证码错误\n（开发演示：正确验证码为 847392）');
+                }
+            }
         });
 
         document.getElementById('accountLoginBtn').addEventListener('click', () => {
@@ -807,6 +957,136 @@
         } else {
             startQrTimer();
         }
+
+        // 模拟扫码登录功能
+        const demoScanBtn = document.getElementById('demoScanBtn');
+        const phoneBindModal = document.getElementById('phoneBindModal');
+        const phoneBindClose = document.getElementById('phoneBindClose');
+        const getBindCodeBtn = document.getElementById('getBindCode');
+        const bindSubmitBtn = document.getElementById('bindSubmitBtn');
+        const bindPhoneInput = document.getElementById('bindPhone');
+        const bindCodeInput = document.getElementById('bindCode');
+
+        // 模拟是否已绑定手机号（开发演示用，可以切换测试）
+        let isPhoneBound = false; // 设置为 false 来测试未绑定流程
+
+        // 模拟扫码登录
+        demoScanBtn.addEventListener('click', () => {
+            // 模拟扫码成功
+            console.log('模拟扫码成功');
+            
+            // 检查是否已绑定手机号
+            if (isPhoneBound) {
+                // 已绑定，直接登录成功
+                alert('微信登录成功！\n（开发演示：已绑定手机号，直接登录）');
+                // 这里可以调用实际的登录逻辑
+                // Auth.setLoggedIn(true);
+            } else {
+                // 未绑定，显示手机号绑定弹窗
+                phoneBindModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+
+        // 关闭手机号绑定弹窗
+        phoneBindClose.addEventListener('click', () => {
+            phoneBindModal.classList.remove('show');
+            document.body.style.overflow = '';
+        });
+
+        // 点击遮罩层关闭
+        phoneBindModal.addEventListener('click', (e) => {
+            if (e.target === phoneBindModal) {
+                phoneBindModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // 获取绑定验证码
+        let bindCountdown = 0;
+        getBindCodeBtn.addEventListener('click', () => {
+            if (bindCountdown > 0) return;
+            
+            const phone = bindPhoneInput.value.trim();
+            if (!phone) {
+                alert('请输入手机号');
+                return;
+            }
+            
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                alert('请输入正确的手机号');
+                return;
+            }
+            
+            // 模拟发送验证码
+            console.log('发送验证码到：', phone);
+            alert('验证码已发送（开发演示：验证码为 847392）');
+            
+            bindCountdown = 60;
+            getBindCodeBtn.disabled = true;
+            
+            const timer = setInterval(() => {
+                getBindCodeBtn.textContent = `${bindCountdown}秒后重试`;
+                bindCountdown--;
+                
+                if (bindCountdown < 0) {
+                    clearInterval(timer);
+                    getBindCodeBtn.disabled = false;
+                    getBindCodeBtn.textContent = '获取验证码';
+                }
+            }, 1000);
+        });
+
+        // 确认绑定
+        bindSubmitBtn.addEventListener('click', () => {
+            const phone = bindPhoneInput.value.trim();
+            const code = bindCodeInput.value.trim();
+            
+            if (!phone) {
+                alert('请输入手机号');
+                return;
+            }
+            
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                alert('请输入正确的手机号');
+                return;
+            }
+            
+            if (!code) {
+                alert('请输入验证码');
+                return;
+            }
+            
+            // 模拟验证（开发演示：验证码为 847392）
+            if (code === '847392') {
+            // 绑定成功
+            isPhoneBound = true;
+            phoneBindModal.classList.remove('show');
+            document.body.style.overflow = '';
+            // 调用登录逻辑
+            if (window.Auth) {
+                window.Auth.setLoggedIn(true);
+            }
+            // 关闭登录弹窗
+            if (window.closeLoginModal) {
+                window.closeLoginModal();
+            }
+            // 显示toast提示
+            if (window.showToast) {
+                window.showToast('微信登录成功！');
+            }
+            } else {
+                alert('验证码错误\n（开发演示：正确验证码为 847392）');
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && phoneBindModal.classList.contains('show')) {
+                phoneBindModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
     </script>
 </body>
 </html>

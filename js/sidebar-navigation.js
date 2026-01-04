@@ -21,13 +21,33 @@
         viewAllProjects: basePath + 'conversation-list.html'
     };
 
+    // 检查登录状态并拦截
+    function checkLoginAndIntercept(callback) {
+        // 检查是否有Auth对象
+        if (typeof Auth !== 'undefined' && Auth.isLoggedIn && !Auth.isLoggedIn()) {
+            // 未登录，弹出登录弹窗
+            if (window.openLoginModal) {
+                window.openLoginModal();
+            } else {
+                // 如果没有登录弹窗，跳转到登录页
+                window.location.href = getBasePath() + 'login.html';
+            }
+            return false;
+        }
+        // 已登录，执行回调
+        if (callback) callback();
+        return true;
+    }
+
     // 初始化导航
     function initNavigation() {
         // 新建会话
         const newProjectBtn = document.getElementById('newProject');
         if (newProjectBtn) {
             newProjectBtn.addEventListener('click', function() {
-                window.location.href = menuItems.newProject;
+                checkLoginAndIntercept(function() {
+                    window.location.href = menuItems.newProject;
+                });
             });
         }
 
@@ -35,7 +55,9 @@
         const bomArchiveBtn = document.getElementById('bomArchive');
         if (bomArchiveBtn) {
             bomArchiveBtn.addEventListener('click', function() {
-                window.location.href = menuItems.bomArchive;
+                checkLoginAndIntercept(function() {
+                    window.location.href = menuItems.bomArchive;
+                });
             });
         }
 
@@ -43,7 +65,9 @@
         const knowledgeBaseBtn = document.getElementById('knowledgeBase');
         if (knowledgeBaseBtn) {
             knowledgeBaseBtn.addEventListener('click', function() {
-                window.location.href = menuItems.knowledgeBase;
+                checkLoginAndIntercept(function() {
+                    window.location.href = menuItems.knowledgeBase;
+                });
             });
         }
 
@@ -51,7 +75,9 @@
         const viewAllProjectsBtn = document.getElementById('viewAllProjects');
         if (viewAllProjectsBtn) {
             viewAllProjectsBtn.addEventListener('click', function() {
-                window.location.href = menuItems.viewAllProjects;
+                checkLoginAndIntercept(function() {
+                    window.location.href = menuItems.viewAllProjects;
+                });
             });
         }
 

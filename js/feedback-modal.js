@@ -54,7 +54,7 @@
                 <!-- 头部 -->
                 <div class="modal-header">
                     <h2 class="modal-title">
-                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝" class="modal-title-icon">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" alt="硅宝" class="modal-title-icon">
                         <span>用户反馈</span>
                     </h2>
                     <button class="close-btn" id="feedbackCloseBtn">×</button>
