@@ -15,7 +15,7 @@
                 <!-- 头部 -->
                 <div class="modal-header">
                     <h2 class="modal-title">
-                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝" class="modal-title-icon">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" alt="硅宝" class="modal-title-icon">
                         <span>个人设置</span>
                     </h2>
                     <button class="close-btn" id="settingsCloseBtn">×</button>
@@ -57,7 +57,7 @@
                                     <div class="avatar-upload">
                                         <img 
                                             id="avatarPreview" 
-                                            src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" 
+                                            src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" 
                                             alt="头像" 
                                             class="avatar-image"
                                         >
@@ -101,6 +101,24 @@
                                         value="13645166079"
                                         readonly
                                     >
+                                </div>
+
+                                <!-- 第三方账号绑定 -->
+                                <div class="form-group">
+                                    <label class="form-label">第三方账号绑定</label>
+                                    <div class="third-party-bind-container" id="thirdPartyBindContainer">
+                                        <!-- 微信绑定项 -->
+                                        <div class="third-party-item" id="wechatBindItem">
+                                            <div class="third-party-item-left">
+                                                <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/4e7ee1a094eb86888135ac51fc4b1bfa.png" alt="微信" class="third-party-icon">
+                                                <span class="third-party-name">微信</span>
+                                            </div>
+                                            <div class="third-party-item-right">
+                                                <span class="third-party-status" id="wechatBindStatus">未绑定</span>
+                                                <button class="third-party-action-btn" id="wechatBindBtn">绑定</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -226,6 +244,7 @@
         document.body.appendChild(modal);
         settingsModal = modal;
         initSettingsModalEvents();
+        initThirdPartyBind(); // 初始化第三方账号绑定
         return modal;
     }
 
@@ -464,6 +483,128 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && settingsModal.classList.contains('show')) {
                 closeModal();
+            }
+        });
+    }
+
+    // 初始化第三方账号绑定功能
+    function initThirdPartyBind() {
+        if (!settingsModal) return;
+
+        let isWechatBound = false; // 默认未绑定
+        const wechatBindBtn = settingsModal.querySelector('#wechatBindBtn');
+        const wechatBindStatus = settingsModal.querySelector('#wechatBindStatus');
+        
+        if (!wechatBindBtn || !wechatBindStatus) return;
+
+        // 更新微信绑定状态显示
+        function updateWechatBindStatus() {
+            if (isWechatBound) {
+                wechatBindStatus.textContent = '已绑定';
+                wechatBindStatus.classList.add('bound');
+                wechatBindBtn.textContent = '解绑';
+                wechatBindBtn.classList.add('unbind');
+            } else {
+                wechatBindStatus.textContent = '未绑定';
+                wechatBindStatus.classList.remove('bound');
+                wechatBindBtn.textContent = '绑定';
+                wechatBindBtn.classList.remove('unbind');
+            }
+        }
+
+        // 初始化绑定状态
+        updateWechatBindStatus();
+
+        // 创建微信绑定弹窗
+        function createWechatBindModal() {
+            let wechatBindModal = document.getElementById('wechatBindModal');
+            if (wechatBindModal) return wechatBindModal;
+
+            const modal = document.createElement('div');
+            modal.className = 'wechat-bind-modal';
+            modal.id = 'wechatBindModal';
+            modal.innerHTML = `
+                <div class="wechat-bind-content">
+                    <button class="wechat-bind-close" id="wechatBindClose">×</button>
+                    <div class="wechat-bind-header">
+                        <h2 class="wechat-bind-title">绑定微信账号</h2>
+                        <p class="wechat-bind-subtitle">使用微信扫码完成账号绑定</p>
+                    </div>
+                    <div class="wechat-bind-body">
+                        <div class="wechat-qr-code">
+                            <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/c455a13364e4e34dda5337633114e0fd.png" alt="微信登录二维码">
+                        </div>
+                        <button class="demo-bind-btn" id="demoBindBtn">模拟绑定（开发演示）</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        // 打开微信绑定弹窗
+        function openWechatBindModal() {
+            const wechatBindModal = createWechatBindModal();
+            const wechatBindClose = wechatBindModal.querySelector('#wechatBindClose');
+            const demoBindBtn = wechatBindModal.querySelector('#demoBindBtn');
+
+            wechatBindModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+
+            // 关闭按钮
+            wechatBindClose.onclick = () => {
+                wechatBindModal.classList.remove('show');
+                document.body.style.overflow = '';
+            };
+
+            // 点击遮罩层关闭
+            wechatBindModal.onclick = (e) => {
+                if (e.target === wechatBindModal) {
+                    wechatBindModal.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            };
+
+            // 模拟绑定按钮
+            demoBindBtn.onclick = () => {
+                isWechatBound = true;
+                updateWechatBindStatus();
+                wechatBindModal.classList.remove('show');
+                document.body.style.overflow = '';
+                if (window.showToast) {
+                    window.showToast('微信账号绑定成功！');
+                } else {
+                    alert('微信账号绑定成功！');
+                }
+            };
+
+            // ESC键关闭
+            const escHandler = (e) => {
+                if (e.key === 'Escape' && wechatBindModal.classList.contains('show')) {
+                    wechatBindModal.classList.remove('show');
+                    document.body.style.overflow = '';
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+        }
+
+        // 绑定按钮点击事件
+        wechatBindBtn.addEventListener('click', () => {
+            if (isWechatBound) {
+                // 解绑：二次确认
+                if (confirm('确定要解绑微信账号吗？')) {
+                    isWechatBound = false;
+                    updateWechatBindStatus();
+                    if (window.showToast) {
+                        window.showToast('微信账号已解绑');
+                    } else {
+                        alert('微信账号已解绑');
+                    }
+                }
+            } else {
+                // 绑定：打开扫码弹窗
+                openWechatBindModal();
             }
         });
     }

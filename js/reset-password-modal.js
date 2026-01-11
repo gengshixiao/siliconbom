@@ -18,7 +18,7 @@
             <div class="reset-password-modal">
                 <div class="reset-password-header">
                     <div class="logo-container">
-                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png" alt="硅宝 Logo" class="logo">
+                        <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" alt="硅宝 Logo" class="logo">
                     </div>
                     <h1 class="reset-password-title">重置密码</h1>
                     <p class="reset-password-subtitle">请输入您的手机号和验证码来重置密码</p>

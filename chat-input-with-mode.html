@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天输入框 - 硅宝</title>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;
+            --trace-active: #6DD5E8;
+            --text-main: #334155;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+            background-size: 30px 30px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 输入区域容器 */
+        .input-container {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        /* 输入框包装 */
+        .search-wrapper {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .search-wrapper:focus-within { 
+            border-color: var(--trace-active); 
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.15); 
+        }
+
+        /* 输入框 */
+        .input-editor {
+            width: 100%;
+            min-height: 40px;
+            max-height: 200px;
+            border: none; 
+            background: transparent; 
+            outline: none;
+            font-size: 16px; 
+            color: #333;
+            line-height: 24px;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+        
+        .input-editor:empty::before {
+            content: attr(data-placeholder);
+            color: #94A3B8;
+            font-size: 14px;
+        }
+
+        /* 底部操作栏 */
+        .input-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .input-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-actions-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-attach,
+        .btn-voice {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94A3B8;
+            transition: all 0.2s;
+        }
+        
+        .btn-attach:hover,
+        .btn-voice:hover {
+            background: #F1F5F9;
+            color: var(--trace-active);
+        }
+        
+        .btn-attach svg,
+        .btn-voice svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .send-button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--trace-active);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .send-button:hover {
+            background: #5BC5D8;
+            transform: translateY(-1px);
+        }
+        
+        .send-button:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .send-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 研发风格铭牌 */
+        .mode-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1.5px solid;
+            white-space: nowrap;
+        }
+
+        .mode-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 不同模式的铭牌样式 */
+        .mode-badge.balanced {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            border-color: #6DD5E8;
+            color: #fff;
+        }
+
+        .mode-badge.efficiency {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            border-color: #F59E0B;
+            color: #fff;
+        }
+
+        .mode-badge.inspiration {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            border-color: #8B5CF6;
+            color: #fff;
+        }
+
+        .mode-badge-icon {
+            font-size: 14px;
+        }
+
+        /* 设置弹窗遮罩 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        /* 设置弹窗 */
+        .settings-modal {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 弹窗头部 */
+        .modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-title-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        .close-btn:hover {
+            background-color: #F1F5F9;
+        }
+
+        /* 弹窗内容 */
+        .modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        /* 研发偏好样式 */
+        .preferences-form {
+            max-width: 100%;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        /* 标签容器 */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* 标签项 */
+        .preference-tag {
+            position: relative;
+            padding: 10px 20px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 24px;
+            font-size: 14px;
+            color: var(--text-main);
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preference-tag:hover {
+            border-color: var(--trace-active);
+            background: #F0FDFF;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.15);
+        }
+
+        .preference-tag.selected {
+            border-color: transparent;
+            color: #fff;
+        }
+
+        /* 不同模式的颜色 */
+        .preference-tag[data-mode="balanced"].selected {
+            background: linear-gradient(135deg, #6DD5E8 0%, #4DB6AC 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        .preference-tag[data-mode="efficiency"].selected {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .preference-tag[data-mode="inspiration"].selected {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .preference-tag-icon {
+            font-size: 16px;
+        }
+
+        /* Tooltip提示 */
+        .preference-tag-tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 320px;
+            min-width: 240px;
+            white-space: normal;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .preference-tag-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.85);
+        }
+
+        .preference-tag:hover .preference-tag-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 多行文本输入 */
+        .preference-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.2s ease;
+            background: #fff;
+            line-height: 1.6;
+        }
+
+        .preference-textarea:focus {
+            outline: none;
+            border-color: var(--trace-active);
+            box-shadow: 0 0 0 3px rgba(109, 213, 232, 0.1);
+        }
+
+        .preference-textarea::placeholder {
+            color: #94A3B8;
+            line-height: 1.6;
+        }
+
+        /* 弹窗底部 */
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #FAFBFC;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-cancel {
+            background: #fff;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-cancel:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
+            color: #fff;
+        }
+
+        .btn-save:hover {
+            background: linear-gradient(135deg, #4DB6AC 0%, var(--trace-active) 100%);
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.3);
+        }
+
+        /* 滚动条样式 */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body>
+    <!-- 输入框区域 -->
+    <div class="input-container">
+        <div class="search-wrapper">
+            <div class="input-editor" id="messageInput" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
+            <div class="input-actions">
+                <div class="input-actions-left">
+                    <!-- 研发风格铭牌 -->
+                    <div class="mode-badge balanced" id="modeBadge">
+                        <span class="mode-badge-icon">⚖️</span>
+                        <span id="modeBadgeText">均衡模式</span>
+                    </div>
+                </div>
+                <div class="input-actions-right">
+                    <button class="btn-attach" type="button" aria-label="上传文件">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-voice" type="button" aria-label="语音输入">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button class="send-button" id="sendButton">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22,2 15,22 11,13 2,9"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="settings-modal">
+            <!-- 头部 -->
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <img src="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/a98360672e312beb0fcc5fdaaf57a568.png" alt="硅宝" class="modal-title-icon">
+                    <span>研发偏好</span>
+                </h2>
+                <button class="close-btn" id="closeBtn">×</button>
+            </div>
+
+            <!-- 内容 -->
+            <div class="modal-content">
+                <div class="preferences-form">
+                    <!-- 研发风格 -->
+                    <div class="form-section">
+                        <div class="form-section-title">研发风格</div>
+                        <div class="tags-container">
+                            <div class="preference-tag selected" data-mode="balanced">
+                                <span class="preference-tag-icon">⚖️</span>
+                                <span>均衡模式</span>
+                                <div class="preference-tag-tooltip">
+                                    在任务深度和时间上做了平衡，适用于大多数工程师
+                                </div>
+                            </div>
+                            <div class="preference-tag" data-mode="efficiency">
+                                <span class="preference-tag-icon">⚡</span>
+                                <span>效率模式</span>
+                                <div class="preference-tag-tooltip">
+                                    硅宝将专注于执行你发出的指令，速度最快，但不会帮你思考过多内容
+                                </div>
+                            </div>
+                            <div class="preference-tag" data-mode="inspiration">
+                                <span class="preference-tag-icon">💡</span>
+                                <span>启发模式</span>
+                                <div class="preference-tag-tooltip">
+                                    硅宝将使用更复杂的模型和更多的数据与你协作，结果更丰富和全面，但耗时更久
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 选型偏好 -->
+                    <div class="form-section">
+                        <div class="form-section-title">选型偏好</div>
+                        <textarea 
+                            class="preference-textarea" 
+                            id="selectionPreference"
+                            placeholder="描述你的选型倾向，例如：&#10;• 偏好的品牌（TI、ADI、国产等）&#10;• 技术参数要求（功耗、精度、速度等）&#10;• 应用场景特点（车规、工业、消费级）&#10;• 其他考虑因素"
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="modal-footer">
+                <button class="btn btn-cancel" id="cancelBtn">取消</button>
+                <button class="btn btn-save" id="saveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模式配置
+        const modeConfig = {
+            balanced: {
+                icon: '⚖️',
+                text: '均衡模式',
+                class: 'balanced'
+            },
+            efficiency: {
+                icon: '⚡',
+                text: '效率模式',
+                class: 'efficiency'
+            },
+            inspiration: {
+                icon: '💡',
+                text: '启发模式',
+                class: 'inspiration'
+            }
+        };
+
+        // 获取DOM元素
+        const modeBadge = document.getElementById('modeBadge');
+        const modeBadgeText = document.getElementById('modeBadgeText');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const closeBtn = document.getElementById('closeBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const preferenceTags = document.querySelectorAll('.preference-tag');
+        const selectionPreference = document.getElementById('selectionPreference');
+
+        // 当前选中的模式
+        let selectedMode = 'balanced';
+
+        // 从localStorage加载保存的设置
+        function loadSettings() {
+            const savedMode = localStorage.getItem('developmentMode');
+            const savedPreference = localStorage.getItem('selectionPreference');
+
+            if (savedMode && modeConfig[savedMode]) {
+                selectedMode = savedMode;
+                updateModeBadge(savedMode);
+                
+                // 更新弹窗中的选中状态
+                preferenceTags.forEach(tag => {
+                    tag.classList.remove('selected');
+                    if (tag.getAttribute('data-mode') === savedMode) {
+                        tag.classList.add('selected');
+                    }
+                });
+            }
+
+            if (savedPreference) {
+                selectionPreference.value = savedPreference;
+            }
+        }
+
+        // 更新铭牌显示
+        function updateModeBadge(mode) {
+            const config = modeConfig[mode];
+            modeBadge.className = `mode-badge ${config.class}`;
+            modeBadge.querySelector('.mode-badge-icon').textContent = config.icon;
+            modeBadgeText.textContent = config.text;
+        }
+
+        // 点击铭牌打开设置弹窗
+        modeBadge.addEventListener('click', function() {
+            modalOverlay.classList.add('show');
+        });
+
+        // 关闭弹窗
+        function closeModal() {
+            modalOverlay.classList.remove('show');
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+
+        // 点击遮罩层关闭
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // 阻止弹窗内容点击关闭
+        document.querySelector('.settings-modal').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // 标签选择（单选，可取消）
+        preferenceTags.forEach(tag => {
+            tag.addEventListener('click', function() {
+                const mode = this.getAttribute('data-mode');
+                
+                // 如果点击的是已选中的标签，则取消选择
+                if (selectedMode === mode) {
+                    this.classList.remove('selected');
+                    selectedMode = null;
+                } else {
+                    // 移除所有标签的选中状态
+                    preferenceTags.forEach(t => t.classList.remove('selected'));
+                    // 选中当前标签
+                    this.classList.add('selected');
+                    selectedMode = mode;
+                }
+            });
+        });
+
+        // 保存设置
+        saveBtn.addEventListener('click', function() {
+            const preference = selectionPreference.value.trim();
+
+            // 保存到localStorage
+            if (selectedMode) {
+                localStorage.setItem('developmentMode', selectedMode);
+                updateModeBadge(selectedMode);
+            } else {
+                localStorage.removeItem('developmentMode');
+            }
+
+            if (preference) {
+                localStorage.setItem('selectionPreference', preference);
+            } else {
+                localStorage.removeItem('selectionPreference');
+            }
+
+            // 直接关闭弹窗，不显示alert
+            closeModal();
+        });
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+                closeModal();
+            }
+        });
+
+        // 页面加载时加载设置
+        loadSettings();
+    </script>
+</body>
+</html>
+
