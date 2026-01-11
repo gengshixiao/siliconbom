@@ -1859,6 +1859,29 @@ function initChatDemo() {
     const practicesChatTitle = document.getElementById('practicesChatTitle');
     const chatBackBtn = document.getElementById('chatBackBtn');
     
+    // 存储所有定时器的ID，用于清理
+    let practiceTimers = [];
+    let practiceIntervals = [];
+    
+    // 清除所有定时器的函数
+    function clearAllPracticeTimers() {
+        // 清除所有 setTimeout
+        practiceTimers.forEach(timerId => {
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+        });
+        practiceTimers = [];
+        
+        // 清除所有 setInterval
+        practiceIntervals.forEach(intervalId => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        });
+        practiceIntervals = [];
+    }
+    
     // 为卡片添加点击事件
     const practiceItems = document.querySelectorAll('.practice-item');
     practiceItems.forEach((item, index) => {
@@ -1874,6 +1897,18 @@ function initChatDemo() {
             item.addEventListener('click', () => {
                 showChatDemo('product');
             });
+        } else if (index === 3) { // 第四个卡片是"CAD原理图解读"
+            item.addEventListener('click', () => {
+                window.location.href = 'cad-practice.html';
+            });
+        } else if (index === 4) { // 第五个卡片是"BOM智能生成"
+            item.addEventListener('click', () => {
+                window.location.href = 'bom-generation-practice.html';
+            });
+        } else if (index === 5) { // 第六个卡片是"BOM构建"（新版本）
+            item.addEventListener('click', () => {
+                window.location.href = 'bom-review-practice.html';
+            });
         }
     });
     
@@ -1885,6 +1920,9 @@ function initChatDemo() {
     }
     
     function showChatDemo(type) {
+        // 重要：在切换最佳实践时，先清除所有之前的定时器
+        clearAllPracticeTimers();
+        
         // 隐藏卡片列表，显示对话容器
         if (practicesContainer) {
             practicesContainer.style.display = 'none';
@@ -1894,32 +1932,41 @@ function initChatDemo() {
         }
         
         // 根据类型设置标题和渲染对话内容
+        // 注意：只有 type === 'bomreview' (第二个最佳实践) 才会自动执行
+        // 第一个 (chengong) 和第三个 (product) 都是静态展示，不自动执行
         if (type === 'chengong') {
+            // 第一个最佳实践：物料检索 - 静态展示，不自动执行
             if (practicesChatTitle) {
                 practicesChatTitle.textContent = '@奋斗小青年陈工';
             }
-            renderChatMessages();
+            renderChatMessages(); // 静态展示，无自动执行逻辑
         } else if (type === 'bomreview') {
+            // 第二个最佳实践：BOM构建 - 自动执行流程
             if (practicesChatTitle) {
                 practicesChatTitle.textContent = '@BOM管理员小陈';
             }
-            renderBomReviewChatMessages();
+            renderBomReviewChatMessages(); // 这个函数包含自动执行的 setTimeout
         } else if (type === 'product') {
+            // 第三个最佳实践：研发任务研究 - 静态展示，需要用户点击确认按钮才执行，不自动执行
             if (practicesChatTitle) {
                 practicesChatTitle.textContent = '@不愿意透露姓名的产品大佬';
             }
-            renderBomChatMessages();
+            renderBomChatMessages(); // 静态展示，需要用户点击按钮才会执行，无自动执行逻辑
         }
         
         // 滚动到顶部（从顶部开始展示）
-        setTimeout(() => {
+        const scrollTimer = setTimeout(() => {
             if (practicesMessagesContainer) {
                 practicesMessagesContainer.scrollTop = 0;
             }
         }, 100);
+        practiceTimers.push(scrollTimer);
     }
     
     function hideChatDemo() {
+        // 清除所有定时器，防止在返回后继续执行
+        clearAllPracticeTimers();
+        
         // 显示卡片列表，隐藏对话容器
         if (practicesContainer) {
             practicesContainer.style.display = 'block';
@@ -1929,6 +1976,7 @@ function initChatDemo() {
         }
     }
     
+    // 渲染物料检索对话内容（第一个最佳实践 - 静态展示，不自动执行）
     function renderChatMessages() {
         if (!practicesMessagesContainer) return;
         
@@ -2094,7 +2142,7 @@ function initChatDemo() {
         }
     }
     
-    // 渲染BOM评审对话内容
+    // 渲染BOM评审对话内容（第二个最佳实践 - 自动执行）
     function renderBomReviewChatMessages() {
         if (!practicesMessagesContainer) return;
         
@@ -2143,10 +2191,12 @@ function initChatDemo() {
             </div>
         `;
         
-        // 模拟读取BOM版本过程
-        setTimeout(() => {
+        // 只有第二个最佳实践（BOM构建）才自动执行
+        // 模拟读取BOM版本过程，保存定时器ID以便清理
+        const timer1 = setTimeout(() => {
             showBomVersionsRead();
         }, 1500);
+        practiceTimers.push(timer1);
     }
     
     // 显示读取的BOM版本信息
@@ -2181,10 +2231,11 @@ function initChatDemo() {
             `;
         }
         
-        // 继续显示分析结论
-        setTimeout(() => {
+        // 继续显示分析结论，保存定时器ID以便清理
+        const timer2 = setTimeout(() => {
             showVersionAnalysisConclusion();
         }, 2000);
+        practiceTimers.push(timer2);
     }
     
     // 显示版本分析结论
@@ -2228,17 +2279,19 @@ function initChatDemo() {
         
         practicesMessagesContainer.appendChild(conclusionMessage);
         
-        // 滚动到最新消息
-        setTimeout(() => {
+        // 滚动到最新消息，保存定时器ID以便清理
+        const timer3 = setTimeout(() => {
             if (practicesMessagesContainer) {
                 conclusionMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
             }
         }, 100);
+        practiceTimers.push(timer3);
         
-        // 继续显示并行选型任务
-        setTimeout(() => {
+        // 继续显示并行选型任务，保存定时器ID以便清理
+        const timer4 = setTimeout(() => {
             showParallelSelectionTasks();
         }, 1500);
+        practiceTimers.push(timer4);
     }
     
     // 显示并行选型任务（只选型2个关键器件）
@@ -2285,12 +2338,13 @@ function initChatDemo() {
         
         practicesMessagesContainer.appendChild(tasksMessage);
         
-        // 滚动到最新消息
-        setTimeout(() => {
+        // 滚动到最新消息，保存定时器ID以便清理
+        const timer5 = setTimeout(() => {
             if (practicesMessagesContainer) {
                 tasksMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
             }
         }, 100);
+        practiceTimers.push(timer5);
         
         // 模拟任务完成
         simulateReviewTaskCompletion();
@@ -2318,15 +2372,17 @@ function initChatDemo() {
         ];
 
         tasks.forEach(task => {
-            setTimeout(() => {
+            const taskTimer = setTimeout(() => {
                 completeReviewTask(task.id, task.result);
             }, task.delay);
+            practiceTimers.push(taskTimer);
         });
 
-        // 所有任务完成后显示BOM生成
-        setTimeout(() => {
+        // 所有任务完成后显示BOM生成，保存定时器ID以便清理
+        const timer6 = setTimeout(() => {
             showBomGenerationForReview();
         }, 2800);
+        practiceTimers.push(timer6);
     }
     
     // 完成单个选型任务
@@ -2403,12 +2459,13 @@ function initChatDemo() {
         
         practicesMessagesContainer.appendChild(generationMessage);
         
-        // 滚动到最新消息
-        setTimeout(() => {
+        // 滚动到最新消息，保存定时器ID以便清理
+        const timer7 = setTimeout(() => {
             if (practicesMessagesContainer) {
                 generationMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
             }
         }, 100);
+        practiceTimers.push(timer7);
         
         // 模拟生成步骤
         simulateReviewLoadingSteps();
@@ -2456,15 +2513,18 @@ function initChatDemo() {
                 
                 clearInterval(stepInterval);
                 
-                setTimeout(() => {
+                const timer8 = setTimeout(() => {
                     const loadingMsg = document.getElementById('bomReviewGenerationMessage');
                     if (loadingMsg) {
                         loadingMsg.remove();
                     }
                     generateReviewBomTable();
                 }, 800);
+                practiceTimers.push(timer8);
             }
         }, 1000);
+        // 保存 setInterval ID 以便清理
+        practiceIntervals.push(stepInterval);
     }
     
     // 生成BOM评审的BOM表格（使用相同的表格结构）
@@ -2733,7 +2793,7 @@ function initChatDemo() {
         initBomActions(bomMessage, null, null);
     }
     
-    // 渲染BOM对话内容
+    // 渲染BOM对话内容（第三个最佳实践 - 静态展示，需要用户点击确认按钮才执行，不自动执行）
     function renderBomChatMessages() {
         if (!practicesMessagesContainer) return;
         
@@ -2835,6 +2895,7 @@ function initChatDemo() {
             </div>
         `;
         
+        // 第三个最佳实践需要用户手动点击确认按钮才会执行，不自动执行
         // 为确认按钮添加点击事件
         const confirmBtn = practicesMessagesContainer.querySelector('#bomConfirmBtn');
         if (confirmBtn) {
@@ -2842,6 +2903,9 @@ function initChatDemo() {
                 startBomGeneration();
             });
         }
+        
+        // 确保第三个最佳实践不会自动执行 - 移除任何可能的自动执行逻辑
+        // 注释：此处不添加任何 setTimeout 或自动执行逻辑
     }
     
     // BOM生成流程

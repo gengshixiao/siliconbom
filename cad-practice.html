@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>CAD原理图解读 - SiliconBom 硅宝</title>
+    
+    <!-- 引入公共CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+            font-family: 'Inter', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color, #F8FAFC);
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 主容器 - 完全按照第二个最佳实践 */
+        .main-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 对话框区域 - 完全按照第二个最佳实践的practices-chat-container样式 */
+        .chat-area {
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: flex 0.3s ease;
+        }
+
+        /* 研发空间打开时，对话框和研发空间各占一半 */
+        .main-container.has-rd-space .chat-area {
+            flex: 1;
+        }
+
+        /* 修复header布局，确保按钮和标题在一行 */
+        .chat-area .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #E2E8F0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+        }
+
+        .chat-area .chat-back-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+        }
+
+        .chat-area .chat-back-btn:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .chat-area .chat-back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .chat-area .chat-title-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .chat-area .chat-title-main {
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .chat-area .chat-title-sub {
+            font-size: 13px;
+            color: #6DD5E8;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* 修复header布局，确保按钮和标题在一行 */
+        .chat-area .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #E2E8F0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .chat-area .chat-back-btn {
+            flex-shrink: 0;
+        }
+
+        .chat-area .chat-title-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        /* 研发空间触发气泡 - 在标题栏右边 */
+        .rd-space-trigger {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background: #6DD5E8;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.3);
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .rd-space-trigger:hover {
+            background: #4FC3D9;
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.4);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .rd-space-trigger.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .rd-space-trigger svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        /* Cursor风格的loading文字高亮滑动效果 */
+        .loading-text {
+            display: inline-block;
+            position: relative;
+            color: #64748B;
+            background: linear-gradient(90deg, #64748B 0%, #94A3B8 50%, #64748B 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* 上传的文件样式 */
+        .uploaded-files {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .uploaded-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .uploaded-file:hover {
+            background: rgba(255, 255, 255, 0.35);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .file-icon.pdf {
+            background: #EF4444;
+            color: white;
+        }
+
+        .file-icon.cad {
+            background: #3B82F6;
+            color: white;
+        }
+
+        /* Loading状态文字 - 不是气泡形式 */
+        .loading-status {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 24px;
+            margin: 8px 0;
+        }
+
+        .loading-status .loading-text {
+            font-size: 14px;
+            color: #64748B;
+        }
+
+        /* 文件名高亮效果 */
+        .file-name-highlight {
+            color: #6DD5E8;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: rgba(109, 213, 232, 0.5);
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .file-name-highlight:hover {
+            color: #4FC3D9;
+            text-decoration-color: #4FC3D9;
+            background: rgba(109, 213, 232, 0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        /* Markdown样式 */
+        .message-text strong {
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .message-text {
+            line-height: 1.8;
+        }
+
+        /* 消息气泡 - 宽度自适应内容，覆盖index.css的样式 */
+        .chat-area .message-bubble {
+            width: fit-content !important;
+            min-width: fit-content;
+            max-width: 80%;
+            display: inline-block;
+        }
+
+        .chat-area .message.user .message-bubble {
+            width: fit-content !important;
+        }
+
+        .chat-area .message.assistant .message-bubble {
+            width: fit-content !important;
+        }
+
+        /* 研发空间抽屉样式 - 真正的并排展示，各占一半 */
+        .rd-space-drawer {
+            width: 0;
+            height: 100vh;
+            background: #FFFFFF;
+            box-shadow: -2px 0 16px rgba(15, 23, 42, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: flex 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid #E2E8F0;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .rd-space-drawer.open {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .rd-space-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            height: 60px;
+        }
+
+        .rd-space-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rd-space-title svg {
+            width: 20px;
+            height: 20px;
+            color: #64748B;
+        }
+
+        .rd-space-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+        }
+
+        .rd-space-close:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .rd-space-close svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .rd-space-tabs {
+            display: flex;
+            padding: 0 20px;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            gap: 0;
+        }
+
+        .rd-space-tab {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            margin-bottom: -1px;
+        }
+
+        .rd-space-tab:hover {
+            color: #334155;
+            background: #F1F5F9;
+        }
+
+        .rd-space-tab.active {
+            color: #6DD5E8;
+            border-bottom-color: #6DD5E8;
+            background: transparent;
+        }
+
+        .rd-space-content {
+            flex: 1;
+            overflow: hidden;
+            padding: 20px;
+            background: #F8FAFC;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .rd-space-panel {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .rd-space-panel.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 本地资源面板样式 */
+        .local-resources-panel {
+            display: flex;
+            gap: 12px;
+            height: 100%;
+            min-height: 0;
+            position: relative;
+        }
+
+        .resources-sidebar {
+            width: 180px;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s ease, opacity 0.3s ease;
+            position: relative;
+            opacity: 1;
+        }
+
+        .resources-sidebar.collapsed {
+            width: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .resources-sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            background: #F1F5F9;
+            min-height: 40px;
+        }
+
+        .resources-sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .resources-sidebar-toggle {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .resources-sidebar-toggle:hover {
+            background: #E2E8F0;
+            color: #334155;
+        }
+
+        .resources-sidebar-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .resources-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .resource-category {
+            margin-bottom: 16px;
+        }
+
+        .resource-category-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            background: #F1F5F9;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .resource-category-title svg {
+            width: 12px;
+            height: 12px;
+            color: #64748B;
+        }
+
+        .resource-file {
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #64748B;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .resource-file:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .resource-file.selected {
+            background: #DBEAFE;
+            color: #1E40AF;
+            font-weight: 500;
+        }
+
+        .resource-file svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #64748B;
+        }
+
+        .resource-file.selected svg {
+            color: #1E40AF;
+        }
+
+        .resource-file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .resources-content {
+            flex: 1;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            position: relative;
+        }
+
+        /* 悬浮展开按钮 - 完全复用rd-space-demo.html的实现 */
+        .resources-expand-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 32px;
+            height: 32px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+            z-index: 10;
+        }
+
+        .resources-expand-button:hover {
+            background: #F1F5F9;
+            border-color: #6DD5E8;
+            color: #334155;
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.2);
+        }
+
+        .resources-expand-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .resources-sidebar.collapsed ~ .resources-content .resources-expand-button {
+            display: flex;
+        }
+
+        /* 内容区域标题 - 完全复用rd-space-demo.html的实现 */
+        .resources-content-header {
+            display: none;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #E2E8F0;
+            margin-bottom: 24px;
+            transition: padding-left 0.3s ease;
+        }
+
+        .resources-sidebar.collapsed ~ .resources-content .resources-content-header {
+            display: block;
+            padding-left: 48px;
+        }
+
+        .resources-content-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .resources-content-title svg {
+            width: 18px;
+            height: 18px;
+            color: #64748B;
+        }
+
+        .resources-content-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .resources-content-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .resources-content-body::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        /* 空状态 - 完全复用rd-space-demo.html的实现 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 24px;
+            color: #94A3B8;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            color: #94A3B8;
+            opacity: 0.4;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+        }
+
+        .resource-preview {
+            display: none;
+        }
+
+        .resource-preview.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 对话框区域 - 完全按照第二个最佳实践的结构 -->
+        <div class="chat-area">
+            <!-- 对话头部 -->
+            <div class="chat-header">
+                <button class="chat-back-btn" id="chatBackBtn" onclick="window.history.back()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H6m6-7l-7 7 7 7"></path>
+                    </svg>
+                </button>
+                <div class="chat-title-wrapper">
+                    <h1 class="chat-title-main">最佳实践</h1>
+                    <span class="chat-title-sub">@硬件工程师小李</span>
+                </div>
+                <!-- 研发空间触发气泡 -->
+                <button class="rd-space-trigger" id="rdSpaceTrigger" title="研发空间">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 消息区域 - 完全按照第二个最佳实践 -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- 对话内容将通过JavaScript自动生成 -->
+            </div>
+        </div>
+
+        <!-- 研发空间抽屉 -->
+        <div class="rd-space-drawer" id="rdSpaceDrawer">
+            <!-- 头部 -->
+            <div class="rd-space-header">
+                <div class="rd-space-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>研发空间</span>
+                </div>
+                <button class="rd-space-close" id="rdSpaceClose" title="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Tab导航 - 只显示本地资源 -->
+            <div class="rd-space-tabs">
+                <button class="rd-space-tab active" data-tab="local-resources">本地资源</button>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="rd-space-content">
+                <!-- 本地资源面板 -->
+                <div class="rd-space-panel active" id="local-resources-panel">
+                    <div class="local-resources-panel">
+                        <div class="resources-sidebar" id="resourcesSidebar">
+                            <div class="resources-sidebar-header">
+                                <span class="resources-sidebar-title">资源目录</span>
+                                <button class="resources-sidebar-toggle" id="resourcesSidebarToggle" title="收起/展开目录">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="resources-sidebar-content" id="resourcesSidebarContent">
+                                <!-- 文件列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                        <div class="resources-content">
+                            <button class="resources-expand-button" id="resourcesExpandButton" title="展开目录">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="resources-content-header">
+                                <div class="resources-content-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                    <span id="resourcesCurrentFile">选择文件查看详情</span>
+                                </div>
+                            </div>
+                            <div class="resources-content-body" id="resourcesContentBody">
+                                <div class="empty-state">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                    <div class="empty-state-text">选择左侧文件查看详情</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 完全按照第二个最佳实践的结构
+        const messagesContainer = document.getElementById('messagesContainer');
+        
+        // 存储所有定时器的ID，用于清理
+        let practiceTimers = [];
+        
+        // 清除所有定时器的函数
+        function clearAllPracticeTimers() {
+            // 清除所有 setTimeout
+            practiceTimers.forEach(timerId => {
+                if (timerId) {
+                    clearTimeout(timerId);
+                }
+            });
+            practiceTimers = [];
+        }
+
+        // 定义的文件列表
+        const files = [
+            { name: '电源模块设计需求.pdf', type: 'pdf' },
+            { name: '原理图设计.dwg', type: 'dwg' }
+        ];
+
+        // 获取文件类型标识
+        function getFileType(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (['dwg', 'dxf', 'dwf'].includes(ext)) return 'CAD';
+            if (['pdf'].includes(ext)) return 'PDF';
+            return 'FILE';
+        }
+
+        // 获取当前时间
+        function getCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        // 渲染对话内容 - 完全按照第二个最佳实践的结构
+        function renderCadPracticeChatMessages() {
+            if (!messagesContainer) return;
+            
+            const filesHtml = files.map(file => {
+                const fileType = getFileType(file.name);
+                return `
+                    <div class="uploaded-file">
+                        <div class="file-icon ${fileType.toLowerCase()}">${fileType}</div>
+                        <span>${file.name}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            messagesContainer.innerHTML = `
+                <!-- 用户消息 - 带文件 -->
+                <div class="message user">
+                    <div class="message-avatar">👤</div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <div class="message-text">
+                                基于这两个文件，帮我解读一下设计需求
+                            </div>
+                            <div class="uploaded-files">${filesHtml}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 助手loading文字 - 不是气泡形式 -->
+                <div class="loading-status" id="loadingStatus">
+                    <span class="loading-text">正在读取${files[0].name}...</span>
+                </div>
+            `;
+            
+            // 为用户上传的文件添加点击事件
+            const uploadedFiles = messagesContainer.querySelectorAll('.uploaded-file');
+            uploadedFiles.forEach((fileElement, index) => {
+                fileElement.style.cursor = 'pointer';
+                fileElement.addEventListener('click', () => {
+                    const fileName = files[index].name;
+                    openRdSpaceAndLocateFile(fileName);
+                });
+            });
+            
+            // 自动执行loading过程
+            const timer1 = setTimeout(() => {
+                simulateFileReading();
+            }, 1500);
+            practiceTimers.push(timer1);
+        }
+        
+        // 模拟读取文件的loading过程
+        function simulateFileReading() {
+            const loadingStatus = document.getElementById('loadingStatus');
+            if (!loadingStatus) return;
+
+            let currentFileIndex = 0;
+            const fileNames = files.map(f => f.name);
+
+            const updateLoading = () => {
+                if (currentFileIndex < fileNames.length) {
+                    const fileName = fileNames[currentFileIndex];
+                    // 文件名高亮显示（不可点击）
+                    loadingStatus.innerHTML = `<span class="loading-text">正在读取${fileName}...</span>`;
+                    
+                    currentFileIndex++;
+                    const timer = setTimeout(updateLoading, 2000);
+                    practiceTimers.push(timer);
+                } else {
+                    // 所有文件读取完成，立即清除loading文字并显示最终回复
+                    loadingStatus.remove();
+                    // 直接显示最终回复
+                    const timer = setTimeout(() => {
+                        showFinalReply();
+                    }, 500);
+                    practiceTimers.push(timer);
+                }
+            };
+
+            const timer = setTimeout(updateLoading, 2000);
+            practiceTimers.push(timer);
+        }
+
+        // 研发空间相关变量
+        let rdSpaceDrawer = null;
+        let rdSpaceTrigger = null;
+        let rdSpaceClose = null;
+        let isRdSpaceOpen = false;
+
+        // 初始化研发空间
+        function initRdSpace() {
+            rdSpaceDrawer = document.getElementById('rdSpaceDrawer');
+            rdSpaceTrigger = document.getElementById('rdSpaceTrigger');
+            rdSpaceClose = document.getElementById('rdSpaceClose');
+
+            if (rdSpaceTrigger) {
+                rdSpaceTrigger.addEventListener('click', openRdSpace);
+            }
+
+            if (rdSpaceClose) {
+                rdSpaceClose.addEventListener('click', closeRdSpace);
+            }
+
+            // 初始化本地资源文件列表
+            initLocalResources();
+        }
+
+        // 打开研发空间
+        function openRdSpace() {
+            if (!rdSpaceDrawer) return;
+            rdSpaceDrawer.classList.add('open');
+            document.querySelector('.main-container').classList.add('has-rd-space');
+            if (rdSpaceTrigger) {
+                rdSpaceTrigger.classList.add('hidden');
+            }
+            isRdSpaceOpen = true;
+        }
+
+        // 关闭研发空间
+        function closeRdSpace() {
+            if (!rdSpaceDrawer) return;
+            rdSpaceDrawer.classList.remove('open');
+            document.querySelector('.main-container').classList.remove('has-rd-space');
+            if (rdSpaceTrigger) {
+                rdSpaceTrigger.classList.remove('hidden');
+            }
+            isRdSpaceOpen = false;
+        }
+
+        // 打开研发空间并定位到文件
+        function openRdSpaceAndLocateFile(fileName) {
+            // 如果研发空间未打开，先打开
+            if (!isRdSpaceOpen) {
+                openRdSpace();
+            }
+            
+            // 定位到文件
+            locateFileInRdSpace(fileName);
+        }
+
+        // 在研发空间中定位文件
+        function locateFileInRdSpace(fileName) {
+            const resourceFiles = document.querySelectorAll('.resource-file');
+            resourceFiles.forEach(file => {
+                file.classList.remove('selected');
+                const fileElement = file.querySelector('.resource-file-name');
+                if (fileElement && fileElement.textContent === fileName) {
+                    file.classList.add('selected');
+                    // 滚动到该文件
+                    file.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // 显示文件预览
+                    showFilePreview(fileName);
+                }
+            });
+        }
+
+        // 初始化本地资源
+        function initLocalResources() {
+            const resourcesSidebarContent = document.getElementById('resourcesSidebarContent');
+            if (!resourcesSidebarContent) return;
+
+            // 按文件类型分组
+            const pdfFiles = files.filter(f => f.type === 'pdf');
+            const cadFiles = files.filter(f => f.type === 'dwg');
+
+            let html = '';
+
+            // PDF文件
+            if (pdfFiles.length > 0) {
+                html += `
+                    <div class="resource-category">
+                        <div class="resource-category-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            文档
+                        </div>
+                `;
+                pdfFiles.forEach(file => {
+                    html += `
+                        <div class="resource-file" data-file="${file.name}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span class="resource-file-name">${file.name}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // CAD文件
+            if (cadFiles.length > 0) {
+                html += `
+                    <div class="resource-category">
+                        <div class="resource-category-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                            </svg>
+                            CAD
+                        </div>
+                `;
+                cadFiles.forEach(file => {
+                    html += `
+                        <div class="resource-file" data-file="${file.name}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span class="resource-file-name">${file.name}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            resourcesSidebarContent.innerHTML = html;
+
+            // 为文件添加点击事件
+            const resourceFiles = resourcesSidebarContent.querySelectorAll('.resource-file');
+            resourceFiles.forEach(file => {
+                file.addEventListener('click', () => {
+                    const fileName = file.dataset.file;
+                    selectFile(fileName);
+                });
+            });
+
+            // 侧栏收起/展开功能
+            const sidebarToggle = document.getElementById('resourcesSidebarToggle');
+            const sidebar = document.getElementById('resourcesSidebar');
+            const expandButton = document.getElementById('resourcesExpandButton');
+
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', () => {
+                    sidebar.classList.add('collapsed');
+                });
+            }
+
+            if (expandButton && sidebar) {
+                expandButton.addEventListener('click', () => {
+                    sidebar.classList.remove('collapsed');
+                });
+            }
+        }
+
+        // 选择文件
+        function selectFile(fileName) {
+            const resourceFiles = document.querySelectorAll('.resource-file');
+            resourceFiles.forEach(file => {
+                file.classList.remove('selected');
+                if (file.dataset.file === fileName) {
+                    file.classList.add('selected');
+                }
+            });
+
+            // 更新当前文件标题
+            const currentFileElement = document.getElementById('resourcesCurrentFile');
+            if (currentFileElement) {
+                currentFileElement.textContent = fileName;
+            }
+
+            // 显示文件预览
+            showFilePreview(fileName);
+        }
+
+        // 显示文件预览
+        function showFilePreview(fileName) {
+            const contentBody = document.getElementById('resourcesContentBody');
+            if (!contentBody) return;
+
+            // 简单的预览效果
+            const fileType = getFileType(fileName);
+            let previewHtml = '';
+
+            if (fileType === 'PDF') {
+                previewHtml = `
+                    <div class="resource-preview active">
+                        <div style="background: #F1F5F9; border-radius: 8px; padding: 40px; text-align: center; color: #64748B;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 64px; height: 64px; margin: 0 auto 16px; color: #EF4444;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <div style="font-size: 14px; font-weight: 500;">${fileName}</div>
+                            <div style="font-size: 12px; margin-top: 8px; color: #94A3B8;">PDF文档预览</div>
+                        </div>
+                    </div>
+                `;
+            } else if (fileType === 'CAD') {
+                previewHtml = `
+                    <div class="resource-preview active">
+                        <div style="background: #F1F5F9; border-radius: 8px; padding: 40px; text-align: center; color: #64748B;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 64px; height: 64px; margin: 0 auto 16px; color: #3B82F6;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                            </svg>
+                            <div style="font-size: 14px; font-weight: 500;">${fileName}</div>
+                            <div style="font-size: 12px; margin-top: 8px; color: #94A3B8;">CAD图纸预览</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            contentBody.innerHTML = previewHtml;
+        }
+
+        // 显示最终回复（打字机效果）
+        function showFinalReply() {
+            if (!messagesContainer) return;
+
+            // 先移除loading消息
+            const loadingMessage = document.querySelector('.message.assistant');
+            if (loadingMessage && loadingMessage.id !== 'finalMessage') {
+                loadingMessage.remove();
+            }
+
+            // 创建最终消息容器
+            const finalMessage = document.createElement('div');
+            finalMessage.className = 'message assistant';
+            finalMessage.id = 'finalMessage';
+            
+            // 使用markdown格式的文本
+            const fullText = `我已完成分析，以下是关键设计需求的解读：
+
+**核心功能需求**
+• **输入电源**：24V DC输入，支持18V-36V宽电压范围
+• **输出电源**：12V/3A输出，效率要求≥85%
+• **保护功能**：具备过压、欠压、过流保护，响应时间<10ms
+• **工作温度**：-40°C ~ +85°C工业级工作温度范围
+
+**电路拓扑结构**
+从原理图分析，该设计采用隔离型DC-DC转换器拓扑，主要包含以下部分：
+• **输入滤波电路**：LC滤波网络，抑制输入噪声
+• **DC-DC转换核心**：采用24V转12V隔离模块，输出功率36W
+• **输出调节电路**：线性稳压器用于精确电压调节
+• **保护电路**：集成过压、欠压检测和过流保护
+
+**关键器件识别**
+• **主控MCU**：HC32F030C8TA（华大半导体），用于系统控制和状态监测
+• **DC-DC模块**：B2412LS-1WR3（金升阳），24V转12V/3W隔离型
+• **功率MOSFET**：用于电源切换和保护，型号待确认
+• **检测电阻**：10mΩ精密电阻，用于电流检测
+
+**PCB布局建议**
+从原理图的布局信息来看，建议采用4层PCB设计，电源和地平面分离，主要器件应靠近输入输出端口，以减少线路损耗和EMI干扰。
+
+如需对某个具体部分进行深入分析，或需要BOM清单生成，请告诉我。`;
+
+            finalMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble" id="finalMessageBubble">
+                        <div class="message-text" id="finalMessageText" style="white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(finalMessage);
+            
+            // 打字机效果（支持markdown）
+            typewriterEffectWithMarkdown(document.getElementById('finalMessageText'), fullText);
+        }
+
+        // 打字机效果函数（支持markdown）
+        function typewriterEffectWithMarkdown(element, text) {
+            if (!element) {
+                console.error('typewriterEffectWithMarkdown: element is null');
+                return;
+            }
+            
+            // 将markdown格式转换为HTML
+            let processedText = text;
+            // 将 **文本** 转换为 <strong>文本</strong>
+            processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            let index = 0;
+            const maxWidth = Math.min(800, window.innerWidth * 0.75);
+            let htmlContent = '';
+            
+            function typeChar() {
+                if (!element || !element.parentElement) {
+                    return;
+                }
+                
+                if (index >= processedText.length) {
+                    return;
+                }
+                
+                // 普通字符：逐字符输出
+                const char = processedText[index];
+                htmlContent += char;
+                element.innerHTML = htmlContent;
+                index++;
+                
+                // 动态调整气泡宽度
+                const bubble = element.closest('.message-bubble');
+                if (bubble) {
+                    const currentWidth = element.scrollWidth;
+                    if (currentWidth > maxWidth) {
+                        bubble.style.maxWidth = maxWidth + 'px';
+                        bubble.style.width = maxWidth + 'px';
+                    } else {
+                        bubble.style.maxWidth = '80%';
+                        bubble.style.width = 'fit-content';
+                    }
+                }
+                
+                // 滚动到底部
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+                // 根据字符类型调整打字速度
+                let delay = 20;
+                if (char === '\n') {
+                    delay = 80;
+                } else if (char === '。' || char === '，' || char === '：' || char === '、') {
+                    delay = 40;
+                } else if (char === ' ') {
+                    delay = 10;
+                }
+                
+                const timer = setTimeout(typeChar, delay);
+                practiceTimers.push(timer);
+            }
+            
+            const startTimer = setTimeout(() => {
+                typeChar();
+            }, 50);
+            practiceTimers.push(startTimer);
+        }
+
+        // 打字机效果函数（气泡宽度动态调整）
+        function typewriterEffect(element, text) {
+            if (!element) {
+                console.error('typewriterEffect: element is null');
+                return;
+            }
+            
+            let index = 0;
+            const maxWidth = Math.min(800, window.innerWidth * 0.75); // 最大宽度限制
+            
+            function typeChar() {
+                // 检查元素是否还存在
+                if (!element || !element.parentElement) {
+                    console.warn('typewriterEffect: element removed, stopping');
+                    return;
+                }
+                
+                if (index >= text.length) {
+                    return; // 完成
+                }
+                
+                const char = text[index];
+                element.textContent = text.substring(0, index + 1);
+                
+                // 动态调整气泡宽度
+                const bubble = element.closest('.message-bubble');
+                if (bubble) {
+                    // 获取当前文本的实际宽度
+                    const currentWidth = element.scrollWidth;
+                    
+                    // 根据文本宽度动态调整气泡宽度
+                    if (currentWidth > maxWidth) {
+                        // 超过最大宽度，设置为最大宽度，让文本换行
+                        bubble.style.maxWidth = maxWidth + 'px';
+                        bubble.style.width = maxWidth + 'px';
+                    } else {
+                        // 未超过最大宽度，让气泡自适应内容
+                        bubble.style.maxWidth = '80%';
+                        bubble.style.width = 'fit-content';
+                    }
+                }
+                
+                index++;
+                
+                // 滚动到底部
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+                // 根据字符类型调整打字速度
+                let delay = 20; // 默认20ms
+                if (char === '\n') {
+                    delay = 80; // 换行稍慢
+                } else if (char === '。' || char === '，' || char === '：' || char === '、') {
+                    delay = 40; // 标点稍慢
+                } else if (char === ' ') {
+                    delay = 10; // 空格更快
+                }
+                
+                // 使用setTimeout继续打字
+                const timer = setTimeout(typeChar, delay);
+                practiceTimers.push(timer);
+            }
+            
+            // 延迟一小段时间确保DOM已渲染，然后开始打字
+            const startTimer = setTimeout(() => {
+                typeChar();
+            }, 50);
+            practiceTimers.push(startTimer);
+        }
+
+        // 在messagesContainer上绑定事件委托，处理文件名点击（只需要绑定一次）
+        function initFileNameClickDelegate() {
+            if (messagesContainer && !messagesContainer.dataset.fileNameDelegateBound) {
+                messagesContainer.dataset.fileNameDelegateBound = 'true';
+                // 使用捕获阶段，确保能捕获到所有点击
+                messagesContainer.addEventListener('click', function(e) {
+                    // 检查点击的是否是文件名高亮元素或其子元素
+                    let target = e.target;
+                    let found = false;
+                    
+                    // 向上遍历DOM树，查找file-name-highlight元素
+                    while (target && target !== messagesContainer && target !== document.body) {
+                        if (target.classList && target.classList.contains('file-name-highlight')) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const fileName = target.dataset.fileName;
+                            if (fileName) {
+                                console.log('点击文件名:', fileName); // 调试用
+                                openRdSpaceAndLocateFile(fileName);
+                            }
+                            found = true;
+                            break;
+                        }
+                        target = target.parentElement;
+                    }
+                }, true); // 使用捕获阶段
+                
+                console.log('文件名点击事件委托已绑定'); // 调试用
+            }
+        }
+
+        // 页面加载完成后自动执行流程
+        window.addEventListener('load', () => {
+            // 清除所有定时器（防止重复执行）
+            clearAllPracticeTimers();
+            // 初始化文件名点击事件委托（必须在最开始就绑定）
+            initFileNameClickDelegate();
+            // 初始化研发空间
+            initRdSpace();
+            // 开始自动执行流程
+            renderCadPracticeChatMessages();
+            // Loading时显示研发空间气泡
+            const timer = setTimeout(() => {
+                if (rdSpaceTrigger) {
+                    rdSpaceTrigger.style.display = 'flex';
+                }
+            }, 1500);
+            practiceTimers.push(timer);
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', () => {
+            clearAllPracticeTimers();
+        });
+    </script>
+</body>
+</html>

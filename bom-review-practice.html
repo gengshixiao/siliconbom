@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/f4f1acead1b2b1cfc74946089e643749.png">
+    <title>BOM构建 - SiliconBom 硅宝</title>
+    
+    <!-- 引入公共CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+            font-family: 'Inter', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color, #F8FAFC);
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 主容器 */
+        .main-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 对话框区域 */
+        .chat-area {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: flex 0.3s ease;
+        }
+
+        /* 确保消息容器填充剩余空间 */
+        .chat-area .messages-container {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 24px;
+        }
+
+        /* 执行过程中的底部留白占位 */
+        .messages-container .scroll-spacer {
+            height: 100vh;
+            flex-shrink: 0;
+        }
+
+        .main-container.has-rd-space .chat-area {
+            flex: 1;
+        }
+
+        /* Header样式 */
+        .chat-area .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #E2E8F0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+        }
+
+        .chat-area .chat-back-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+        }
+
+        .chat-area .chat-back-btn:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .chat-area .chat-back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .chat-area .chat-title-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .chat-area .chat-title-main {
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .chat-area .chat-title-sub {
+            font-size: 13px;
+            color: #6DD5E8;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* 研发空间触发气泡 */
+        .rd-space-trigger {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background: #6DD5E8;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(109, 213, 232, 0.3);
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .rd-space-trigger.hidden {
+            display: none;
+        }
+
+        .rd-space-trigger:hover {
+            background: #4FC3D9;
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.4);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .rd-space-trigger svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        /* Loading文字效果 */
+        .loading-status {
+            padding: 20px 24px;
+            color: #64748B;
+        }
+
+        .loading-text {
+            display: inline-block;
+            position: relative;
+            color: #64748B;
+            background: linear-gradient(90deg, #64748B 0%, #94A3B8 50%, #64748B 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* 消息内容区域 - 限制宽度 */
+        .chat-area .message-content {
+            max-width: 100%;
+            overflow: visible;
+        }
+
+        /* 用户消息气泡 - 保持原始样式 */
+        .chat-area .message.user .message-bubble {
+            width: fit-content !important;
+            min-width: fit-content;
+            max-width: 65%;
+            display: inline-block;
+        }
+
+        /* 助手消息气泡 - 固定最大宽度，不允许内容撑开 */
+        .chat-area .message.assistant .message-bubble {
+            max-width: 65%;
+            width: 100%;
+            display: block;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* 研发空间打开时，助手气泡最大宽度为屏幕一半减去padding */
+        .main-container.has-rd-space .chat-area .message.assistant .message-bubble {
+            max-width: calc(50vw - 120px) !important;
+            width: 100% !important;
+            display: block !important;
+        }
+        
+        /* 研发空间打开时，用户气泡也要保持一致的宽度限制 */
+        .main-container.has-rd-space .chat-area .message.user .message-bubble {
+            max-width: calc(50vw - 120px) !important;
+            width: 100% !important;
+            display: block !important;
+        }
+
+        /* 需求表单 - 在气泡内横向滚动 */
+        .chat-area .requirements-form {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .chat-area .form-body {
+            min-width: 600px;
+        }
+
+        /* BOM表格容器 - 在气泡内横向滚动 */
+        .chat-area .bom-table-container {
+            width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 表格滚动区域 */
+        .chat-area .bom-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .chat-area .bom-table {
+            min-width: 800px;
+            width: 100%;
+        }
+
+        /* 按钮区域 - 固定在底部，不参与滚动 */
+        .chat-area .bom-table-actions {
+            width: 100%;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 研发空间抽屉样式 */
+        .rd-space-drawer {
+            width: 0;
+            height: 100vh;
+            background: #FFFFFF;
+            box-shadow: -2px 0 16px rgba(15, 23, 42, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            flex: 0;
+        }
+
+        .rd-space-drawer.open {
+            flex: 1;
+            width: 50%;
+        }
+
+        .rd-space-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .rd-space-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .rd-space-title svg {
+            width: 20px;
+            height: 20px;
+            color: #6DD5E8;
+        }
+
+        .rd-space-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+        }
+
+        .rd-space-close:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .rd-space-tabs {
+            display: flex;
+            padding: 0 20px;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            gap: 0;
+        }
+
+        .rd-space-tab {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            margin-bottom: -1px;
+        }
+
+        .rd-space-tab.active {
+            color: #6DD5E8;
+            border-bottom-color: #6DD5E8;
+        }
+
+        .rd-space-content {
+            flex: 1;
+            overflow: hidden;
+            padding: 20px;
+            background: #F8FAFC;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        /* Tab内容面板 */
+        .rd-space-panel {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .rd-space-panel.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .local-resources-panel {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            gap: 12px;
+            height: 100%;
+        }
+
+        .resources-sidebar {
+            width: 180px;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s ease, opacity 0.3s ease;
+        }
+
+        .resources-sidebar.collapsed {
+            width: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .resources-sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            background: #F1F5F9;
+            min-height: 40px;
+        }
+
+        .resources-sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .resources-sidebar-toggle {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .resources-sidebar-toggle:hover {
+            background: #E2E8F0;
+            color: #334155;
+        }
+
+        .resources-sidebar-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .resources-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .resource-category {
+            margin-bottom: 16px;
+        }
+
+        .resource-category-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            background: #F1F5F9;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .resource-category-title svg {
+            width: 12px;
+            height: 12px;
+            color: #64748B;
+        }
+
+        .resource-file {
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #64748B;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .resource-file:hover {
+            background: #F1F5F9;
+            color: #334155;
+        }
+
+        .resource-file.selected {
+            background: #DBEAFE;
+            color: #1E40AF;
+            font-weight: 500;
+        }
+
+        .resource-file svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #64748B;
+        }
+
+        .resource-file.selected svg {
+            color: #1E40AF;
+        }
+
+        .resource-file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .resources-content {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            color: #64748B;
+            font-size: 13px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 悬浮展开按钮 - 完全复用rd-space-demo.html的实现 */
+        .resources-expand-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 32px;
+            height: 32px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+            z-index: 10;
+        }
+
+        .resources-expand-button:hover {
+            background: #F1F5F9;
+            border-color: #6DD5E8;
+            color: #334155;
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.2);
+        }
+
+        .resources-expand-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .resources-sidebar.collapsed ~ .resources-content .resources-expand-button {
+            display: flex;
+        }
+
+        /* 内容区域标题 - 完全复用rd-space-demo.html的实现 */
+        .resources-content-header {
+            display: none;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #E2E8F0;
+            margin-bottom: 24px;
+            transition: padding-left 0.3s ease;
+        }
+
+        .resources-sidebar.collapsed ~ .resources-content .resources-content-header {
+            display: block;
+            padding-left: 48px;
+        }
+
+        .resources-content-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .resources-content-title svg {
+            width: 18px;
+            height: 18px;
+            color: #64748B;
+        }
+
+        .resources-content-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .resources-content-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .resources-content-body::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        /* 当有预览内容时，让预览填充整个区域 */
+        .resources-content-body:has(.resource-preview.active) {
+            align-items: stretch;
+            justify-content: stretch;
+            padding: 0;
+        }
+
+        /* 空状态 - 完全复用rd-space-demo.html的实现 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 24px;
+            color: #94A3B8;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            color: #94A3B8;
+            opacity: 0.4;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+        }
+
+        /* 文件预览 - 完全复用rd-space-demo.html的实现 */
+        .resource-preview {
+            width: 100%;
+            height: 100%;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .resources-content-body:has(.resource-preview.active) .empty-state {
+            display: none;
+        }
+
+        .resource-preview.active {
+            display: flex;
+        }
+
+        .resource-preview-image {
+            flex: 1;
+            min-height: 0;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .resource-preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 文档预览 - 模拟文档内容 */
+        .preview-document {
+            width: 100%;
+            height: 100%;
+            background: white;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 10px;
+            color: #334155;
+            overflow-y: auto;
+        }
+
+        .preview-document-line {
+            height: 12px;
+            background: #64748B;
+            border-radius: 2px;
+            opacity: 0.3;
+        }
+
+        .preview-document-line:nth-child(1) { width: 60%; }
+        .preview-document-line:nth-child(2) { width: 100%; }
+        .preview-document-line:nth-child(3) { width: 85%; }
+        .preview-document-line:nth-child(4) { width: 70%; }
+        .preview-document-line:nth-child(5) { width: 90%; }
+        .preview-document-line:nth-child(6) { width: 55%; }
+
+        .resource-preview-info {
+            font-size: 12px;
+            color: #64748B;
+        }
+
+        .resource-preview-info strong {
+            color: #334155;
+            font-weight: 600;
+        }
+
+        /* 任务进度面板 - 完全复用rd-space-demo.html的实现 */
+        .task-progress-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .workflow-diagram {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 30px 20px;
+            height: 100%;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .workflow-diagram::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .workflow-diagram::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .workflow-stage {
+            margin-bottom: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .workflow-step {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 12px;
+            border: 1.5px solid #E2E8F0;
+            background: white;
+            color: #334155;
+            transition: all 0.2s;
+            position: relative;
+            min-width: 100px;
+            z-index: 3;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .workflow-step-category {
+            font-size: 11px;
+            color: #64748B;
+            margin-bottom: 4px;
+        }
+
+        .workflow-step-name {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .workflow-step.completed {
+            color: #065F46;
+            border-color: #10B981;
+        }
+
+        .workflow-step.processing {
+            color: #6DD5E8;
+            border-color: #6DD5E8;
+            position: relative;
+            padding-left: 24px;
+        }
+
+        /* Loading动画 */
+        .workflow-step.processing::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            width: 8px;
+            height: 8px;
+            border: 2px solid #6DD5E8;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .workflow-step.pending {
+            color: #94A3B8;
+            border-color: #E2E8F0;
+        }
+
+        .workflow-step-single {
+            position: relative;
+            margin-bottom: 0;
+        }
+
+        /* 并行任务容器 */
+        .workflow-parallel {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 0;
+            position: relative;
+            width: 100%;
+        }
+
+        .workflow-connector {
+            position: relative;
+            width: 100%;
+            margin: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .workflow-connector svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .workflow-connector path {
+            fill: none;
+            stroke: #E2E8F0;
+            stroke-width: 1.5;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .workflow-connector.simple {
+            height: 30px;
+        }
+
+        /* 分支连线 - 从单个节点分成多个 */
+        .workflow-connector.branch {
+            height: 50px;
+        }
+
+        /* 汇聚连线 - 从多个节点汇聚成一个 */
+        .workflow-connector.merge {
+            height: 50px;
+        }
+
+        /* BOM面板 - 完全复用rd-space-demo.html的实现 */
+        .bom-panel {
+            display: flex;
+            gap: 12px;
+            height: 100%;
+            position: relative;
+        }
+
+        .bom-sidebar {
+            width: 200px;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin 0.3s ease, opacity 0.3s ease;
+            position: relative;
+            opacity: 1;
+            min-height: 0;
+        }
+
+        .bom-sidebar.collapsed {
+            width: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .bom-sidebar.collapsed .bom-sidebar-content,
+        .bom-sidebar.collapsed .bom-sidebar-header {
+            display: none;
+        }
+
+        .bom-sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            background: #F1F5F9;
+            min-height: 40px;
+        }
+
+        .bom-sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bom-sidebar-toggle {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .bom-sidebar-toggle:hover {
+            background: #E2E8F0;
+            color: #334155;
+        }
+
+        .bom-sidebar-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .bom-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            min-height: 0;
+        }
+
+        .bom-sidebar-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .bom-sidebar-content::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 2px;
+        }
+
+        /* BOM项目 - 完全复用rd-space-demo.html的实现 */
+        .bom-project {
+            margin-bottom: 16px;
+        }
+
+        .bom-project-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background: #F1F5F9;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .bom-project-badge {
+            font-size: 9px;
+            padding: 2px 5px;
+            background: #6DD5E8;
+            color: white;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* BOM侧边栏版本卡片样式 - 完全按照rd-space-demo.html的实现 */
+        .bom-sidebar-content .bom-version-item {
+            padding: 10px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .bom-sidebar-content .bom-version-item:hover {
+            background: #F1F5F9;
+            border-color: #E2E8F0;
+        }
+
+        .bom-sidebar-content .bom-version-item.selected {
+            background: #DBEAFE;
+            border-color: #6DD5E8;
+        }
+
+        .bom-sidebar-content .bom-version-name {
+            font-size: 13px !important;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+            text-align: left !important;
+        }
+
+        .bom-sidebar-content .bom-version-badge {
+            font-size: 9px;
+            padding: 2px 5px;
+            background: #6DD5E8;
+            color: white;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .bom-sidebar-content .bom-version-meta {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-bottom: 4px;
+            text-align: left !important;
+        }
+
+        .bom-sidebar-content .bom-version-info {
+            font-size: 11px;
+            color: #64748B;
+            line-height: 1.4;
+            text-align: left !important;
+        }
+
+        .bom-sidebar-content .bom-version-name {
+            text-align: left !important;
+        }
+
+        /* 替代料下拉框样式 */
+        .component-select {
+            position: relative;
+        }
+
+        .component-name {
+            color: #6DD5E8;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+
+        .component-name:hover {
+            color: #5BC5D8;
+        }
+
+        .component-select:hover .dropdown-icon {
+            transform: translateY(2px);
+        }
+
+        .dropdown-icon {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .alternatives-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            min-width: 250px;
+            display: none;
+            margin-top: 4px;
+        }
+
+        .alternatives-dropdown.show {
+            display: block;
+        }
+
+        .alternative-option {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #F1F5F9;
+            transition: all 0.2s;
+        }
+
+        .alternative-option:last-child {
+            border-bottom: none;
+        }
+
+        .alternative-option:hover {
+            background: #F8FAFC;
+        }
+
+        .alternative-name {
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .alternative-desc {
+            font-size: 12px;
+            color: #64748B;
+            line-height: 1.4;
+        }
+
+        .alternative-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .tag-high-compatible {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .tag-same-manufacturer {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .tag-cost-effective {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .bom-content {
+            flex: 1;
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+        }
+
+        .bom-expand-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 32px;
+            height: 32px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+            z-index: 10;
+        }
+
+        .bom-expand-button:hover {
+            background: #F1F5F9;
+            border-color: #6DD5E8;
+            color: #334155;
+            box-shadow: 0 4px 12px rgba(109, 213, 232, 0.2);
+        }
+
+        .bom-expand-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .bom-sidebar.collapsed ~ .bom-content .bom-expand-button {
+            display: flex;
+        }
+
+        .bom-content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #E2E8F0;
+            flex-wrap: wrap;
+            gap: 12px;
+            transition: padding-left 0.3s ease;
+        }
+
+        .bom-sidebar.collapsed ~ .bom-content .bom-content-header {
+            padding-left: 48px;
+        }
+
+        .bom-content-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bom-content-title svg {
+            width: 18px;
+            height: 18px;
+            color: #64748B;
+        }
+
+        .bom-content-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bom-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            background: white;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .bom-action-btn:hover {
+            background: #F1F5F9;
+            border-color: #94A3B8;
+        }
+
+        .bom-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .bom-action-btn.primary {
+            background: #6DD5E8;
+            color: white;
+            border-color: #6DD5E8;
+        }
+
+        .bom-action-btn.primary:hover {
+            background: #4FC3D9;
+            border-color: #4FC3D9;
+        }
+
+        .bom-content-body {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .bom-content-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .bom-content-body::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .bom-detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bom-detail-item {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .bom-detail-item:hover {
+            border-color: #6DD5E8;
+            box-shadow: 0 2px 4px rgba(109, 213, 232, 0.1);
+        }
+
+        .bom-detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .bom-detail-model {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bom-detail-model svg {
+            width: 14px;
+            height: 14px;
+            color: #6DD5E8;
+            cursor: pointer;
+        }
+
+        .bom-detail-ref {
+            font-size: 12px;
+            color: #64748B;
+            background: #F1F5F9;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .bom-detail-grid {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 8px 12px;
+            font-size: 12px;
+        }
+
+        .bom-detail-label {
+            color: #94A3B8;
+            font-weight: 500;
+        }
+
+        .bom-detail-value {
+            color: #334155;
+        }
+
+        .bom-detail-action {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #E2E8F0;
+        }
+
+        .bom-detail-action a {
+            font-size: 12px;
+            color: #6DD5E8;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+
+        .bom-detail-action a:hover {
+            color: #4FC3D9;
+            text-decoration: underline;
+        }
+
+        .bom-detail-action svg {
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container" id="mainContainer">
+        <!-- 对话框区域 -->
+        <div class="chat-area">
+            <!-- 对话头部 -->
+            <div class="chat-header">
+                <button class="chat-back-btn" id="chatBackBtn" onclick="window.history.back()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H6m6-7l-7 7 7 7"></path>
+                    </svg>
+                </button>
+                <div class="chat-title-wrapper">
+                    <h1 class="chat-title-main">最佳实践</h1>
+                    <span class="chat-title-sub">@BOM管理员小陈</span>
+                </div>
+                <!-- 研发空间触发气泡 -->
+                <button class="rd-space-trigger hidden" id="rdSpaceTrigger" title="研发空间">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 消息区域 -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- 对话内容将通过JavaScript自动生成 -->
+            </div>
+        </div>
+
+        <!-- 研发空间抽屉 -->
+        <div class="rd-space-drawer" id="rdSpaceDrawer">
+            <!-- 头部 -->
+            <div class="rd-space-header">
+                <div class="rd-space-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>研发空间</span>
+                </div>
+                <button class="rd-space-close" id="rdSpaceClose" title="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Tab导航 -->
+            <div class="rd-space-tabs">
+                <button class="rd-space-tab" data-tab="task-progress" style="display: none;">任务进度</button>
+                <button class="rd-space-tab active" data-tab="bom">BOM</button>
+                <button class="rd-space-tab" data-tab="local-resources" style="display: none;">本地资源</button>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="rd-space-content">
+                <!-- 任务进度面板 -->
+                <div class="rd-space-panel" id="task-progress-panel">
+                    <div class="task-progress-panel">
+                        <div class="workflow-diagram" id="workflowDiagram">
+                            <!-- 任务流程将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOM面板 -->
+                <div class="rd-space-panel" id="bom-panel">
+                    <div class="bom-panel">
+                        <div class="bom-sidebar" id="bomSidebar">
+                            <div class="bom-sidebar-header">
+                                <span class="bom-sidebar-title">项目版本</span>
+                                <button class="bom-sidebar-toggle" id="bomSidebarToggle" title="收起/展开目录">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="bom-sidebar-content" id="bomSidebarContent">
+                                <!-- BOM项目列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                        <div class="bom-content">
+                            <button class="bom-expand-button" id="bomExpandButton" title="展开目录">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="bom-content-header">
+                                <div class="bom-content-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                    <span id="bomContentTitle">选择BOM版本查看详情</span>
+                                </div>
+                            </div>
+                            <div class="bom-content-body" id="bomContentBody">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">选择左侧BOM版本查看详情</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 本地资源面板 -->
+                <div class="rd-space-panel active" id="local-resources-panel">
+                    <div class="local-resources-panel">
+                        <div class="resources-sidebar" id="resourcesSidebar">
+                            <div class="resources-sidebar-header">
+                                <span class="resources-sidebar-title">资源目录</span>
+                                <button class="resources-sidebar-toggle" id="resourcesSidebarToggle" title="收起/展开目录">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="resources-sidebar-content" id="resourcesSidebarContent">
+                                <!-- 文件列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                        <div class="resources-content">
+                            <button class="resources-expand-button" id="resourcesExpandButton" title="展开目录">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="resources-content-header">
+                                <div class="resources-content-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                    <span id="resourcesCurrentFile">选择文件查看详情</span>
+                                </div>
+                            </div>
+                            <div class="resources-content-body" id="resourcesContentBody">
+                                <div class="empty-state">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    <div class="empty-state-text">选择左侧文件查看详情</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messagesContainer = document.getElementById('messagesContainer');
+        const mainContainer = document.getElementById('mainContainer');
+        const rdSpaceDrawer = document.getElementById('rdSpaceDrawer');
+        const rdSpaceTrigger = document.getElementById('rdSpaceTrigger');
+        const rdSpaceClose = document.getElementById('rdSpaceClose');
+        const resourcesSidebar = document.getElementById('resourcesSidebar');
+        const resourcesSidebarToggle = document.getElementById('resourcesSidebarToggle');
+        const resourcesExpandButton = document.getElementById('resourcesExpandButton');
+        const resourcesSidebarContent = document.getElementById('resourcesSidebarContent');
+        const resourcesContentBody = document.getElementById('resourcesContentBody');
+        const resourcesCurrentFile = document.getElementById('resourcesCurrentFile');
+        
+        // 存储所有定时器的ID
+        let practiceTimers = [];
+        
+        // 清除所有定时器
+        function clearAllPracticeTimers() {
+            practiceTimers.forEach(timerId => {
+                if (timerId) clearTimeout(timerId);
+            });
+            practiceTimers = [];
+        }
+
+        // 第二个最佳实践没有上传文件，所以不需要files数组
+
+        // 获取文件类型标识
+        function getFileType(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (['doc', 'docx'].includes(ext)) return 'DOC';
+            if (['pdf'].includes(ext)) return 'PDF';
+            return 'FILE';
+        }
+
+        // Tab切换功能
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.rd-space-tab');
+            const panels = document.querySelectorAll('.rd-space-panel');
+            
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            panels.forEach(panel => {
+                if (panel.id === `${tabName}-panel`) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+
+            // 切回“任务进度”时重绘连线，避免布局变化（抽屉宽度/滚动条）导致脱离
+            if (tabName === 'task-progress') {
+                requestAnimationFrame(() => {
+                    if (typeof updateWorkflowConnectors === 'function') {
+                        updateWorkflowConnectors();
+                    }
+                });
+            }
+        }
+
+        // 初始化研发空间
+        function initRdSpace() {
+            // 触发气泡点击事件
+            if (rdSpaceTrigger) {
+                rdSpaceTrigger.addEventListener('click', () => {
+                    openRdSpace();
+                });
+            }
+
+            // 关闭按钮点击事件
+            if (rdSpaceClose) {
+                rdSpaceClose.addEventListener('click', () => {
+                    closeRdSpace();
+                });
+            }
+
+            // Tab切换事件
+            const tabs = document.querySelectorAll('.rd-space-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+
+            // 侧边栏折叠/展开
+            if (resourcesSidebarToggle) {
+                resourcesSidebarToggle.addEventListener('click', () => {
+                    resourcesSidebar.classList.toggle('collapsed');
+                });
+            }
+
+            if (resourcesExpandButton) {
+                resourcesExpandButton.addEventListener('click', () => {
+                    resourcesSidebar.classList.remove('collapsed');
+                });
+            }
+
+            // BOM侧边栏折叠/展开
+            const bomSidebarToggle = document.getElementById('bomSidebarToggle');
+            const bomExpandButton = document.getElementById('bomExpandButton');
+            const bomSidebar = document.getElementById('bomSidebar');
+            
+            if (bomSidebarToggle && bomSidebar) {
+                bomSidebarToggle.addEventListener('click', () => {
+                    bomSidebar.classList.toggle('collapsed');
+                });
+            }
+
+            if (bomExpandButton && bomSidebar) {
+                bomExpandButton.addEventListener('click', () => {
+                    bomSidebar.classList.remove('collapsed');
+                });
+            }
+
+            // 初始化BOM侧边栏（第二个最佳实践没有本地资源）
+            initBomSidebar();
+        }
+
+        // 打开研发空间
+        function openRdSpace() {
+            if (rdSpaceDrawer) {
+                rdSpaceDrawer.classList.add('open');
+                mainContainer.classList.add('has-rd-space');
+                if (rdSpaceTrigger) {
+                    rdSpaceTrigger.classList.add('hidden');
+                }
+            }
+        }
+
+        // 关闭研发空间
+        function closeRdSpace() {
+            if (rdSpaceDrawer) {
+                rdSpaceDrawer.classList.remove('open');
+                mainContainer.classList.remove('has-rd-space');
+                if (rdSpaceTrigger) {
+                    rdSpaceTrigger.classList.remove('hidden');
+                }
+            }
+        }
+
+        // 初始化本地资源
+        // 初始化BOM侧边栏（第二个最佳实践：显示已有的BOM项目版本）
+        function initBomSidebar() {
+            const bomSidebarContent = document.getElementById('bomSidebarContent');
+            if (!bomSidebarContent) return;
+
+            // 显示已有的BOM项目（双电源自动切换系统）的版本（v1.0, v2.0, v2.1）
+            bomSidebarContent.innerHTML = `
+                <div class="bom-project">
+                    <div class="bom-project-name">
+                        双电源自动切换系统
+                        </div>
+                    <div class="bom-version-item selected" data-version="v2.1">
+                        <div class="bom-version-name">V2.1</div>
+                        <div class="bom-version-meta">2024-05-10</div>
+                        <div class="bom-version-info">降低成本 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-item" data-version="v2.0">
+                        <div class="bom-version-name">V2.0</div>
+                        <div class="bom-version-meta">2024-03-20</div>
+                        <div class="bom-version-info">优化电源 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-item" data-version="v1.0">
+                        <div class="bom-version-name">V1.0</div>
+                        <div class="bom-version-meta">2024-01-15</div>
+                        <div class="bom-version-info">初版设计 · 6个器件</div>
+                    </div>
+                        </div>
+                    `;
+
+            // 为版本项添加选中状态切换
+            const versionItems = bomSidebarContent.querySelectorAll('.bom-version-item');
+            versionItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    versionItems.forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    // TODO: 可以在这里切换显示对应版本的BOM内容
+                });
+            });
+        }
+
+        // 选择文件
+        function selectFile(fileName) {
+            // 更新激活状态
+            const resourceFiles = resourcesSidebarContent.querySelectorAll('.resource-file');
+            resourceFiles.forEach(file => {
+                if (file.dataset.file === fileName) {
+                    file.classList.add('selected');
+                } else {
+                    file.classList.remove('selected');
+                }
+            });
+
+            // 更新内容区域标题
+            const currentFileSpan = document.getElementById('resourcesCurrentFile');
+            if (currentFileSpan) {
+                currentFileSpan.textContent = fileName;
+            }
+
+            // 显示预览
+            showFilePreview(fileName);
+        }
+
+        // 显示文件预览 - 完全复用rd-space-demo.html的实现
+        function showFilePreview(fileName) {
+            if (!resourcesContentBody) return;
+            
+            const fileType = getFileType(fileName);
+            let previewHtml = '';
+
+            if (fileType === 'DOC') {
+                previewHtml = `
+                    <div class="resource-preview active">
+                        <div class="resource-preview-image">
+                            <div class="preview-document">
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                            </div>
+                        </div>
+                        <div class="resource-preview-info">
+                            <strong>${fileName}</strong><br>
+                            页数: 12页 · 大小: 856 KB
+                        </div>
+                    </div>
+                `;
+            } else {
+                previewHtml = `
+                    <div class="resource-preview active">
+                        <div class="resource-preview-image">
+                            <div class="preview-document">
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                                <div class="preview-document-line"></div>
+                            </div>
+                        </div>
+                        <div class="resource-preview-info">
+                            <strong>${fileName}</strong><br>
+                            文件预览
+                        </div>
+                    </div>
+                `;
+            }
+
+            resourcesContentBody.innerHTML = previewHtml;
+        }
+
+        // 渲染对话内容 - 第二个最佳实践（BOM构建）
+        function renderBomReviewChatMessages() {
+            if (!messagesContainer) return;
+            
+            // 首轮用户输入：@BOM项目，提问优化需求
+            messagesContainer.innerHTML = `
+                <!-- 用户消息 - @BOM项目 -->
+                <div class="message user">
+                    <div class="message-avatar">📋</div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <div class="message-text">
+                                <span class="mention-tag">
+                                    <span class="mention-tag-icon">B</span>
+                                    <span class="mention-tag-text">双电源自动切换系统</span>
+                                </span>
+                                这个项目现在需要提升耐高温性能，并且要纯国产，直接生成BOM
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 自动执行：硅宝收到需求后，查看BOM并自动展开研发空间
+            const timer1 = setTimeout(() => {
+                showAssistantInitialReply();
+            }, 1000);
+            practiceTimers.push(timer1);
+        }
+        
+        // 打字机效果函数（支持markdown）
+        function typewriterEffectWithMarkdown(element, text) {
+            if (!element) return;
+            
+            // 将markdown格式转换为HTML，同时处理换行
+            // 先处理粗体（避免与换行处理冲突）
+            let processedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 将文本按换行符分割，然后重新组合，段落之间用<br>连接
+            const paragraphs = processedText.split('\n');
+            processedText = paragraphs.join('<br>');
+            
+            // 将文本转换为token数组（每个字符或HTML标签作为一个token）
+            const tokens = [];
+            let i = 0;
+            while (i < processedText.length) {
+                if (processedText.substring(i).startsWith('<br>')) {
+                    tokens.push('<br>');
+                    i += 4;
+                } else if (processedText.substring(i).startsWith('<strong>')) {
+                    tokens.push('<strong>');
+                    i += 8;
+                } else if (processedText.substring(i).startsWith('</strong>')) {
+                    tokens.push('</strong>');
+                    i += 9;
+                } else {
+                    tokens.push(processedText[i]);
+                    i++;
+                }
+            }
+            
+            let tokenIndex = 0;
+            const maxWidth = Math.min(600, window.innerWidth * 0.6);
+            let htmlContent = '';
+            
+            function typeChar() {
+                if (!element || !element.parentElement) return;
+                
+                if (tokenIndex >= tokens.length) return;
+                
+                const token = tokens[tokenIndex];
+                htmlContent += token;
+                element.innerHTML = htmlContent;
+                tokenIndex++;
+                
+                // 动态调整气泡宽度
+                const bubble = element.closest('.message-bubble');
+                if (bubble) {
+                    const currentWidth = element.scrollWidth;
+                    if (currentWidth > maxWidth) {
+                        bubble.style.maxWidth = maxWidth + 'px';
+                        bubble.style.width = maxWidth + 'px';
+                    } else {
+                        bubble.style.maxWidth = '65%';
+                        bubble.style.width = 'fit-content';
+                    }
+                }
+                
+                // 滚动到底部
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+                // 根据token类型调整打字速度（速度调快一倍）
+                let delay = 10;
+                if (token === '<br>') {
+                    delay = 40;
+                } else if (token === '。' || token === '，' || token === '：' || token === '、') {
+                    delay = 25;
+                } else if (token === ' ') {
+                    delay = 5;
+                } else if (token.startsWith('<')) {
+                    // HTML标签立即输出，不延迟
+                    delay = 0;
+                }
+                
+                const timer = setTimeout(typeChar, delay);
+                practiceTimers.push(timer);
+            }
+            
+            // 延迟启动，确保DOM已准备好
+            const startTimer = setTimeout(() => {
+                typeChar();
+            }, 50);
+            practiceTimers.push(startTimer);
+        }
+
+        // 向下滚动动画，滚动距离是一个对话框高度
+        function scrollDownToShowLoading(loadingEl) {
+            if (!messagesContainer || !loadingEl) return;
+            
+            // 获取对话框容器的高度
+            const containerHeight = messagesContainer.clientHeight;
+            // 滚动距离是一个对话框高度（翻倍）
+            const scrollDistance = containerHeight;
+            
+            // 获取当前滚动位置
+            const currentScrollTop = messagesContainer.scrollTop;
+            const targetScrollTop = currentScrollTop + scrollDistance;
+            
+            // 平滑滚动动画
+            const duration = 300;
+            const startTime = performance.now();
+            const startScrollTop = currentScrollTop;
+            const distance = targetScrollTop - startScrollTop;
+            
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // 使用ease-out缓动函数
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                messagesContainer.scrollTop = startScrollTop + distance * easeProgress;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 显示助手初始回复（查看BOM）
+        function showAssistantInitialReply() {
+            if (!messagesContainer) return;
+            
+            const assistantMessage = document.createElement('div');
+            assistantMessage.className = 'message assistant';
+            assistantMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                        <div class="message-text" id="initialReplyText"></div>
+                        </div>
+                    </div>
+            `;
+            messagesContainer.appendChild(assistantMessage);
+            
+            const textElement = assistantMessage.querySelector('#initialReplyText');
+            const fullText = '收到！我将基于 **双电源自动切换系统** 项目的历史版本，分析并生成满足**耐高温**和**纯国产**要求的新BOM方案。';
+            
+            // 使用打字机效果
+            typewriterEffectWithMarkdown(textElement, fullText);
+            
+            // 显示loading状态（在打字机效果之后）
+            setTimeout(() => {
+                const loadingStatus = document.createElement('div');
+                loadingStatus.className = 'loading-status';
+                loadingStatus.id = 'loadingStatus';
+                loadingStatus.innerHTML = '<span class="loading-text">正在读取项目所有版本...</span>';
+                messagesContainer.appendChild(loadingStatus);
+                
+                // 自动展开研发空间并显示BOM
+                setTimeout(() => {
+                    openRdSpace();
+                    setTimeout(() => {
+                        switchTab('bom');
+                        renderBomContentForVersion('v2.1'); // 默认显示v2.1
+                    }, 300);
+                }, 500);
+                
+                // 继续显示BOM版本读取结果
+                const timer2 = setTimeout(() => {
+                    showBomVersionsRead();
+                }, 3000);
+                practiceTimers.push(timer2);
+            }, fullText.length * 10 + 1000); // 等待打字机效果完成（速度调快一倍）
+        }
+        
+        // 显示读取的BOM版本信息和分析结论（合并为一个气泡）
+        function showBomVersionsRead() {
+            const loadingStatus = document.getElementById('loadingStatus');
+            if (loadingStatus) {
+                loadingStatus.remove();
+            }
+            
+            // 研发空间已经在openRdSpace中自动打开，不需要显示触发按钮
+            
+            if (!messagesContainer) return;
+            
+            const versionMessage = document.createElement('div');
+            versionMessage.className = 'message assistant';
+            versionMessage.innerHTML = `
+                    <div class="message-avatar"></div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                        <div class="message-text" id="versionMessageText"></div>
+                            </div>
+                            </div>
+            `;
+            messagesContainer.appendChild(versionMessage);
+            
+            const textElement = versionMessage.querySelector('#versionMessageText');
+            const fullText = '已读取项目 **双电源自动切换系统**，共找到 **3个** 历史版本：\n\n- **v1.0**（2024-01-15，初版设计）\n- **v2.0**（2024-03-20，优化电源）\n- **v2.1**（2024-05-10，降低成本）\n\n---\n\n**分析结论：**\n\n综合考虑新需求（**耐高温性能** + **纯国产**），建议基于 **v2.1** 版本进行改动。\n\n**选择理由：**\n\n- v2.1 已具备 -40°C ~ +85°C 工作温度范围，是较好的起点\n- 已有部分国产器件，改动成本相对较低\n- 在成本控制上已做优化，符合经济性要求\n\n**需要改动的关键器件：**\n\n1. **控制MCU**: STM32F030C8T6 (ST) → 需替换为兼容的国产MCU，要求支持 -40~+125°C\n\n2. **功率MOSFET**: IRFB4115PBF (Infineon) → 需替换为耐高温国产MOS管\n\n**其他器件：**\n\n电压检测芯片、DC-DC转换器、电阻、二极管沿用 v2.1 现有方案即可满足要求。\n\n---\n\n现在调用物料查询与选型工具，为这2个关键器件寻找最优的国产替代方案。';
+            
+            // 使用打字机效果
+            typewriterEffectWithMarkdown(textElement, fullText);
+            
+            // 继续开始任务规划
+            const timer3 = setTimeout(() => {
+                startMaterialQueryAndSelection();
+            }, fullText.length * 10 + 2000); // 等待打字机效果完成（速度调快一倍）
+            practiceTimers.push(timer3);
+        }
+        
+        // 开始物料查询和选型（任务规划）
+        function startMaterialQueryAndSelection() {
+            // 显示任务进度tab
+            const taskProgressTab = document.querySelector('.rd-space-tab[data-tab="task-progress"]');
+            if (taskProgressTab) {
+                taskProgressTab.style.display = 'block';
+            }
+            
+            // 切换到任务进度tab
+            switchTab('task-progress');
+            createWorkflowDiagram();
+            
+            // 添加底部留白占位（执行过程中）
+            const scrollSpacer = document.createElement('div');
+            scrollSpacer.className = 'scroll-spacer';
+            scrollSpacer.id = 'scrollSpacer';
+            messagesContainer.appendChild(scrollSpacer);
+            
+            // 显示loading状态
+            const loadingStatus = document.createElement('div');
+            loadingStatus.className = 'loading-status';
+            loadingStatus.id = 'loadingStatus';
+            loadingStatus.innerHTML = '<span class="loading-text">正在查询物料...</span>';
+            messagesContainer.insertBefore(loadingStatus, scrollSpacer);
+            
+            // 向下滚动动画，显示loading
+            setTimeout(() => {
+                scrollDownToShowLoading(loadingStatus);
+            }, 100);
+            
+            // 更新任务进度：物料查询开始（并行，但不同时完成）
+            setTimeout(() => {
+                materialTypes.forEach((type, index) => {
+                    updateTaskProgress(`step-query-${index}`, 'processing');
+                    // 每个任务随机延迟完成（2-5秒）
+                    updateTaskWithRandomDelay(`step-query-${index}`, 'completed', 2000, 5000);
+                });
+            }, 200);
+            
+            // 检查所有查询任务完成后，开始选型
+            checkAllTasksCompleted('step-query', () => {
+                // 所有查询完成，开始选型（并行，但不同时完成）
+                materialTypes.forEach((type, index) => {
+                    updateTaskProgress(`step-selection-${index}`, 'processing');
+                    // 每个任务随机延迟完成（2-5秒）
+                    updateTaskWithRandomDelay(`step-selection-${index}`, 'completed', 2000, 5000);
+                });
+                
+                // 更新loading文字
+                if (loadingStatus) {
+                    loadingStatus.innerHTML = '<span class="loading-text">正在选型物料...</span>';
+                }
+            });
+            
+            // 检查所有选型任务完成后，开始BOM生成
+            checkAllTasksCompleted('step-selection', () => {
+                updateTaskProgress('step-bom', 'processing');
+                if (loadingStatus) {
+                    loadingStatus.innerHTML = '<span class="loading-text">正在生成BOM表格结构...</span>';
+                }
+                
+                // BOM生成（4秒）
+                const timer5 = setTimeout(() => {
+                    updateTaskProgress('step-bom', 'completed');
+                    updateTaskProgress('step-complete', 'completed');
+                    if (loadingStatus) {
+                        loadingStatus.remove();
+                    }
+                    // 移除底部留白占位（执行结束）
+                    const spacer = document.getElementById('scrollSpacer');
+                    if (spacer) {
+                        spacer.remove();
+                    }
+                    // 生成BOM表格
+                    generateBomTable();
+                }, 4000);
+                practiceTimers.push(timer5);
+            });
+        }
+        
+        // 渲染指定版本的BOM内容
+        function renderBomContentForVersion(version) {
+            const bomContentTitle = document.getElementById('bomContentTitle');
+            const bomContentBody = document.getElementById('bomContentBody');
+            if (!bomContentTitle || !bomContentBody) return;
+            
+            // 根据版本显示不同的BOM数据
+            let versionData = bomData;
+            if (version === 'v2.1') {
+                versionData = {
+                    ...bomData,
+                    version: 'V2.1',
+                    date: '2024-05-10'
+                };
+            } else if (version === 'v2.0') {
+                versionData = {
+                    ...bomData,
+                    version: 'V2.0',
+                    date: '2024-03-20'
+                };
+            } else if (version === 'v1.0') {
+                versionData = {
+                    ...bomData,
+                    version: 'V1.0',
+                    date: '2024-01-15'
+                };
+            }
+            
+            bomContentTitle.textContent = `${versionData.projectName} BOM清单 ${versionData.version}`;
+            
+            let html = '<div class="bom-detail-list">';
+            versionData.items.forEach(item => {
+                html += `
+                    <div class="bom-detail-item">
+                        <div class="bom-detail-header">
+                            <div class="bom-detail-model">
+                                ${item.model}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                                </div>
+                            <span class="bom-detail-ref">${item.ref}</span>
+                                        </div>
+                        <div class="bom-detail-grid">
+                            <div class="bom-detail-label">分类</div>
+                            <div class="bom-detail-value">${item.category}</div>
+                            <div class="bom-detail-label">核心参数</div>
+                            <div class="bom-detail-value">${item.params}</div>
+                            <div class="bom-detail-label">封装</div>
+                            <div class="bom-detail-value">${item.package}</div>
+                            <div class="bom-detail-label">制造商</div>
+                            <div class="bom-detail-value">${item.manufacturer}</div>
+                                    </div>
+                        <div class="bom-detail-action">
+                            <a href="#">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                查看规格说明书
+                            </a>
+                    </div>
+                </div>
+            `;
+            });
+            html += '</div>';
+            
+            bomContentBody.innerHTML = html;
+        }
+
+        // 物料列表（第二个最佳实践只有2个并发任务）
+        const materialTypes = [
+            '控制MCU',
+            '功率MOSFET'
+        ];
+
+        let workflowConnectorResizeBound = false;
+
+        function updateWorkflowConnectors() {
+            const startEl = document.getElementById('step-start');
+            const bomEl = document.getElementById('step-bom');
+            const completeEl = document.getElementById('step-complete');
+
+            const queryEls = materialTypes.map((_, i) => document.getElementById(`step-query-${i}`)).filter(Boolean);
+            const selectionEls = materialTypes.map((_, i) => document.getElementById(`step-selection-${i}`)).filter(Boolean);
+
+            const queryConnector = document.getElementById('connector-query');
+            const selectionConnector = document.getElementById('connector-selection');
+            const mergeConnector = document.getElementById('connector-merge');
+            const completeConnector = document.getElementById('connector-complete');
+
+            const svgQuery = document.getElementById('svg-query');
+            const svgSelection = document.getElementById('svg-selection');
+            const svgMerge = document.getElementById('svg-merge');
+            const svgComplete = document.getElementById('svg-complete');
+
+            const centerXIn = (el, containerRect) => {
+                const r = el.getBoundingClientRect();
+                return (r.left + r.width / 2) - containerRect.left;
+            };
+
+            const setSvgBox = (svg, rect) => {
+                if (!svg) return;
+                svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+                svg.setAttribute('preserveAspectRatio', 'none');
+            };
+
+            // 1) 开始 -> 查询（分支）
+            if (startEl && queryConnector && svgQuery && queryEls.length > 0) {
+                const rect = queryConnector.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    setSvgBox(svgQuery, rect);
+                    const startX = centerXIn(startEl, rect);
+                    const yBranch = Math.round(rect.height * 0.6);
+                    const yBottom = rect.height;
+                    const xs = queryEls.map(el => centerXIn(el, rect));
+                    const paths = xs.map((x, idx) => {
+                        if (idx === 0) {
+                            return `<path d="M ${startX} 0 L ${startX} ${yBranch} L ${x} ${yBranch} L ${x} ${yBottom}"></path>`;
+                        }
+                        return `<path d="M ${startX} ${yBranch} L ${x} ${yBranch} L ${x} ${yBottom}"></path>`;
+                    }).join('\n');
+                    svgQuery.innerHTML = paths;
+                }
+            }
+
+            // 2) 查询 -> 选型（逐条连接，吸附到各自节点中点）
+            if (selectionConnector && svgSelection && queryEls.length > 0 && selectionEls.length > 0) {
+                const rect = selectionConnector.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    setSvgBox(svgSelection, rect);
+                    const yTop = 0;
+                    const yBottom = rect.height;
+                    const count = Math.min(queryEls.length, selectionEls.length);
+                    const paths = Array.from({ length: count }).map((_, i) => {
+                        const x1 = centerXIn(queryEls[i], rect);
+                        const x2 = centerXIn(selectionEls[i], rect);
+                        return `<path d="M ${x1} ${yTop} L ${x2} ${yBottom}"></path>`;
+                    }).join('\n');
+                    svgSelection.innerHTML = paths;
+                }
+            }
+
+            // 3) 选型 -> BOM生成（汇聚）
+            if (bomEl && mergeConnector && svgMerge && selectionEls.length > 0) {
+                const rect = mergeConnector.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    setSvgBox(svgMerge, rect);
+                    const bomX = centerXIn(bomEl, rect);
+                    const yMerge = Math.round(rect.height * 0.6);
+                    const yBottom = rect.height;
+                    const xs = selectionEls.map(el => centerXIn(el, rect));
+                    const paths = xs.map((x, idx) => {
+                        if (idx === 0) {
+                            return `<path d="M ${x} 0 L ${x} ${yMerge} L ${bomX} ${yMerge} L ${bomX} ${yBottom}"></path>`;
+                        }
+                        return `<path d="M ${x} 0 L ${x} ${yMerge} L ${bomX} ${yMerge}"></path>`;
+                    }).join('\n');
+                    svgMerge.innerHTML = paths;
+                }
+            }
+
+            // 4) BOM生成 -> 完成（简单连接，也吸附中点）
+            if (bomEl && completeEl && completeConnector && svgComplete) {
+                const rect = completeConnector.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    setSvgBox(svgComplete, rect);
+                    const x1 = centerXIn(bomEl, rect);
+                    const x2 = centerXIn(completeEl, rect);
+                    svgComplete.innerHTML = `<path d="M ${x1} 0 L ${x2} ${rect.height}"></path>`;
+                }
+            }
+        }
+
+        // 创建任务进度流程图（并行任务）
+        function createWorkflowDiagram() {
+            const workflowDiagram = document.getElementById('workflowDiagram');
+            if (!workflowDiagram) return;
+
+            // 生成物料查询的并行任务节点
+            let querySteps = '';
+            materialTypes.forEach((type, index) => {
+                querySteps += `
+                    <div class="workflow-step pending" id="step-query-${index}">
+                        <div class="workflow-step-category">物料查询</div>
+                        <div class="workflow-step-name">${type}</div>
+                    </div>
+                `;
+            });
+
+            // 生成物料选型的并行任务节点
+            let selectionSteps = '';
+            materialTypes.forEach((type, index) => {
+                selectionSteps += `
+                    <div class="workflow-step pending" id="step-selection-${index}">
+                        <div class="workflow-step-category">物料选型</div>
+                        <div class="workflow-step-name">${type}</div>
+                    </div>
+                `;
+            });
+
+            workflowDiagram.innerHTML = `
+                <!-- 开始 -->
+                <div class="workflow-stage">
+                    <div class="workflow-step-single">
+                        <div class="workflow-step completed" id="step-start">开始</div>
+                    </div>
+                </div>
+                
+                <!-- 连线：开始 -> 分成多个分支 -->
+                <div class="workflow-connector branch" id="connector-query">
+                    <svg id="svg-query"></svg>
+                </div>
+
+                <!-- 物料查询 - 并行 -->
+                <div class="workflow-stage">
+                    <div class="workflow-parallel" id="stage-query">
+                        ${querySteps}
+                    </div>
+                </div>
+                
+                <!-- 连线：多个查询 -> 多个选型 -->
+                <div class="workflow-connector simple" id="connector-selection">
+                    <svg id="svg-selection"></svg>
+                </div>
+
+                <!-- 物料选型 - 并行 -->
+                <div class="workflow-stage">
+                    <div class="workflow-parallel" id="stage-selection">
+                        ${selectionSteps}
+                    </div>
+                </div>
+                
+                <!-- 连线：多个选型 -> 汇聚到BOM生成 -->
+                <div class="workflow-connector merge" id="connector-merge">
+                    <svg id="svg-merge"></svg>
+                </div>
+
+                <!-- BOM生成 -->
+                <div class="workflow-stage">
+                    <div class="workflow-step-single">
+                        <div class="workflow-step pending" id="step-bom">
+                            <div class="workflow-step-category">BOM生成</div>
+                            <div class="workflow-step-name">生成BOM清单</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 连线：BOM生成 -> 完成 -->
+                <div class="workflow-connector simple" id="connector-complete">
+                    <svg id="svg-complete"></svg>
+                </div>
+
+                <!-- 完成 -->
+                <div class="workflow-stage">
+                    <div class="workflow-step-single">
+                        <div class="workflow-step pending" id="step-complete">完成</div>
+                    </div>
+                </div>
+            `;
+
+            // 等待布局完成后绘制连线；并在窗口尺寸变化时重绘，保证横向拉伸不脱离
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    updateWorkflowConnectors();
+                });
+            });
+
+            if (!workflowConnectorResizeBound) {
+                workflowConnectorResizeBound = true;
+                window.addEventListener('resize', () => {
+                    // 连续resize时合并到下一帧
+                    requestAnimationFrame(() => {
+                        updateWorkflowConnectors();
+                    });
+                });
+            }
+        }
+
+        // 更新任务进度状态（支持并行任务）
+        function updateTaskProgress(stepId, status) {
+            const step = document.getElementById(stepId);
+            if (!step) return;
+
+            step.classList.remove('pending', 'processing', 'completed');
+            step.classList.add(status);
+        }
+
+        // 更新所有并行任务的状态
+        function updateParallelTasks(prefix, status) {
+            materialTypes.forEach((type, index) => {
+                updateTaskProgress(`${prefix}-${index}`, status);
+            });
+        }
+
+        // 随机延迟更新单个任务（模拟真实并发情况）
+        function updateTaskWithRandomDelay(stepId, status, minDelay, maxDelay) {
+            const delay = minDelay + Math.random() * (maxDelay - minDelay);
+            const timer = setTimeout(() => {
+                updateTaskProgress(stepId, status);
+            }, delay);
+            practiceTimers.push(timer);
+            return delay;
+        }
+
+        // 检查所有并行任务是否都完成
+        function checkAllTasksCompleted(prefix, callback) {
+            const totalTasks = materialTypes.length;
+            
+            // 使用setInterval监听所有任务完成
+            const checkInterval = setInterval(() => {
+                let completedCount = 0;
+                materialTypes.forEach((type, index) => {
+                    const stepId = `${prefix}-${index}`;
+                    const step = document.getElementById(stepId);
+                    if (step && step.classList.contains('completed')) {
+                        completedCount++;
+                    }
+                });
+                
+                if (completedCount === totalTasks) {
+                    clearInterval(checkInterval);
+                    if (callback) callback();
+                }
+            }, 100);
+            
+            practiceTimers.push(checkInterval);
+        }
+
+        // BOM数据（基于v2.1，更新了控制MCU和功率MOSFET为国产耐高温版本）
+        const bomData = {
+            projectName: '双电源自动切换系统',
+            version: 'V2.2',
+            date: new Date().toISOString().split('T')[0],
+            items: [
+                { model: 'TPS3813K33DBVR', ref: 'U1', category: '电压检测芯片', params: '3.3V基准，1%精度，响应时间0.5ms', package: 'SOT-23', manufacturer: '德州仪器' },
+                { model: 'CJ2305', ref: 'Q1,Q2', category: '功率MOSFET', params: '150V/100A，Rds(on)=9.2mΩ，-40~+125°C', package: 'TO-220', manufacturer: '长晶科技' },
+                { model: 'TMR 3-2412WI', ref: 'U2', category: 'DC-DC转换器', params: '24V转12V/3A，效率87%，3kV隔离', package: 'DIP24', manufacturer: 'TRACO POWER' },
+                { model: 'GD32F130C8T6', ref: 'U3', category: '控制MCU', params: 'Cortex-M3，64KB Flash，39个GPIO，-40~+125°C', package: 'LQFP48', manufacturer: '兆易创新' },
+                { model: 'WSL2512R0100FEA', ref: 'R1,R2', category: '电流检测电阻', params: '10mΩ/2W，±1%精度', package: '2512', manufacturer: 'Vishay' },
+                { model: '1N4148', ref: 'D1,D2', category: '保护二极管', params: '75V/150mA，快速开关，-65~+175°C', package: 'DO-35', manufacturer: 'Onsemi' }
+            ]
+        };
+
+        // 替代料数据
+        const alternativesData = {
+            'TPS3813K33DBVR': [
+                { model: 'TPS3813K33DBVR', manufacturer: '德州仪器', tag: 'tag-high-compatible', desc: '当前选择 - 3.3V基准，1%精度，SOT-23' },
+                { model: 'MAX6369KA+T', manufacturer: 'Maxim Integrated', tag: 'tag-high-compatible', desc: '3.08V基准，1.5%精度，SOT-23' },
+                { model: 'MCP130T-300I/TT', manufacturer: 'Microchip', tag: 'tag-cost-effective', desc: '3.0V基准，2%精度，SOT-23' }
+            ],
+            'IRFB4115PBF': [
+                { model: 'IRFB4115PBF', manufacturer: 'Infineon', tag: 'tag-high-compatible', desc: '当前选择 - 150V/104A，Rds=8.7mΩ' },
+                { model: 'IRFP4468PBF', manufacturer: 'Infineon', tag: 'tag-same-manufacturer', desc: '100V/195A，Rds=2.8mΩ，更低阻抗' },
+                { model: 'STB80NF10T4', manufacturer: 'STMicroelectronics', tag: 'tag-cost-effective', desc: '100V/80A，Rds=9.5mΩ，性价比高' }
+            ],
+            'TMR 3-2412WI': [
+                { model: 'TMR 3-2412WI', manufacturer: 'TRACO POWER', tag: 'tag-high-compatible', desc: '当前选择 - 24V转12V/3A，87%效率' },
+                { model: 'IB2412S-3W', manufacturer: 'XP Power', tag: 'tag-high-compatible', desc: '24V转12V/3W，85%效率，SIP封装' },
+                { model: 'NME2412SC', manufacturer: 'Murata', tag: 'tag-cost-effective', desc: '24V转12V/2W，88%效率，SMD封装' }
+            ],
+            'STM32F030C8T6': [
+                { model: 'STM32F030C8T6', manufacturer: 'STMicroelectronics', tag: 'tag-high-compatible', desc: '当前选择 - Cortex-M0，64KB Flash' },
+                { model: 'STM32F072CBT6', manufacturer: 'STMicroelectronics', tag: 'tag-same-manufacturer', desc: 'Cortex-M0，128KB Flash，更多外设' },
+                { model: 'GD32F130C8T6', manufacturer: 'GigaDevice', tag: 'tag-high-compatible', desc: 'Cortex-M3，64KB Flash，兼容STM32' }
+            ],
+            'WSL2512R0100FEA': [
+                { model: 'WSL2512R0100FEA', manufacturer: 'Vishay', tag: 'tag-high-compatible', desc: '当前选择 - 10mΩ/2W，±1%精度' },
+                { model: 'CRCW2512R010FKEAC', manufacturer: 'Vishay', tag: 'tag-same-manufacturer', desc: '10mΩ/1W，±1%精度，厚膜工艺' },
+                { model: 'LVR10R010FER', manufacturer: 'Rohm', tag: 'tag-cost-effective', desc: '10mΩ/3W，±1%精度，金属箔工艺' }
+            ],
+            '1N4148': [
+                { model: '1N4148', manufacturer: 'Onsemi', tag: 'tag-high-compatible', desc: '当前选择 - 75V/150mA，快速开关' },
+                { model: '1N4148WS', manufacturer: 'Fairchild', tag: 'tag-high-compatible', desc: '75V/150mA，SOD-123封装' },
+                { model: 'BAS16', manufacturer: 'NXP', tag: 'tag-cost-effective', desc: '85V/215mA，SOT-23封装' }
+            ]
+        };
+
+        // BOM生成流程
+        function startBomGeneration() {
+            const confirmBtn = document.getElementById('bomConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '✓ 已确认';
+                confirmBtn.style.background = '#10B981';
+                confirmBtn.style.cursor = 'not-allowed';
+            }
+            
+            // 立即打开研发空间并切换到任务进度tab
+            openRdSpace();
+            setTimeout(() => {
+                switchTab('task-progress');
+                createWorkflowDiagram();
+            }, 100);
+            
+            // 添加底部留白占位（执行过程中）
+            const scrollSpacer = document.createElement('div');
+            scrollSpacer.className = 'scroll-spacer';
+            scrollSpacer.id = 'scrollSpacer';
+            messagesContainer.appendChild(scrollSpacer);
+            
+            // 显示loading状态（替代工具调用卡片）
+            const loadingStatus = document.createElement('div');
+            loadingStatus.className = 'loading-status';
+            loadingStatus.id = 'loadingStatus';
+            loadingStatus.innerHTML = '<span class="loading-text">正在查询物料...</span>';
+            // 添加到消息末尾（在留白之前）
+            messagesContainer.insertBefore(loadingStatus, scrollSpacer);
+            
+            // 滚动到loading位置，让loading显示在顶部
+            setTimeout(() => {
+                loadingStatus.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+            
+            // 显示任务进度tab
+            const taskProgressTab = document.querySelector('.rd-space-tab[data-tab="task-progress"]');
+            if (taskProgressTab) {
+                taskProgressTab.style.display = 'block';
+            }
+            
+            // 更新任务进度：物料查询开始（并行，但不同时完成）
+            setTimeout(() => {
+                materialTypes.forEach((type, index) => {
+                    updateTaskProgress(`step-query-${index}`, 'processing');
+                    // 每个任务随机延迟完成（2-5秒）
+                    updateTaskWithRandomDelay(`step-query-${index}`, 'completed', 2000, 5000);
+                });
+            }, 200);
+            
+            // 检查所有查询任务完成后，开始选型
+            checkAllTasksCompleted('step-query', () => {
+                // 所有查询完成，开始选型（并行，但不同时完成）
+                materialTypes.forEach((type, index) => {
+                    updateTaskProgress(`step-selection-${index}`, 'processing');
+                    // 每个任务随机延迟完成（2-5秒）
+                    updateTaskWithRandomDelay(`step-selection-${index}`, 'completed', 2000, 5000);
+                });
+                
+                // 更新loading文字
+                if (loadingStatus) {
+                    loadingStatus.innerHTML = '<span class="loading-text">正在选型物料...</span>';
+                    // 滚动到loading位置，让loading显示在顶部
+                    setTimeout(() => {
+                        loadingStatus.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                }
+            });
+            
+            // 检查所有选型任务完成后，开始BOM生成
+            checkAllTasksCompleted('step-selection', () => {
+                updateTaskProgress('step-bom', 'processing');
+                if (loadingStatus) {
+                    loadingStatus.innerHTML = '<span class="loading-text">正在生成BOM表格结构...</span>';
+                    // 滚动到loading位置，让loading显示在顶部
+                    setTimeout(() => {
+                        loadingStatus.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                }
+                
+                // BOM生成（4秒）
+                const timer4 = setTimeout(() => {
+                    updateTaskProgress('step-bom', 'completed');
+                    updateTaskProgress('step-complete', 'completed');
+                    if (loadingStatus) {
+                        loadingStatus.remove();
+                    }
+                    // 移除底部留白占位（执行结束）
+                    const spacer = document.getElementById('scrollSpacer');
+                    if (spacer) {
+                        spacer.remove();
+                    }
+                    // 生成BOM表格
+                    generateBomTable();
+                }, 4000);
+                practiceTimers.push(timer4);
+            });
+        }
+
+        // 生成BOM表格
+        function generateBomTable() {
+            if (!messagesContainer) return;
+            
+            const bomMessage = document.createElement('div');
+            bomMessage.className = 'message assistant';
+            
+            // 动态生成表格行
+            const tableRows = bomData.items.map((item, index) => {
+                const alternatives = alternativesData[item.model] || [];
+                const dropdownId = `dropdown-${item.model.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                const alternativesHTML = alternatives.map(alt => {
+                    const tagText = alt.tag === 'tag-high-compatible' ? '高兼容' : 
+                                   alt.tag === 'tag-same-manufacturer' ? '同厂家' : '性价比高';
+                    return `
+                        <div class="alternative-option" onclick="selectBomAlternative(this, '${alt.model}', '${alt.manufacturer}', ${index})">
+                            <div class="alternative-name">${alt.model} <span class="alternative-tag ${alt.tag}">${tagText}</span></div>
+                            <div class="alternative-desc">${alt.desc}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <tr data-item-index="${index}">
+                        <td>
+                            <div class="component-select">
+                                <span class="component-name" onclick="showBomAlternatives(this, '${item.model.replace(/[^a-zA-Z0-9]/g, '-')}')">
+                                    ${item.model}
+                                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6,9 12,15 18,9"/>
+                                    </svg>
+                                </span>
+                                <div class="alternatives-dropdown" id="${dropdownId}">
+                                    ${alternativesHTML}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${item.ref}</td>
+                        <td>${item.category}</td>
+                        <td>${item.params}</td>
+                        <td>${item.package}</td>
+                        <td class="manufacturer-cell">${item.manufacturer}</td>
+                        <td><a href="#" class="pdf-link">查看规格说明书</a></td>
+                    </tr>
+                `;
+            }).join('');
+
+            bomMessage.innerHTML = `
+                <div class="message-avatar"></div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            BOM生成完成。基于需求文档，已生成完整的BOM清单：
+                        </div>
+                        
+                        <div class="bom-table-container">
+                            <div class="bom-table-header">
+                                📋 电源切换模块 BOM清单 v1.0
+                            </div>
+                            <div class="bom-table-wrapper">
+                                <table class="bom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>型号</th>
+                                            <th>位号</th>
+                                            <th>分类</th>
+                                            <th>核心参数</th>
+                                            <th>封装</th>
+                                            <th>制造商</th>
+                                            <th>规格书</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${tableRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- BOM操作按钮区域 - 固定在底部，不参与滚动 -->
+                            <div class="bom-table-actions">
+                                <button class="bom-action-btn bom-btn-download">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    下载
+                                </button>
+                                <button class="bom-action-btn bom-btn-save primary">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                        <polyline points="17 21 17 13 7 13 7 21"/>
+                                        <polyline points="7 3 7 8 15 8"/>
+                                    </svg>
+                                    保存BOM版本
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到消息末尾
+            messagesContainer.appendChild(bomMessage);
+            
+            // BOM表格生成后，滚动到最新消息（BOM表格）的位置
+            const timer = setTimeout(() => {
+                bomMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+            practiceTimers.push(timer);
+
+            // 添加BOM tab并显示数据
+            addBomTab();
+        }
+
+        // 显示替代料下拉框
+        function showBomAlternatives(element, type) {
+            // 隐藏所有其他下拉菜单
+            document.querySelectorAll('.alternatives-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+            
+            // 显示当前下拉菜单
+            const dropdown = document.getElementById(`dropdown-${type}`);
+            if (dropdown) {
+                dropdown.classList.add('show');
+            }
+            
+            // 点击其他地方关闭下拉菜单
+            setTimeout(() => {
+                const closeHandler = function(e) {
+                    if (!element.closest('.component-select').contains(e.target)) {
+                        if (dropdown) {
+                            dropdown.classList.remove('show');
+                        }
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                document.addEventListener('click', closeHandler);
+            }, 100);
+        }
+        
+        // 选择替代方案并同步数据
+        function selectBomAlternative(element, partNumber, manufacturer, itemIndex) {
+            const componentSelect = element.closest('.component-select');
+            if (!componentSelect) return;
+            
+            const componentName = componentSelect.querySelector('.component-name');
+            const row = componentSelect.closest('tr');
+            
+            if (componentName && row && row.cells) {
+                // 更新显示（保留SVG图标）
+                const svg = componentName.querySelector('svg');
+                const svgHTML = svg ? svg.outerHTML : '';
+                componentName.innerHTML = partNumber + ' ' + svgHTML;
+                
+                // 更新制造商（第6列，索引5）
+                const manufacturerCell = row.cells[5];
+                if (manufacturerCell) {
+                    manufacturerCell.textContent = manufacturer;
+                }
+                
+                // 更新bomData中的数据
+                if (bomData.items[itemIndex]) {
+                    bomData.items[itemIndex].model = partNumber;
+                    bomData.items[itemIndex].manufacturer = manufacturer;
+                }
+                
+                // 同步更新研发空间的BOM内容
+                renderBomContent();
+                
+                // 隐藏下拉菜单
+                const dropdown = componentSelect.querySelector('.alternatives-dropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+                
+                // 显示更新提示
+                row.style.backgroundColor = '#F0FDF4';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 2000);
+            }
+        }
+        
+        // 将函数暴露到全局
+        window.showBomAlternatives = showBomAlternatives;
+        window.selectBomAlternative = selectBomAlternative;
+
+        // 添加BOM tab并显示数据
+        function addBomTab() {
+            // 显示BOM tab（如果还没有显示）
+            const bomTab = document.querySelector('.rd-space-tab[data-tab="bom"]');
+            if (bomTab) {
+                bomTab.style.display = 'block';
+            }
+            
+            // 确保任务进度tab也显示（保留）
+            const taskProgressTab = document.querySelector('.rd-space-tab[data-tab="task-progress"]');
+            if (taskProgressTab) {
+                taskProgressTab.style.display = 'block';
+            }
+
+            // 切换到BOM tab（但保留任务进度tab）
+            setTimeout(() => {
+                switchTab('bom');
+                renderBomSidebar();
+                renderBomContent();
+            }, 500);
+        }
+
+        // 渲染BOM侧边栏
+        function renderBomSidebar() {
+            const bomSidebarContent = document.getElementById('bomSidebarContent');
+            if (!bomSidebarContent) return;
+
+            bomSidebarContent.innerHTML = `
+                <div class="bom-project">
+                    <div class="bom-project-name">
+                        双电源自动切换系统
+                    </div>
+                    <div class="bom-version-item selected" data-version="v2.2">
+                        <div class="bom-version-name">V2.2 <span class="bom-version-badge">new</span></div>
+                        <div class="bom-version-meta">${bomData.date}</div>
+                        <div class="bom-version-info">耐高温纯国产 · ${bomData.items.length}个器件</div>
+                    </div>
+                    <div class="bom-version-item" data-version="v2.1">
+                        <div class="bom-version-name">V2.1</div>
+                        <div class="bom-version-meta">2024-05-10</div>
+                        <div class="bom-version-info">降低成本 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-item" data-version="v2.0">
+                        <div class="bom-version-name">V2.0</div>
+                        <div class="bom-version-meta">2024-03-20</div>
+                        <div class="bom-version-info">优化电源 · 6个器件</div>
+                    </div>
+                    <div class="bom-version-item" data-version="v1.0">
+                        <div class="bom-version-name">V1.0</div>
+                        <div class="bom-version-meta">2024-01-15</div>
+                        <div class="bom-version-info">初版设计 · 6个器件</div>
+                    </div>
+                </div>
+            `;
+
+            // 为版本项添加选中状态切换
+            const versionItems = bomSidebarContent.querySelectorAll('.bom-version-item');
+            versionItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    versionItems.forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    const version = item.dataset.version;
+                    renderBomContentForVersion(version);
+                });
+            });
+        }
+
+        // 渲染BOM内容
+        function renderBomContent() {
+            const bomContentTitle = document.getElementById('bomContentTitle');
+            const bomContentBody = document.getElementById('bomContentBody');
+            if (!bomContentTitle || !bomContentBody) return;
+
+            bomContentTitle.textContent = `${bomData.projectName} BOM清单 ${bomData.version}`;
+
+            let html = '<div class="bom-detail-list">';
+            bomData.items.forEach(item => {
+                html += `
+                    <div class="bom-detail-item">
+                        <div class="bom-detail-header">
+                            <div class="bom-detail-model">
+                                ${item.model}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <span class="bom-detail-ref">${item.ref}</span>
+                        </div>
+                        <div class="bom-detail-grid">
+                            <div class="bom-detail-label">分类</div>
+                            <div class="bom-detail-value">${item.category}</div>
+                            <div class="bom-detail-label">核心参数</div>
+                            <div class="bom-detail-value">${item.params}</div>
+                            <div class="bom-detail-label">封装</div>
+                            <div class="bom-detail-value">${item.package}</div>
+                            <div class="bom-detail-label">制造商</div>
+                            <div class="bom-detail-value">${item.manufacturer}</div>
+                        </div>
+                        <div class="bom-detail-action">
+                            <a href="#">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                查看规格说明书
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            bomContentBody.innerHTML = html;
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            initRdSpace();
+            renderBomReviewChatMessages();
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', clearAllPracticeTimers);
+    </script>
+</body>
+</html>
+

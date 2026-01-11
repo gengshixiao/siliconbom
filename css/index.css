@@ -757,6 +757,11 @@
     background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #FCD34D 100%);
 }
 
+/* CAD原理图解读卡片 - 绿色系 */
+.practice-bg-cad {
+    background: linear-gradient(135deg, #10B981 0%, #34D399 50%, #6EE7B7 100%);
+}
+
 .practice-bg-pattern {
     position: absolute;
     top: 0;
@@ -812,6 +817,52 @@
     width: 80px;
     height: 80px;
     background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.practice-bg-cad::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* BOM智能生成卡片 - 青色系 */
+.practice-bg-generation {
+    background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 50%, #67E8F9 100%);
+}
+
+/* BOM构建卡片（新版本）- 粉色系 */
+.practice-bg-review {
+    background: linear-gradient(135deg, #EC4899 0%, #F472B6 50%, #FBCFE8 100%);
+}
+
+.practice-bg-review::before {
+    content: '';
+    position: absolute;
+    bottom: -25px;
+    right: -25px;
+    width: 105px;
+    height: 105px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, transparent 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.practice-bg-generation::before {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
     border-radius: 50%;
     z-index: 1;
 }
