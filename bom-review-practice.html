@@ -1937,14 +1937,14 @@
             practiceTimers.push(startTimer);
         }
 
-        // 向下滚动动画，滚动距离是一个对话框高度
+        // 向下滚动动画，滚动距离是0.75个对话框高度
         function scrollDownToShowLoading(loadingEl) {
             if (!messagesContainer || !loadingEl) return;
             
             // 获取对话框容器的高度
             const containerHeight = messagesContainer.clientHeight;
-            // 滚动距离是一个对话框高度（翻倍）
-            const scrollDistance = containerHeight;
+            // 滚动距离是0.75个对话框高度
+            const scrollDistance = containerHeight * 0.75;
             
             // 获取当前滚动位置
             const currentScrollTop = messagesContainer.scrollTop;

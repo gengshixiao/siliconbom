@@ -796,6 +796,12 @@ function setActiveFloor(target) {
             const questionGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             questionGroup.setAttribute('class', 'question-node');
             questionGroup.setAttribute('style', 'cursor: pointer;');
+            questionGroup.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.setMainInputValue) {
+                    window.setMainInputValue(questionText);
+                }
+            });
             
             // 气泡背景
             const bubbleRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -1049,6 +1055,12 @@ function setActiveFloor(target) {
             const questionGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             questionGroup.setAttribute('class', 'question-node');
             questionGroup.setAttribute('style', 'cursor: pointer;');
+            questionGroup.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.setMainInputValue) {
+                    window.setMainInputValue(questionText);
+                }
+            });
             
             // 气泡背景
             const bubbleRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -4086,464 +4098,381 @@ window.addEventListener('load', () => {
      });
  }
  
- // @提及功能
- (function() {
-     const textarea = document.getElementById('mainTextarea');
-     const dropdown = document.getElementById('mentionDropdown');
-     const searchWrapper = textarea.closest('.search-wrapper');
-     
-     // BOM档案数据（树形结构）
-     const bomData = [
-         {
-             name: '电源切换模块BOM',
-             versions: [
-                 { version: 'v1.0', date: '2024-01-15' },
-                 { version: 'v2.0', date: '2024-03-20' },
-                 { version: 'v2.1', date: '2024-05-10' }
-             ]
-         },
-         {
-             name: '新电源芯片mos选型',
-             versions: [
-                 { version: 'v1.0', date: '2024-02-01' },
-                 { version: 'v1.5', date: '2024-04-12' }
-             ]
-         },
-         {
-             name: '60V参数的mos查询',
-             versions: [
-                 { version: 'v1.0', date: '2024-01-20' },
-                 { version: 'v1.2', date: '2024-03-05' },
-                 { version: 'v2.0', date: '2024-06-18' }
-             ]
-         },
-         {
-             name: 'BOM更新需求分析',
-             versions: [
-                 { version: 'v1.0', date: '2024-02-15' }
-             ]
-         },
-         {
-             name: 'BOM中mos替换分析',
-             versions: [
-                 { version: 'v1.0', date: '2024-03-10' },
-                 { version: 'v1.1', date: '2024-04-25' }
-             ]
-         },
-         {
-             name: 'R26系列同规格产品推荐',
-             versions: [
-                 { version: 'v1.0', date: '2024-04-01' },
-                 { version: 'v1.3', date: '2024-05-20' },
-                 { version: 'v2.0', date: '2024-07-01' }
-             ]
-         }
-     ];
-     
-     let selectedIndex = 0;
-     let mentionStartNode = null;
-     let mentionStartOffset = -1;
-     let savedRange = null; // 保存当前的range
-     
-     // 渲染下拉菜单
-     function renderDropdown() {
-         dropdown.innerHTML = '';
-         
-         bomData.forEach((bom, bomIndex) => {
-             // BOM名称组（可展开/折叠）
-             const groupItem = document.createElement('div');
-             groupItem.className = 'mention-item-group expanded';
-             
-             const groupIcon = document.createElement('span');
-             groupIcon.className = 'mention-group-icon';
-             groupIcon.innerHTML = '▶';
-             
-             const folderIcon = document.createElement('span');
-             folderIcon.className = 'folder-icon';
-             folderIcon.innerHTML = '📁';
-             
-             const groupText = document.createElement('span');
-             groupText.textContent = bom.name;
-             
-             groupItem.appendChild(groupIcon);
-             groupItem.appendChild(folderIcon);
-             groupItem.appendChild(groupText);
-             
-             // 点击组标题展开/折叠
-             groupItem.addEventListener('click', function(e) {
-                 e.stopPropagation();
-                 this.classList.toggle('expanded');
-             });
-             
-             dropdown.appendChild(groupItem);
-             
-             // 版本列表容器
-             const itemList = document.createElement('div');
-             itemList.className = 'mention-item-list';
-             
-             // 版本列表
-             bom.versions.forEach((version, versionIndex) => {
-                 const item = document.createElement('div');
-                 item.className = 'mention-item';
-                 item.dataset.bomName = bom.name;
-                 item.dataset.version = version.version;
-                 
-                 const icon = document.createElement('span');
-                 icon.className = 'mention-item-icon';
-                 icon.innerHTML = '▶';
-                 
-                 const text = document.createElement('span');
-                 text.className = 'mention-item-text';
-                 text.textContent = version.version;
-                 
-                 item.appendChild(icon);
-                 item.appendChild(text);
-                 itemList.appendChild(item);
-                 
-                 // 点击选择
-                 item.addEventListener('mousedown', function(e) {
-                     e.preventDefault();
-                     e.stopPropagation();
-                     
-                     // 在mousedown时保存selection，防止点击时丢失
-                     const selection = window.getSelection();
-                     if (selection.rangeCount > 0) {
-                         savedRange = selection.getRangeAt(0).cloneRange();
-                     }
-                     
-                     selectMention(bom.name, version.version);
-                 });
-             });
-             
-             dropdown.appendChild(itemList);
-         });
-         
-         updateSelected();
-     }
-     
-     // 更新选中状态
-     function updateSelected() {
-         // 只获取可见的项（展开的组下的项）
-         const visibleItems = Array.from(dropdown.querySelectorAll('.mention-item')).filter(item => {
-             return item.offsetParent !== null; // 检查是否可见
-         });
-         
-         visibleItems.forEach((item, index) => {
-             item.classList.toggle('selected', index === selectedIndex);
-         });
-         
-         // 滚动到选中项
-         const selectedItem = visibleItems[selectedIndex];
-         if (selectedItem) {
-             selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-         }
-     }
-     
-     // 获取可见项列表
-     function getVisibleItems() {
-         return Array.from(dropdown.querySelectorAll('.mention-item')).filter(item => {
-             return item.offsetParent !== null;
-         });
-     }
-     
-     // 选择提及项
-     function selectMention(bomName, version) {
-         const selection = window.getSelection();
-         
-         if (!mentionStartNode) {
-             console.log('selectMention: missing mentionStartNode');
-             return;
-         }
-         
-         // 如果没有selection，使用保存的range
-         let range;
-         if (selection.rangeCount > 0) {
-             range = selection.getRangeAt(0);
-         } else if (savedRange) {
-             range = savedRange;
-             selection.addRange(savedRange.cloneRange());
-         } else {
-             console.log('selectMention: no range available');
-             return;
-         }
-         
-         try {
-             
-             // 创建@提及标签
-             const mentionTag = document.createElement('span');
-             mentionTag.className = 'mention-tag';
-             mentionTag.contentEditable = 'false';
-             mentionTag.dataset.bomName = bomName;
-             mentionTag.dataset.version = version;
-             
-             const icon = document.createElement('span');
-             icon.className = 'mention-tag-icon';
-             icon.textContent = 'B';
-             
-             const text = document.createElement('span');
-             text.className = 'mention-tag-text';
-             text.textContent = `${bomName}(${version})`;
-             
-             mentionTag.appendChild(icon);
-             mentionTag.appendChild(text);
-             
-             // 创建删除范围：从@符号到光标位置
-             const deleteRange = document.createRange();
-             
-             // 确保节点仍然存在
-             if (!mentionStartNode.parentNode) {
-                 console.log('selectMention: mentionStartNode no longer exists');
-                 hideDropdown();
-                 return;
-             }
-             
-             deleteRange.setStart(mentionStartNode, mentionStartOffset);
-             deleteRange.setEnd(range.startContainer, range.startOffset);
-             
-             // 删除@符号及其后的内容
-             deleteRange.deleteContents();
-             
-             // 在删除位置插入标签
-             deleteRange.insertNode(mentionTag);
-             
-             // 创建空格文本节点
-             const textNode = document.createTextNode(' ');
-             
-             // 在标签后插入空格
-             const insertRange = document.createRange();
-             insertRange.setStartAfter(mentionTag);
-             insertRange.collapse(true);
-             insertRange.insertNode(textNode);
-             
-             // 设置光标到空格后
-             insertRange.setStartAfter(textNode);
-             insertRange.collapse(true);
-             
-             selection.removeAllRanges();
-             selection.addRange(insertRange);
-             
-             hideDropdown();
-             textarea.focus();
-         } catch (error) {
-             console.error('selectMention error:', error);
-             hideDropdown();
-         }
-     }
-     
-     // 显示下拉菜单
-     function showDropdown() {
-         // 确保弹窗在body下
-         if (dropdown.parentNode !== document.body) {
-             document.body.appendChild(dropdown);
-         }
-         
-         dropdown.classList.add('show');
-         selectedIndex = 0;
-         updateSelected();
-         
-         // 动态计算位置（使用fixed定位）
-         const rect = textarea.getBoundingClientRect();
-         dropdown.style.left = rect.left + 'px';
-         dropdown.style.top = (rect.top - dropdown.offsetHeight - 8) + 'px';
-         dropdown.style.width = Math.max(rect.width, 240) + 'px';
-     }
-     
-     // 隐藏下拉菜单
-     function hideDropdown() {
-         dropdown.classList.remove('show');
-         mentionStartNode = null;
-         mentionStartOffset = -1;
-         selectedIndex = 0;
-         savedRange = null;
-     }
-     
-     // 检测@符号
-     function checkMention(e) {
-         const selection = window.getSelection();
-         if (selection.rangeCount === 0) {
-             hideDropdown();
-             return;
-         }
-         
-         const range = selection.getRangeAt(0);
-         let textNode = range.startContainer;
-         let cursorPos = range.startOffset;
-         
-         // 如果光标在元素节点内，查找最近的文本节点
-         if (textNode.nodeType !== Node.TEXT_NODE) {
-             // 检查是否在@提及标签内
-             if (textNode.nodeType === Node.ELEMENT_NODE && textNode.classList.contains('mention-tag')) {
-                 hideDropdown();
-                 return;
-             }
-             
-             // 尝试找到文本节点
-             if (textNode.childNodes.length > 0 && cursorPos < textNode.childNodes.length) {
-                 const childNode = textNode.childNodes[cursorPos];
-                 if (childNode && childNode.nodeType === Node.TEXT_NODE) {
-                     textNode = childNode;
-                     cursorPos = 0;
-                 } else {
-                     hideDropdown();
-                     return;
-                 }
-             } else {
-                 hideDropdown();
-                 return;
-             }
-         }
-         
-         const text = textNode.textContent;
-         
-         // 查找光标前的@符号
-         let startPos = cursorPos - 1;
-         while (startPos >= 0 && text[startPos] !== '@' && text[startPos] !== ' ' && text[startPos] !== '\n') {
-             startPos--;
-         }
-         
-         if (startPos >= 0 && text[startPos] === '@') {
-             const afterAt = text.substring(startPos + 1, cursorPos);
-             
-             // 检查@后是否有空格或换行（如果有，说明@已经完成）
-             if (afterAt.includes(' ') || afterAt.includes('\n') || afterAt.includes('(')) {
-                 hideDropdown();
-                 return;
-             }
-             
-             // 保存@符号的位置
-             mentionStartNode = textNode;
-             mentionStartOffset = startPos;
-             
-             // 保存当前的range
-             const currentRange = range.cloneRange();
-             savedRange = currentRange;
-             
-             showDropdown();
-         } else {
-             hideDropdown();
-         }
-     }
-     
-     // 获取编辑器文本内容（用于发送）
-     function getEditorText() {
-         let text = '';
-         const walker = document.createTreeWalker(
-             textarea,
-             NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
-             {
-                 acceptNode: function(node) {
-                     if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('mention-tag')) {
-                         return NodeFilter.FILTER_ACCEPT;
-                     }
-                     if (node.nodeType === Node.TEXT_NODE) {
-                         return NodeFilter.FILTER_ACCEPT;
-                     }
-                     return NodeFilter.FILTER_SKIP;
-                 }
-             }
-         );
-         
-         let node;
-         while (node = walker.nextNode()) {
-             if (node.nodeType === Node.TEXT_NODE) {
-                 text += node.textContent;
-             } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('mention-tag')) {
-                 const bomName = node.dataset.bomName;
-                 const version = node.dataset.version;
-                 text += `@${bomName}(${version})`;
-             }
-         }
-         
-         return text;
-     }
-     
-    // 清理空内容，确保placeholder能正确显示
-    function cleanupEmptyContent() {
-        // 获取纯文本内容（不包括@提及标签的文本）
-        const text = textarea.textContent || textarea.innerText || '';
-        // 如果内容为空，清理所有节点，确保div真正为空
-        if (!text || text.trim() === '') {
-            textarea.innerHTML = '';
-        }
+// @提及功能（复用于主页与对话页）
+const initMentionTextarea = (function() {
+    const dropdown = document.getElementById('mentionDropdown');
+    if (!dropdown) {
+        return function() {};
     }
-    
-    // 监听输入事件
-    textarea.addEventListener('input', function() {
-        cleanupEmptyContent();
-        checkMention();
-    });
-    textarea.addEventListener('keyup', function() {
-        cleanupEmptyContent();
-        checkMention();
-    });
-     
-     // 防止删除@提及标签
-     textarea.addEventListener('keydown', function(e) {
-         const selection = window.getSelection();
-         if (selection.rangeCount === 0) return;
-         
-         const range = selection.getRangeAt(0);
-         const startNode = range.startContainer;
-         
-        // 如果光标在@提及标签内，阻止删除
-        if (startNode.parentElement && startNode.parentElement.classList.contains('mention-tag')) {
-            if (e.key === 'Backspace' || e.key === 'Delete') {
-                e.preventDefault();
-                // 删除整个标签
-                const tag = startNode.parentElement;
-                tag.remove();
-                // 清理空内容，确保placeholder能正确显示
-                cleanupEmptyContent();
-                // 设置光标位置
-                const newRange = document.createRange();
-                if (textarea.firstChild) {
-                    newRange.setStart(textarea.firstChild, 0);
-                } else {
-                    newRange.setStart(textarea, 0);
-                }
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
+
+    // BOM档案数据（树形结构）
+    const bomData = [
+        {
+            name: '电源切换模块BOM',
+            versions: [
+                { version: 'v1.0', date: '2024-01-15' },
+                { version: 'v2.0', date: '2024-03-20' },
+                { version: 'v2.1', date: '2024-05-10' }
+            ]
+        },
+        {
+            name: '新电源芯片mos选型',
+            versions: [
+                { version: 'v1.0', date: '2024-02-01' },
+                { version: 'v1.5', date: '2024-04-12' }
+            ]
+        },
+        {
+            name: '60V参数的mos查询',
+            versions: [
+                { version: 'v1.0', date: '2024-01-20' },
+                { version: 'v1.2', date: '2024-03-05' },
+                { version: 'v2.0', date: '2024-06-18' }
+            ]
+        },
+        {
+            name: 'BOM更新需求分析',
+            versions: [
+                { version: 'v1.0', date: '2024-02-15' }
+            ]
+        },
+        {
+            name: 'BOM中mos替换分析',
+            versions: [
+                { version: 'v1.0', date: '2024-03-10' },
+                { version: 'v1.1', date: '2024-04-25' }
+            ]
+        },
+        {
+            name: 'R26系列同规格产品推荐',
+            versions: [
+                { version: 'v1.0', date: '2024-04-01' },
+                { version: 'v1.3', date: '2024-05-20' },
+                { version: 'v2.0', date: '2024-07-01' }
+            ]
+        }
+    ];
+
+    function renderDropdown(selectMention) {
+        dropdown.innerHTML = '';
+
+        bomData.forEach((bom) => {
+            // BOM名称组（可展开/折叠）
+            const groupItem = document.createElement('div');
+            groupItem.className = 'mention-item-group expanded';
+
+            const groupIcon = document.createElement('span');
+            groupIcon.className = 'mention-group-icon';
+            groupIcon.innerHTML = '▶';
+
+            const folderIcon = document.createElement('span');
+            folderIcon.className = 'folder-icon';
+            folderIcon.innerHTML = '📁';
+
+            const groupText = document.createElement('span');
+            groupText.textContent = bom.name;
+
+            groupItem.appendChild(groupIcon);
+            groupItem.appendChild(folderIcon);
+            groupItem.appendChild(groupText);
+
+            // 点击组标题展开/折叠
+            groupItem.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('expanded');
+            });
+
+            dropdown.appendChild(groupItem);
+
+            // 版本列表容器
+            const itemList = document.createElement('div');
+            itemList.className = 'mention-item-list';
+
+            // 版本列表
+            bom.versions.forEach((version) => {
+                const item = document.createElement('div');
+                item.className = 'mention-item';
+                item.dataset.bomName = bom.name;
+                item.dataset.version = version.version;
+
+                const icon = document.createElement('span');
+                icon.className = 'mention-item-icon';
+                icon.innerHTML = '▶';
+
+                const text = document.createElement('span');
+                text.className = 'mention-item-text';
+                text.textContent = version.version;
+
+                item.appendChild(icon);
+                item.appendChild(text);
+                itemList.appendChild(item);
+
+                // 点击选择
+                item.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectMention(bom.name, version.version);
+                });
+            });
+
+            dropdown.appendChild(itemList);
+        });
+    }
+
+    return function init(textarea) {
+        if (!textarea || textarea.dataset.mentionReady === 'true') {
+            return;
+        }
+        textarea.dataset.mentionReady = 'true';
+
+        const searchWrapper = textarea.closest('.search-wrapper');
+        let selectedIndex = 0;
+        let mentionStartNode = null;
+        let mentionStartOffset = -1;
+        let savedRange = null; // 保存当前的range
+
+        function updateSelected() {
+            const visibleItems = Array.from(dropdown.querySelectorAll('.mention-item')).filter(item => {
+                return item.offsetParent !== null;
+            });
+
+            visibleItems.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedIndex);
+            });
+
+            const selectedItem = visibleItems[selectedIndex];
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             }
         }
-     });
-     
-     // 键盘导航
-     textarea.addEventListener('keydown', function(e) {
-         if (!dropdown.classList.contains('show')) return;
-         
-         const visibleItems = getVisibleItems();
-         
-         if (e.key === 'ArrowDown') {
-             e.preventDefault();
-             selectedIndex = Math.min(selectedIndex + 1, visibleItems.length - 1);
-             updateSelected();
-         } else if (e.key === 'ArrowUp') {
-             e.preventDefault();
-             selectedIndex = Math.max(selectedIndex - 1, 0);
-             updateSelected();
-         } else if (e.key === 'Enter' && visibleItems.length > 0) {
-             e.preventDefault();
-             const selectedItem = visibleItems[selectedIndex];
-             if (selectedItem) {
-                 selectMention(selectedItem.dataset.bomName, selectedItem.dataset.version);
-             }
-         } else if (e.key === 'Escape') {
-             e.preventDefault();
-             hideDropdown();
-         }
-     });
-     
-     // 点击外部关闭
-     document.addEventListener('click', function(e) {
-         if (!searchWrapper.contains(e.target) && !dropdown.contains(e.target)) {
-             hideDropdown();
-         }
-     });
-     
-     // 初始化渲染
-     renderDropdown();
- })();
+
+        function getVisibleItems() {
+            return Array.from(dropdown.querySelectorAll('.mention-item')).filter(item => {
+                return item.offsetParent !== null;
+            });
+        }
+
+        function hideDropdown() {
+            dropdown.classList.remove('show');
+            mentionStartNode = null;
+            mentionStartOffset = -1;
+            selectedIndex = 0;
+            savedRange = null;
+        }
+
+        function selectMention(bomName, version) {
+            const selection = window.getSelection();
+
+            if (!mentionStartNode) {
+                return;
+            }
+
+            let range;
+            if (selection.rangeCount > 0) {
+                range = selection.getRangeAt(0);
+            } else if (savedRange) {
+                range = savedRange;
+                selection.addRange(savedRange.cloneRange());
+            } else {
+                return;
+            }
+
+            try {
+                const mentionTag = document.createElement('span');
+                mentionTag.className = 'mention-tag';
+                mentionTag.contentEditable = 'false';
+                mentionTag.dataset.bomName = bomName;
+                mentionTag.dataset.version = version;
+
+                const icon = document.createElement('span');
+                icon.className = 'mention-tag-icon';
+                icon.textContent = 'B';
+
+                const text = document.createElement('span');
+                text.className = 'mention-tag-text';
+                text.textContent = `${bomName}(${version})`;
+
+                mentionTag.appendChild(icon);
+                mentionTag.appendChild(text);
+
+                const deleteRange = document.createRange();
+
+                if (!mentionStartNode.parentNode) {
+                    hideDropdown();
+                    return;
+                }
+
+                deleteRange.setStart(mentionStartNode, mentionStartOffset);
+                deleteRange.setEnd(range.startContainer, range.startOffset);
+                deleteRange.deleteContents();
+                deleteRange.insertNode(mentionTag);
+
+                const textNode = document.createTextNode(' ');
+                const insertRange = document.createRange();
+                insertRange.setStartAfter(mentionTag);
+                insertRange.collapse(true);
+                insertRange.insertNode(textNode);
+                insertRange.setStartAfter(textNode);
+                insertRange.collapse(true);
+
+                selection.removeAllRanges();
+                selection.addRange(insertRange);
+
+                hideDropdown();
+                textarea.focus();
+            } catch (error) {
+                hideDropdown();
+            }
+        }
+
+        function showDropdown() {
+            if (dropdown.parentNode !== document.body) {
+                document.body.appendChild(dropdown);
+            }
+
+            dropdown.classList.add('show');
+            selectedIndex = 0;
+            updateSelected();
+
+            const rect = textarea.getBoundingClientRect();
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = (rect.top - dropdown.offsetHeight - 8) + 'px';
+            dropdown.style.width = Math.max(rect.width, 240) + 'px';
+        }
+
+        function checkMention() {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) {
+                hideDropdown();
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            let textNode = range.startContainer;
+            let cursorPos = range.startOffset;
+
+            if (textNode.nodeType !== Node.TEXT_NODE) {
+                if (textNode.nodeType === Node.ELEMENT_NODE && textNode.classList.contains('mention-tag')) {
+                    hideDropdown();
+                    return;
+                }
+
+                if (textNode.childNodes.length > 0 && cursorPos < textNode.childNodes.length) {
+                    const childNode = textNode.childNodes[cursorPos];
+                    if (childNode && childNode.nodeType === Node.TEXT_NODE) {
+                        textNode = childNode;
+                        cursorPos = 0;
+                    } else {
+                        hideDropdown();
+                        return;
+                    }
+                } else {
+                    hideDropdown();
+                    return;
+                }
+            }
+
+            const text = textNode.textContent;
+            let startPos = cursorPos - 1;
+            while (startPos >= 0 && text[startPos] !== '@' && text[startPos] !== ' ' && text[startPos] !== '\n') {
+                startPos--;
+            }
+
+            if (startPos >= 0 && text[startPos] === '@') {
+                const afterAt = text.substring(startPos + 1, cursorPos);
+                if (afterAt.includes(' ') || afterAt.includes('\n') || afterAt.includes('(')) {
+                    hideDropdown();
+                    return;
+                }
+
+                mentionStartNode = textNode;
+                mentionStartOffset = startPos;
+                savedRange = range.cloneRange();
+                showDropdown();
+            } else {
+                hideDropdown();
+            }
+        }
+
+        function cleanupEmptyContent() {
+            const text = textarea.textContent || textarea.innerText || '';
+            if (!text || text.trim() === '') {
+                textarea.innerHTML = '';
+            }
+        }
+
+        textarea.addEventListener('input', function() {
+            cleanupEmptyContent();
+            checkMention();
+        });
+        textarea.addEventListener('keyup', function() {
+            cleanupEmptyContent();
+            checkMention();
+        });
+
+        textarea.addEventListener('keydown', function(e) {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            const startNode = range.startContainer;
+
+            if (startNode.parentElement && startNode.parentElement.classList.contains('mention-tag')) {
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    e.preventDefault();
+                    const tag = startNode.parentElement;
+                    tag.remove();
+                    cleanupEmptyContent();
+                    const newRange = document.createRange();
+                    if (textarea.firstChild) {
+                        newRange.setStart(textarea.firstChild, 0);
+                    } else {
+                        newRange.setStart(textarea, 0);
+                    }
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                }
+            }
+        });
+
+        textarea.addEventListener('keydown', function(e) {
+            if (!dropdown.classList.contains('show')) return;
+
+            const visibleItems = getVisibleItems();
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, visibleItems.length - 1);
+                updateSelected();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                updateSelected();
+            } else if (e.key === 'Enter' && visibleItems.length > 0) {
+                e.preventDefault();
+                const selectedItem = visibleItems[selectedIndex];
+                if (selectedItem) {
+                    selectMention(selectedItem.dataset.bomName, selectedItem.dataset.version);
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                hideDropdown();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (searchWrapper && !searchWrapper.contains(e.target) && !dropdown.contains(e.target)) {
+                hideDropdown();
+            }
+        });
+
+        renderDropdown(selectMention);
+        updateSelected();
+    };
+})();
+
+initMentionTextarea(document.getElementById('mainTextarea'));
  
  // 菜单项点击事件
  document.getElementById('newProject')?.addEventListener('click', function() {
@@ -4738,4 +4667,612 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
 })();
 
+// ==================== 主对话框功能 ====================
+(function() {
+    const mainTextarea = document.getElementById('mainTextarea');
+    const btnSend = document.querySelector('.btn-send');
+    const btnAttach = document.querySelector('.btn-attach');
+    const welcomeArea = document.getElementById('welcomeArea');
+    const chatContainer = document.getElementById('chatContainer');
+    let messagesContainer = document.getElementById('messagesContainer');
+    const chatTitle = document.getElementById('chatTitle');
+    const projectList = document.getElementById('projectList');
+    const floorsContainer = document.getElementById('floorsContainer');
+    const chipPackage = document.querySelector('.chip-package');
+    const workbenchSvg = document.querySelector('.pcb-layer-svg--workbench');
+    let chatPageSendBtn = null;
+    let chatPageTextarea = null;
+    let chatPageAttachBtn = null;
+    
+    // 当前对话标题（从用户第一条消息生成）
+    let currentChatTitle = '';
+    let isInChatMode = false;
+    let isStreaming = false;
+    let typingTimers = [];
+    let currentTypingTimer = null;
+    let loadingTimer = null;
+    let chatPageTitleText = null;
+    let currentAssistantElement = null;
+    
+    // 初始化：置灰上传附件按钮
+    if (btnAttach) {
+        btnAttach.style.opacity = '0.5';
+        btnAttach.style.cursor = 'not-allowed';
+        btnAttach.title = '功能开发中';
+    }
+    
+    // 获取输入框文本内容（去除HTML标签和空格）
+    function getTextContent(element) {
+        if (!element) return '';
+        const text = element.textContent || element.innerText || '';
+        return text.trim();
+    }
+    
+    // 检查输入框是否有有效内容
+    function hasValidContent() {
+        const text = getTextContent(mainTextarea);
+        return text.length > 0;
+    }
+    
+    // 更新发送按钮状态
+    function updateSendButtonState() {
+        if (!btnSend) return;
+        const hasContent = hasValidContent();
+        btnSend.disabled = !hasContent;
+        if (hasContent) {
+            btnSend.style.opacity = '1';
+            btnSend.style.cursor = 'pointer';
+        } else {
+            btnSend.style.opacity = '0.5';
+            btnSend.style.cursor = 'not-allowed';
+        }
+    }
+    
+    // 初始化按钮状态
+    updateSendButtonState();
 
+    function setMainInputValue(text) {
+        if (!mainTextarea) return;
+        mainTextarea.innerHTML = '';
+        mainTextarea.textContent = text;
+        const range = document.createRange();
+        range.selectNodeContents(mainTextarea);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        updateSendButtonState();
+        mainTextarea.focus();
+    }
+
+    window.setMainInputValue = setMainInputValue;
+
+    function updateChatTitle(text) {
+        if (!text) return;
+        currentChatTitle = text;
+        if (chatPageTitleText) {
+            chatPageTitleText.textContent = text;
+        }
+        const activeItem = document.querySelector('.project-item.active .project-item-text');
+        if (activeItem) {
+            activeItem.textContent = text;
+        }
+    }
+
+    function renderMarkdown(text) {
+        if (window.marked && typeof window.marked.parse === 'function') {
+            return window.marked.parse(text);
+        }
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function setSendButtonState(button, hasContent) {
+        if (!button) return;
+        if (isStreaming) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+            return;
+        }
+        button.disabled = !hasContent;
+        button.style.opacity = hasContent ? '1' : '0.5';
+        button.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+    }
+
+    function setStreamingState(state) {
+        isStreaming = state;
+        if (chatPageSendBtn) {
+            chatPageSendBtn.classList.toggle('is-streaming', state);
+            chatPageSendBtn.setAttribute('aria-label', state ? '停止输出' : '发送');
+        }
+        const hasContent = chatPageTextarea ? chatPageTextarea.textContent.trim().length > 0 : false;
+        setSendButtonState(chatPageSendBtn, hasContent);
+    }
+
+    function stopStreaming() {
+        if (loadingTimer) {
+            clearTimeout(loadingTimer);
+            loadingTimer = null;
+        }
+        const loadingMessage = document.getElementById('loadingMessage');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+        if (currentTypingTimer) {
+            clearTimeout(currentTypingTimer);
+            currentTypingTimer = null;
+        }
+        if (currentAssistantElement) {
+            const currentText = currentAssistantElement.dataset.partialMarkdown || currentAssistantElement.textContent || '';
+            currentAssistantElement.innerHTML = renderMarkdown(currentText);
+        }
+        setStreamingState(false);
+        currentAssistantElement = null;
+    }
+    
+    // 监听输入框内容变化
+    if (mainTextarea) {
+        mainTextarea.addEventListener('input', function() {
+            updateSendButtonState();
+        });
+        
+        mainTextarea.addEventListener('paste', function() {
+            setTimeout(() => {
+                updateSendButtonState();
+            }, 10);
+        });
+        
+        // 回车键处理：Shift+回车换行，回车发送
+        mainTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (hasValidContent() && !btnSend.disabled) {
+                    sendMessage();
+                }
+            }
+        });
+    }
+    
+    // 切换到对话模式（发送消息后）
+    function switchToChatMode(userMessage) {
+        if (isInChatMode) return;
+        
+        isInChatMode = true;
+        
+        // 隐藏整个工作台区域
+        const floorWorkbench = document.querySelector('.floor-workbench');
+        if (floorWorkbench) {
+            floorWorkbench.style.display = 'none';
+        }
+        
+        // 创建新的对话页面容器（仿豆包）
+        const mainViewport = document.querySelector('.main-viewport');
+        if (!mainViewport) return;
+        
+        const chatPageContainer = document.createElement('div');
+        chatPageContainer.className = 'chat-page-container';
+        chatPageContainer.id = 'chatPageContainer';
+        
+        chatPageContainer.innerHTML = `
+            <!-- 对话头部 -->
+            <div class="chat-page-header">
+                <div class="chat-page-title" id="chatPageTitle" aria-label="编辑标题">
+                    <span class="chat-page-title-text">友好的对话</span>
+                    <span class="chat-page-title-hint">点击编辑</span>
+                </div>
+            </div>
+
+            <!-- 消息区域 -->
+            <div class="chat-page-messages" id="chatPageMessages">
+                <!-- 对话内容将通过JavaScript动态生成 -->
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="chat-page-input-container">
+                <div class="search-wrapper">
+                    <div class="input-editor" id="chatPageTextarea" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
+                    <div class="input-actions">
+                        <div class="input-actions-left">
+                            <div class="mode-badge balanced" id="chatPageModeBadge">
+                                <span class="mode-badge-icon">⚖️</span>
+                                <span id="chatPageModeBadgeText">均衡模式</span>
+                            </div>
+                        </div>
+                        <div class="input-actions-right">
+                            <button class="btn-attach" id="chatPageAttach" type="button" aria-label="上传文件">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                </svg>
+                            </button>
+                            <button class="btn-send" id="chatPageSend" type="button" aria-label="发送">
+                                <svg class="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                                <svg class="icon-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        mainViewport.appendChild(chatPageContainer);
+        
+        // 更新对话容器引用
+        messagesContainer = document.getElementById('chatPageMessages');
+        const newTextarea = document.getElementById('chatPageTextarea');
+        const newSendBtn = document.getElementById('chatPageSend');
+        const newAttachBtn = document.getElementById('chatPageAttach');
+        const chatPageTitle = document.getElementById('chatPageTitle');
+
+        if (newAttachBtn) {
+            newAttachBtn.disabled = true;
+            newAttachBtn.style.opacity = '0.5';
+            newAttachBtn.style.cursor = 'not-allowed';
+            newAttachBtn.title = '功能开发中';
+        }
+
+        chatPageSendBtn = newSendBtn;
+        chatPageTextarea = newTextarea;
+        chatPageAttachBtn = newAttachBtn;
+
+        if (typeof initMentionTextarea === 'function') {
+            initMentionTextarea(chatPageTextarea);
+        }
+
+        if (chatPageTitle) {
+            const titleTextEl = chatPageTitle.querySelector('.chat-page-title-text');
+            const titleHintEl = chatPageTitle.querySelector('.chat-page-title-hint');
+            let titleInput = null;
+            chatPageTitleText = titleTextEl;
+
+            function exitEdit(save) {
+                if (!titleInput || !titleTextEl) return;
+                const nextValue = titleInput.value.trim();
+                if (save && nextValue) {
+                    updateChatTitle(nextValue);
+                }
+                titleInput.remove();
+                titleInput = null;
+                titleTextEl.style.display = '';
+                if (titleHintEl) {
+                    titleHintEl.style.display = '';
+                }
+            }
+
+            chatPageTitle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (titleInput || !titleTextEl) return;
+                const currentValue = titleTextEl.textContent.trim();
+                titleInput = document.createElement('input');
+                titleInput.className = 'chat-page-title-input';
+                titleInput.type = 'text';
+                titleInput.value = currentValue;
+                titleTextEl.style.display = 'none';
+                if (titleHintEl) {
+                    titleHintEl.style.display = 'none';
+                }
+                chatPageTitle.appendChild(titleInput);
+                titleInput.focus();
+                titleInput.select();
+
+                titleInput.addEventListener('keydown', function(evt) {
+                    if (evt.key === 'Enter') {
+                        evt.preventDefault();
+                        exitEdit(true);
+                    } else if (evt.key === 'Escape') {
+                        evt.preventDefault();
+                        exitEdit(false);
+                    }
+                });
+
+                titleInput.addEventListener('click', function(evt) {
+                    evt.stopPropagation();
+                });
+
+                titleInput.addEventListener('blur', function() {
+                    exitEdit(true);
+                });
+            });
+
+            document.addEventListener('click', function() {
+                exitEdit(true);
+            });
+        }
+
+        // 重新绑定输入框事件
+        if (newTextarea) {
+            newTextarea.addEventListener('input', function() {
+                const hasContent = newTextarea.textContent.trim().length > 0;
+                setSendButtonState(newSendBtn, hasContent);
+            });
+            
+            newTextarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (isStreaming) {
+                        return;
+                    }
+                    const text = newTextarea.textContent.trim();
+                    if (text && !newSendBtn.disabled) {
+                        newTextarea.textContent = '';
+                        newTextarea.innerHTML = '';
+                        setSendButtonState(newSendBtn, false);
+                        addUserMessage(text);
+                        setTimeout(() => addAssistantMessage(), 300);
+                    }
+                }
+            });
+        }
+        
+        if (newSendBtn) {
+            newSendBtn.addEventListener('click', function() {
+                if (isStreaming) {
+                    stopStreaming();
+                    return;
+                }
+                if (newTextarea && !newSendBtn.disabled) {
+                    const text = newTextarea.textContent.trim();
+                    if (text) {
+                        newTextarea.textContent = '';
+                        newTextarea.innerHTML = '';
+                        setSendButtonState(newSendBtn, false);
+                        addUserMessage(text);
+                        setTimeout(() => addAssistantMessage(), 300);
+                    }
+                }
+            });
+        }
+
+        setSendButtonState(newSendBtn, false);
+        
+        // 生成对话标题（取用户消息的前30个字符）
+        currentChatTitle = userMessage.length > 30 
+            ? userMessage.substring(0, 30) + '...' 
+            : userMessage;
+        
+        // 在对话列表第一行添加当前对话
+        const projectList = document.querySelector('.project-list');
+        if (projectList) {
+            // 创建新的对话项
+            const newItem = document.createElement('div');
+            newItem.className = 'project-item active';
+            newItem.innerHTML = `
+                <svg class="project-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span class="project-item-text">${currentChatTitle}</span>
+            `;
+            // 移除其他项目的active状态
+            projectList.querySelectorAll('.project-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // 插入到第一行
+            projectList.insertBefore(newItem, projectList.firstChild);
+        }
+        
+        updateChatTitle(currentChatTitle);
+    }
+    
+    // 添加用户消息
+    function addUserMessage(text) {
+        if (!messagesContainer) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message user';
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble">
+                <div class="message-text">${escapeHtml(text)}</div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        
+        // 滚动到底部
+        setTimeout(() => {
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }, 50);
+    }
+    
+    // 添加助手消息（带loading和流式输出）
+    function addAssistantMessage() {
+        if (!messagesContainer) return;
+
+        setStreamingState(true);
+
+        // 先显示loading
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message assistant';
+        loadingDiv.id = 'loadingMessage';
+        loadingDiv.innerHTML = `
+            <div class="loading-status">
+                <span class="loading-text">正在识别用户意图</span>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(loadingDiv);
+        
+        // 滚动到底部
+        setTimeout(() => {
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }, 50);
+        
+        // 2秒后移除loading，开始流式输出
+        loadingTimer = setTimeout(() => {
+            if (loadingDiv && loadingDiv.parentNode) {
+                loadingDiv.remove();
+            }
+            
+            // 创建助手消息
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            
+            messageDiv.innerHTML = `
+                <div class="message-text markdown" id="assistantMessageText"></div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            
+            const textElement = messageDiv.querySelector('#assistantMessageText');
+            const fixedText = `# 需求解析概览
+基于你提供的场景，我先给出**关键要点**与**下一步动作**，确保选型和BOM生成高效推进。
+
+## ✅ 已识别的核心信息
+- 应用类型：电源/控制类板卡
+- 关注重点：器件性能与可替代性
+- 输出形式：BOM + 参数说明
+
+---
+
+## 核心器件建议（示例）
+**1) 主控 MCU**
+建议优先评估低功耗系列，满足\`GPIO ≥ 16\` 与 \`ADC ≥ 8\` 的需求。
+
+**2) MOSFET**
+- 关键指标：\`Vds ≥ 20V\`、\`Rds(on) ≤ 50mΩ\`
+- 封装：TO-252
+- 备选方案：英飞凌 / 安森美 / 国产 AOS
+
+**3) DC-DC**
+- 目标：24V → 12V，效率 ≥ 85%
+- 推荐拓扑：同步降压
+
+---
+
+## 输出模板（BOM 结构）
+| 类别 | 器件 | 关键参数 | 备注 |
+| --- | --- | --- | --- |
+| MCU | STM32G0 | 32KB / 16GPIO | 低功耗 |
+| MOS | BSC010N04 | 40V / 6mΩ | 高兼容 |
+| DCDC | MPQ4572 | 36V / 3A | 工业级 |
+
+> 如果你愿意，我可以继续补齐每一行的**替代料**和**价格区间**。`;
+            
+            currentAssistantElement = textElement;
+            // 流式输出
+            typewriterEffect(textElement, fixedText, () => {
+                if (currentAssistantElement) {
+                    currentAssistantElement.innerHTML = renderMarkdown(fixedText);
+                }
+                scrollToBottom();
+                setStreamingState(false);
+                currentAssistantElement = null;
+            });
+        }, 2000);
+    }
+    
+    // 打字机效果
+    function typewriterEffect(element, text, callback) {
+        if (!element) return;
+        
+        let index = 0;
+        element.textContent = '';
+        element.dataset.rawMarkdown = text;
+        
+        function typeChar() {
+            if (!isStreaming) {
+                return;
+            }
+            if (index >= text.length) {
+                if (callback) callback();
+                return;
+            }
+            
+            const char = text[index];
+            if (element.classList.contains('markdown')) {
+                const partial = text.slice(0, index + 1);
+                element.dataset.partialMarkdown = partial;
+                if (index % 6 === 0 || char === '\n') {
+                    element.innerHTML = renderMarkdown(partial);
+                }
+            } else {
+                element.textContent += char;
+            }
+            index++;
+            
+            // 根据字符类型调整延迟
+            let delay = 30;
+            if (char === '。' || char === '，' || char === '：' || char === '、') {
+                delay = 50;
+            } else if (char === ' ') {
+                delay = 10;
+            }
+            
+            currentTypingTimer = setTimeout(typeChar, delay);
+            typingTimers.push(currentTypingTimer);
+            
+            // 每输出几个字符就滚动一次
+            if (index % 10 === 0) {
+                scrollToBottom();
+            }
+        }
+        
+        typeChar();
+    }
+    
+    // 滚动到底部
+    function scrollToBottom() {
+        if (messagesContainer) {
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
+        }
+    }
+    
+    // HTML转义
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // 发送消息
+    function sendMessage() {
+        if (!mainTextarea) return;
+        
+        const text = getTextContent(mainTextarea);
+        if (!text) return;
+        
+        // 清空输入框
+        mainTextarea.textContent = '';
+        mainTextarea.innerHTML = '';
+        updateSendButtonState();
+        
+        // 如果是第一条消息，切换到对话模式
+        if (!isInChatMode) {
+            switchToChatMode(text);
+        }
+        
+        // 添加用户消息
+        addUserMessage(text);
+        
+        // 添加助手消息（带loading和流式输出）
+        setTimeout(() => {
+            addAssistantMessage();
+        }, 300);
+    }
+    
+    // 绑定发送按钮事件
+    if (btnSend) {
+        btnSend.addEventListener('click', function() {
+            if (hasValidContent() && !btnSend.disabled) {
+                sendMessage();
+            }
+        });
+    }
+    
+    // 清理定时器
+    window.addEventListener('beforeunload', function() {
+        typingTimers.forEach(timer => clearTimeout(timer));
+    });
+})();
