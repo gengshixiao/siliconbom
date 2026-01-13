@@ -262,6 +262,11 @@
     overflow: visible;
 }
 
+/* 隐藏设计模式菜单入口（保留路由访问功能） */
+.menu-section:has(#designMode) {
+    display: none;
+}
+
 .menu-item-text {
     flex: 1;
     min-width: 0;
