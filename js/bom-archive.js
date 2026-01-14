@@ -361,7 +361,7 @@
         if (!latestVersion) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 80px 20px;">
+                    <td colspan="8" style="text-align: center; padding: 80px 20px;">
                         <div class="empty-state">
                             <div class="empty-icon">📋</div>
                             <div class="empty-text">暂无BOM数据</div>
@@ -377,7 +377,10 @@
         document.getElementById('currentVersionBadge').textContent = latestVersion.version;
 
         // 渲染BOM表格
-        tbody.innerHTML = latestVersion.bomItems.map((item, index) => `
+        tbody.innerHTML = latestVersion.bomItems.map((item, index) => {
+            // 随机生成已应用BOM数（1-50之间的整数）
+            const appliedBomCount = item.appliedBomCount !== undefined ? item.appliedBomCount : Math.floor(Math.random() * 50) + 1;
+            return `
             <tr data-item-id="${item.id}">
                 <td><input type="text" value="${escapeHtml(item.refDes || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'refDes', this.value)" placeholder="如：C3,C4,C5"></td>
                 <td>
@@ -401,6 +404,7 @@
                 <td><input type="text" value="${escapeHtml(item.package || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'package', this.value)" placeholder="如：0805"></td>
                 <td><input type="text" value="${escapeHtml(item.manufacturer || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'manufacturer', this.value)" placeholder="制造商名称"></td>
                 <td><input type="text" value="${escapeHtml(item.mpn || '')}" onchange="window.bomArchiveModule.updateBomItem(${item.id}, 'mpn', this.value)" placeholder="制造商料号"></td>
+                <td style="text-align: center;">${appliedBomCount}</td>
                 <td style="text-align: center;">
                     <button class="bom-action-btn delete" title="删除" onclick="window.bomArchiveModule.deleteBomItem(${item.id})">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -410,12 +414,13 @@
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         // 添加新行按钮
         const addRowBtn = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 16px;">
+                <td colspan="8" style="text-align: center; padding: 16px;">
                     <button class="btn btn-secondary" onclick="window.bomArchiveModule.addBomItem()" style="width: auto;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -720,7 +725,8 @@
             package: '',
             manufacturer: '',
             mpn: '',
-            detailSpec: ''
+            detailSpec: '',
+            appliedBomCount: Math.floor(Math.random() * 50) + 1
         });
 
         renderCurrentVersion(project);
@@ -777,7 +783,7 @@
         if (!version.bomItems || version.bomItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 80px 20px;">
+                    <td colspan="7" style="text-align: center; padding: 80px 20px;">
                         <div class="empty-state">
                             <div class="empty-icon">📋</div>
                             <div class="empty-text">该版本暂无BOM数据</div>
@@ -786,7 +792,10 @@
                 </tr>
             `;
         } else {
-            tbody.innerHTML = version.bomItems.map(item => `
+            tbody.innerHTML = version.bomItems.map(item => {
+                // 随机生成已应用BOM数（1-50之间的整数）
+                const appliedBomCount = item.appliedBomCount !== undefined ? item.appliedBomCount : Math.floor(Math.random() * 50) + 1;
+                return `
                 <tr>
                     <td>${escapeHtml(item.refDes || '')}</td>
                     <td>${escapeHtml(item.category || '')}</td>
@@ -794,8 +803,10 @@
                     <td>${escapeHtml(item.package || '')}</td>
                     <td>${escapeHtml(item.manufacturer || '')}</td>
                     <td>${escapeHtml(item.mpn || '')}</td>
+                    <td style="text-align: center;">${appliedBomCount}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // 显示弹窗

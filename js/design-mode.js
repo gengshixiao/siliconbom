@@ -1912,6 +1912,7 @@
                     <thead>
                         <tr>
                             <th>型号</th>
+                            <th style="text-align: center;">已应用BOM数</th>
                             <th>位号</th>
                             <th>分类</th>
                             <th>核心参数</th>
@@ -1921,6 +1922,7 @@
                     <tbody>
                         <tr>
                             <td>STM32F103C8T6</td>
+                            <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                             <td>U1</td>
                             <td>微控制器</td>
                             <td>72MHz，64KB Flash，20KB RAM</td>
@@ -1928,6 +1930,7 @@
                         </tr>
                         <tr>
                             <td>LM2596S-ADJ</td>
+                            <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                             <td>U2</td>
                             <td>DC-DC转换器</td>
                             <td>输入4.5-40V，输出1.23-37V可调，3A</td>
@@ -1935,6 +1938,7 @@
                         </tr>
                         <tr>
                             <td>18650-3.7V-2000mAh</td>
+                            <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                             <td>BAT1</td>
                             <td>主电源</td>
                             <td>3.7V，2000mAh</td>
@@ -1942,6 +1946,7 @@
                         </tr>
                         <tr>
                             <td>18650-3.7V-2000mAh</td>
+                            <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                             <td>BAT2</td>
                             <td>备用电源</td>
                             <td>3.7V，2000mAh</td>
@@ -1949,6 +1954,7 @@
                         </tr>
                         <tr>
                             <td>BQ27441-G1</td>
+                            <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                             <td>U3</td>
                             <td>电源监控</td>
                             <td>电池电量监测，I2C接口</td>
@@ -3155,6 +3161,7 @@
                             <thead>
                                 <tr>
                                     <th>型号</th>
+                                    <th style="text-align: center;">已应用BOM数</th>
                                     <th>位号</th>
                                     <th>分类</th>
                                     <th>核心参数</th>
@@ -3188,6 +3195,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U1</td>
                                     <td>电压检测芯片</td>
                                     <td>3.3V基准，1%精度</td>
@@ -3219,6 +3227,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>Q1,Q2</td>
                                     <td>功率MOSFET</td>
                                     <td>150V/104A，Rds=8.7mΩ</td>
@@ -3250,6 +3259,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U2</td>
                                     <td>DC-DC转换器</td>
                                     <td>24V转12V/3A，87%效率</td>
@@ -3281,6 +3291,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U3</td>
                                     <td>控制MCU</td>
                                     <td>Cortex-M0，64KB Flash</td>
@@ -3312,6 +3323,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>R1,R2</td>
                                     <td>电流检测电阻</td>
                                     <td>10mΩ/2W，±1%精度</td>
@@ -3343,6 +3355,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>D1,D2</td>
                                     <td>保护二极管</td>
                                     <td>40V/3A，Vf=0.45V</td>

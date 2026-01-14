@@ -2562,6 +2562,7 @@ function initChatDemo() {
                             <thead>
                                 <tr>
                                     <th>型号</th>
+                                    <th style="text-align: center;">已应用BOM数</th>
                                     <th>位号</th>
                                     <th>分类</th>
                                     <th>核心参数</th>
@@ -2596,6 +2597,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U1</td>
                                     <td>电压检测芯片</td>
                                     <td>3.3V基准，1%精度，-40~+125°C</td>
@@ -2628,6 +2630,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">0</td>
                                     <td>Q1,Q2</td>
                                     <td>功率MOSFET</td>
                                     <td>150V/100A，Rds=7.5mΩ</td>
@@ -2660,6 +2663,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U2</td>
                                     <td>DC-DC转换器</td>
                                     <td>24V转12V/3W，85%效率</td>
@@ -2692,6 +2696,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U3</td>
                                     <td>控制MCU</td>
                                     <td>Cortex-M0+，64KB Flash</td>
@@ -2724,6 +2729,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>R1,R2</td>
                                     <td>电流检测电阻</td>
                                     <td>10mΩ/2W，±1%精度</td>
@@ -2756,6 +2762,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">0</td>
                                     <td>D1,D2</td>
                                     <td>保护二极管</td>
                                     <td>40V/3A，Vf=0.45V</td>
@@ -3266,6 +3273,7 @@ function initChatDemo() {
                             <thead>
                                 <tr>
                                     <th>型号</th>
+                                    <th style="text-align: center;">已应用BOM数</th>
                                     <th>位号</th>
                                     <th>分类</th>
                                     <th>核心参数</th>
@@ -3300,6 +3308,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U1</td>
                                     <td>电压检测芯片</td>
                                     <td>3.3V基准，1%精度</td>
@@ -3332,6 +3341,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>Q1,Q2</td>
                                     <td>功率MOSFET</td>
                                     <td>150V/104A，Rds=8.7mΩ</td>
@@ -3364,6 +3374,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U2</td>
                                     <td>DC-DC转换器</td>
                                     <td>24V转12V/3A，87%效率</td>
@@ -3396,6 +3407,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>U3</td>
                                     <td>控制MCU</td>
                                     <td>Cortex-M0，64KB Flash</td>
@@ -3428,6 +3440,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>R1,R2</td>
                                     <td>电流检测电阻</td>
                                     <td>10mΩ/2W，±1%精度</td>
@@ -3460,6 +3473,7 @@ function initChatDemo() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td style="text-align: center;">${Math.floor(Math.random() * 50) + 1}</td>
                                     <td>D1,D2</td>
                                     <td>保护二极管</td>
                                     <td>40V/3A，Vf=0.45V</td>
@@ -3749,7 +3763,9 @@ function initChatDemo() {
         if (!data) return;
         
         // 生成表格HTML
-        const tableRows = data.items.map(item => `
+        const tableRows = data.items.map(item => {
+            const appliedBomCount = item.appliedBomCount !== undefined ? item.appliedBomCount : Math.floor(Math.random() * 50) + 1;
+            return `
             <tr>
                 <td>${item.refDes}</td>
                 <td>${item.category}</td>
@@ -3757,8 +3773,10 @@ function initChatDemo() {
                 <td>${item.package}</td>
                 <td>${item.manufacturer}</td>
                 <td>${item.mpn}</td>
+                <td style="text-align: center;">${appliedBomCount}</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         
         modal.innerHTML = `
             <button class="close-btn" onclick="closeBomVersionModal()">×</button>
@@ -3776,6 +3794,7 @@ function initChatDemo() {
                                 <th>封装</th>
                                 <th>制造商</th>
                                 <th>制造商料号</th>
+                                <th style="text-align: center;">已应用BOM数</th>
                             </tr>
                         </thead>
                         <tbody>

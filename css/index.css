@@ -659,6 +659,11 @@
     gap: 12px;
 }
 
+.practices-chat-container .message-text {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
 .chat-title-wrapper {
     display: flex;
     align-items: baseline;
@@ -1944,8 +1949,8 @@
 }
 
 .chat-demo-message-text {
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.5;
     color: #334155;
     margin-bottom: 8px;
 }
@@ -3324,4 +3329,3 @@
 }
 
  
-

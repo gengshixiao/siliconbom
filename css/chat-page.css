@@ -121,13 +121,13 @@
 }
 
 .chat-page-messages .message.user .message-bubble {
-    background: #6DD5E8;
+    background: #1F9BB8;
     color: #FFFFFF;
 }
 
 .chat-page-messages .message-text {
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.5;
     margin: 0;
     color: #334155;
     white-space: normal;
