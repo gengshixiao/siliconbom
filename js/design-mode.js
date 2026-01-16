@@ -163,7 +163,6 @@
             expanded: true,
             items: [
                 { id: 'mcu', label: '微控制器', ports: ['SUPPLY', 'I2C', 'GPIO', 'GPIO'] },
-                { id: 'mcu-f030', label: 'STM32F030 MCU', ports: ['SUPPLY', 'I2C', 'GPIO', 'GPIO'] },
                 { id: 'processor', label: '处理器', ports: ['SUPPLY', 'I2C', 'GPIO'] },
             ]
         },
@@ -352,7 +351,7 @@
         
         itemDiv.innerHTML = `
             <div class="component-item-icon">${iconHtml}</div>
-            <span class="component-item-label">${item.label}</span>
+            <div class="component-item-label">${item.label}</div>
         `;
 
         itemDiv.addEventListener('dragstart', (e) => {
@@ -420,56 +419,15 @@
         canvasWrapper.addEventListener('contextmenu', preventContextMenu, { passive: false });
         canvas.addEventListener('contextmenu', preventContextMenu, { passive: false });
 
-        // 鼠标滚轮处理：Ctrl+滚轮缩放，普通滚轮滚动（触控板双指滚动）
+        // 鼠标滚轮/触控板：仅平移画布（缩放交给按钮）
         canvasWrapper.addEventListener('wheel', (e) => {
-            const isCtrlPressed = e.ctrlKey || e.metaKey;
-            const isTouchpad = e.deltaMode === 0 && Math.abs(e.deltaY) < 100; // 触控板通常deltaY较小
-            
-            if (isCtrlPressed || isTouchpad) {
-                // Ctrl+滚轮 或 触控板双指缩放手势：缩放
-                e.preventDefault();
-                e.stopPropagation();
-                
-                let delta = 0;
-                if (e.deltaMode === 0) { // DOM_DELTA_PIXEL (像素模式，触控板)
-                    // 触控板缩放：deltaY通常较小，需要更大的系数
-                    delta = -e.deltaY * 0.005;
-                } else if (e.deltaMode === 1) { // DOM_DELTA_LINE (行模式，普通鼠标)
-                    // 鼠标滚轮缩放
-                    delta = e.deltaY > 0 ? -0.1 : 0.1;
-                } else { // DOM_DELTA_PAGE (页面模式)
-                    delta = e.deltaY > 0 ? -0.2 : 0.2;
-                }
-                
-                // 限制缩放速度
-                delta = Math.max(-0.2, Math.min(0.2, delta));
-                const scaleFactor = 1 + delta;
-                
-                // 计算鼠标在canvas本地坐标系统中的位置（缩放中心）
-                const mouseCanvas = screenToCanvas(e.clientX, e.clientY);
-                
-                // 更新缩放
-                const oldScale = canvasState.scale;
-                canvasState.scale *= scaleFactor;
-                canvasState.scale = Math.max(0.1, Math.min(3, canvasState.scale));
-                
-                // 调整平移以保持鼠标位置不变
-                const newMouseCanvas = screenToCanvas(e.clientX, e.clientY);
-                canvasState.panX += (mouseCanvas.x - newMouseCanvas.x) * canvasState.scale;
-                canvasState.panY += (mouseCanvas.y - newMouseCanvas.y) * canvasState.scale;
-                
-                updateCanvasTransform();
-            } else {
-                // 普通滚轮（无Ctrl）：滚动画布（平移）
-                e.preventDefault();
-                
-                // 滚动转换为平移
-                const scrollSpeed = e.deltaMode === 0 ? 1 : 10; // 触控板用1，鼠标用10
-                canvasState.panX -= e.deltaX * scrollSpeed;
-                canvasState.panY -= e.deltaY * scrollSpeed;
-                
-                updateCanvasTransform();
-            }
+            e.preventDefault();
+
+            const scrollSpeed = e.deltaMode === 0 ? 1 : 10; // 触控板用1，鼠标用10
+            canvasState.panX -= e.deltaX * scrollSpeed;
+            canvasState.panY -= e.deltaY * scrollSpeed;
+
+            updateCanvasTransform();
         }, { passive: false });
 
         // 拖拽平移（空格键+左键，或者中键）
@@ -581,6 +539,8 @@
                 cancelConnection();
             }
         });
+
+        initCanvasZoomControls();
     }
 
     // 将屏幕坐标转换为canvas本地坐标
@@ -624,6 +584,52 @@
         
         canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${canvasState.scale})`;
         canvas.style.transformOrigin = '0 0';
+        updateZoomLevel();
+    }
+
+    function initCanvasZoomControls() {
+        const zoomInBtn = document.getElementById('canvasZoomIn');
+        const zoomOutBtn = document.getElementById('canvasZoomOut');
+
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => {
+                zoomCanvasByStep(0.1);
+            });
+        }
+
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => {
+                zoomCanvasByStep(-0.1);
+            });
+        }
+
+        updateZoomLevel();
+    }
+
+    function zoomCanvasByStep(step) {
+        const canvasWrapper = document.querySelector('.design-canvas-wrapper');
+        if (!canvasWrapper) return;
+
+        const rect = canvasWrapper.getBoundingClientRect();
+        const anchorScreenX = rect.left + rect.width / 2;
+        const anchorScreenY = rect.top + rect.height / 2;
+        const viewportCenterX = rect.width / 2;
+        const viewportCenterY = rect.height / 2;
+
+        const anchorCanvas = screenToCanvas(anchorScreenX, anchorScreenY);
+        const targetScale = Math.max(0.2, Math.min(2.5, canvasState.scale + step));
+
+        canvasState.scale = targetScale;
+        canvasState.panX = anchorScreenX - rect.left - viewportCenterX - anchorCanvas.x * targetScale + 2500 * targetScale;
+        canvasState.panY = anchorScreenY - rect.top - viewportCenterY - anchorCanvas.y * targetScale + 2500 * targetScale;
+
+        updateCanvasTransform();
+    }
+
+    function updateZoomLevel() {
+        const zoomLevel = document.getElementById('canvasZoomLevel');
+        if (!zoomLevel) return;
+        zoomLevel.textContent = `${Math.round(canvasState.scale * 100)}%`;
     }
 
     // 添加元器件到画布
@@ -667,13 +673,15 @@
         const partNumber = (component.partNumber !== null && component.partNumber !== undefined) 
             ? component.partNumber 
             : '';
+        const partNumberDisplay = partNumber || '待选型';
 
         // 先设置内容部分
         block.innerHTML = `
             <div class="component-block-content">
                 <div class="component-block-number">${component.id}</div>
                 <div class="component-block-icon">${iconHtml}</div>
-                <div class="component-block-label">${partNumber}</div>
+                <div class="component-block-type">${component.label}</div>
+                <div class="component-block-label">${partNumberDisplay}</div>
             </div>
         `;
 
@@ -780,27 +788,61 @@
         tempLine.setAttribute('d', path);
     }
 
-    // 创建直角路径（曼哈顿路径算法）
+    // 创建直角路径（根据连接点方向做更自然的出线与拐角）
     function createOrthogonalPath(x1, y1, x2, y2, side1, side2) {
-        // 计算中间点，使用曼哈顿路径（先水平后垂直或先垂直后水平）
-        let midX, midY;
-        
-        if (!side1) {
-            // 临时连线：从起点先水平移动，再垂直移动
-            midX = x1;
-            midY = y2;
-        } else if (side1 === 'top' || side1 === 'bottom') {
-            // 起点在上下边，先水平移动
-            midX = x2;
-            midY = y1;
-        } else {
-            // 起点在左右边，先垂直移动
-            midX = x1;
-            midY = y2;
+        const offset = 30;
+        const exit1 = getExitPoint(x1, y1, side1, offset);
+        const exit2 = getExitPoint(x2, y2, side2, offset);
+
+        // 临时连线：直接从起点出线后对齐到鼠标
+        if (!side2) {
+            if (side1 === 'left' || side1 === 'right') {
+                return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${exit1.x} ${y2} L ${x2} ${y2}`;
+            }
+            return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${x2} ${exit1.y} L ${x2} ${y2}`;
         }
-        
-        // 生成SVG路径数据：M起点 -> L中间点1 -> L中间点2 -> L终点
-        return `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
+
+        const sameOrientation = isHorizontalSide(side1) === isHorizontalSide(side2);
+
+        if (sameOrientation) {
+            // 同向：使用中间走廊，避免拐角紧贴器件
+            if (isHorizontalSide(side1)) {
+                if (side1 === side2) {
+                    const corridorX = side1 === 'left'
+                        ? Math.min(exit1.x, exit2.x) - offset
+                        : Math.max(exit1.x, exit2.x) + offset;
+                    return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${corridorX} ${exit1.y} L ${corridorX} ${exit2.y} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+                }
+                const midX = (exit1.x + exit2.x) / 2;
+                return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${midX} ${exit1.y} L ${midX} ${exit2.y} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+            }
+            if (side1 === side2) {
+                const corridorY = side1 === 'top'
+                    ? Math.min(exit1.y, exit2.y) - offset
+                    : Math.max(exit1.y, exit2.y) + offset;
+                return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${exit1.x} ${corridorY} L ${exit2.x} ${corridorY} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+            }
+            const midY = (exit1.y + exit2.y) / 2;
+            return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${exit1.x} ${midY} L ${exit2.x} ${midY} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+        }
+
+        // 垂直/水平组合：优先走“出线 -> 对齐 -> 入线”
+        if (isHorizontalSide(side1)) {
+            return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${exit1.x} ${exit2.y} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+        }
+        return `M ${x1} ${y1} L ${exit1.x} ${exit1.y} L ${exit2.x} ${exit1.y} L ${exit2.x} ${exit2.y} L ${x2} ${y2}`;
+    }
+
+    function isHorizontalSide(side) {
+        return side === 'left' || side === 'right';
+    }
+
+    function getExitPoint(x, y, side, offset) {
+        if (side === 'left') return { x: x - offset, y: y };
+        if (side === 'right') return { x: x + offset, y: y };
+        if (side === 'top') return { x: x, y: y - offset };
+        if (side === 'bottom') return { x: x, y: y + offset };
+        return { x, y };
     }
 
     // 完成连接
@@ -1144,7 +1186,15 @@
         messageDiv.appendChild(metaDiv);
         messagesContainer.appendChild(messageDiv);
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        scrollCopilotToBottom();
+    }
+
+    function scrollCopilotToBottom() {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+        requestAnimationFrame(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
     }
 
     // 初始化事件监听器
@@ -1552,7 +1602,7 @@
         messageDiv.appendChild(metaDiv);
         messagesContainer.appendChild(messageDiv);
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        scrollCopilotToBottom();
     }
 
     // 显示推荐问题提示框
@@ -2125,10 +2175,8 @@
             }, 800);
         }, 500);
         
-        // 滚动到顶部
-        setTimeout(() => {
-            messagesContainer.scrollTop = 0;
-        }, 100);
+        // 保持滚动在最新消息
+        scrollCopilotToBottom();
     }
     
     // 显示用户文档消息
@@ -2266,9 +2314,7 @@
         messagesContainer.appendChild(assistantMessage);
         
         // 滚动到底部
-        setTimeout(() => {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 100);
+        scrollCopilotToBottom();
         
         // 逐步显示表单项
         showRequirementsFormItems(assistantMessage);
@@ -2284,7 +2330,7 @@
             { type: '电压检测芯片', desc: '检测12V主电源，欠压阈值10.8V，过压阈值13.2V，响应时间<1ms', componentId: 'voltage-monitor' },
             { type: '功率MOSFET', desc: 'N沟道，Vds≥20V，Id≥8A，Rds(on)≤50mΩ，TO-252封装', componentId: 'power-mosfet', count: 2 },
             { type: 'DC-DC转换器', desc: '24V转12V，输出电流≥3A，效率≥85%，隔离型', componentId: 'isolated-dc-dc' },
-            { type: '控制MCU', desc: 'ARM Cortex-M0+，Flash≥32KB，GPIO≥16个，ADC≥8通道', componentId: 'mcu-f030' },
+            { type: '控制MCU', desc: 'ARM Cortex-M0+，Flash≥32KB，GPIO≥16个，ADC≥8通道', componentId: 'mcu' },
             { type: '电流检测电阻', desc: '精密电阻，阻值10mΩ，功率≥2W，精度≤1%，2512封装', componentId: 'current-sense-resistor', count: 2 },
             { type: '保护二极管', desc: '肖特基二极管，Vf≤0.5V，If≥5A，Vr≥20V，SMA封装', componentId: 'protection-diode', count: 2 }
         ];
@@ -2336,6 +2382,7 @@
             setTimeout(() => {
                 itemDiv.style.opacity = '1';
                 itemDiv.style.transform = 'translateY(0)';
+                scrollCopilotToBottom();
             }, 50);
             
             currentIndex++;
@@ -2410,51 +2457,60 @@
         // 第四层（最下）：电流检测电阻（2个，水平排列）
         const blockWidth = 180;
         const blockHeight = 100;
-        const horizontalSpacing = 250; // 水平间距
-        const verticalSpacing = 150; // 垂直间距
+        const columnGap = 240; // 列间距（左/右两列）
+        const rowGap = 170; // 行间距（分层排布）
+        const mosfetOffset = 220; // MOSFET与电阻的水平间距
         
+        const leftColumnX = centerX - columnGap;
+        const rightColumnX = centerX + columnGap;
+        const rowTopY = centerY - rowGap * 2;
+        const rowUpperY = centerY - rowGap;
+        const rowMidY = centerY;
+        const rowLowerY = centerY + rowGap;
+        
+        // 统一分层：上-中-下，保持垂直连线和水平连线更清晰
         const componentLayout = {
             'protection-diode': { 
-                x: centerX - horizontalSpacing, 
-                y: centerY - verticalSpacing * 2, 
+                x: centerX, 
+                y: rowTopY, 
                 label: '保护二极管', 
                 partNumber: '待选型', 
                 count: 2, 
-                offset: horizontalSpacing * 2 
+                offset: columnGap * 2 
             },
             'voltage-monitor': { 
-                x: centerX - horizontalSpacing, 
-                y: centerY - verticalSpacing, 
+                x: leftColumnX, 
+                y: rowUpperY, 
                 label: '电压检测芯片', 
                 partNumber: '待选型' 
             },
-            'mcu-f030': { 
-                x: centerX + horizontalSpacing, 
-                y: centerY - verticalSpacing, 
-                label: '控制MCU', 
+            'mcu': { 
+                x: rightColumnX, 
+                y: rowUpperY, 
+                label: '微控制器', 
                 partNumber: '待选型' 
             },
             'isolated-dc-dc': { 
-                x: centerX - horizontalSpacing * 1.5, 
-                y: centerY, 
+                x: leftColumnX, 
+                y: rowMidY, 
                 label: 'DC-DC转换器', 
                 partNumber: '待选型' 
             },
             'power-mosfet': { 
-                x: centerX + horizontalSpacing * 0.5, 
-                y: centerY, 
+                x: rightColumnX + mosfetOffset / 2, 
+                y: rowMidY, 
                 label: '功率MOSFET', 
                 partNumber: '待选型', 
                 count: 2, 
-                offset: horizontalSpacing 
+                offset: mosfetOffset 
             },
             'current-sense-resistor': { 
-                x: centerX - horizontalSpacing, 
-                y: centerY + verticalSpacing, 
+                x: rightColumnX + mosfetOffset / 2, 
+                y: rowLowerY, 
                 label: '电流检测电阻', 
                 partNumber: '待选型', 
                 count: 2, 
-                offset: horizontalSpacing * 2 
+                offset: mosfetOffset 
             }
         };
         
@@ -2648,7 +2704,7 @@
     function autoConnectComponents(components) {
         // 找到各个组件
         const voltageMonitor = components.find(c => c.type === 'voltage-monitor');
-        const mcu = components.find(c => c.type === 'mcu-f030');
+        const mcu = components.find(c => c.type === 'mcu');
         const mosfets = components.filter(c => c.type === 'power-mosfet').sort((a, b) => a.id - b.id);
         const dcDc = components.find(c => c.type === 'isolated-dc-dc');
         const resistors = components.filter(c => c.type === 'current-sense-resistor').sort((a, b) => a.id - b.id);
@@ -2980,7 +3036,7 @@
             'task1': 'voltage-monitor',
             'task2': 'power-mosfet',
             'task3': 'isolated-dc-dc',
-            'task4': 'mcu-f030',
+            'task4': 'mcu',
             'task5': 'current-sense-resistor',
             'task6': 'protection-diode'
         };

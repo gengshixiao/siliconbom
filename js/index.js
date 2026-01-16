@@ -5143,7 +5143,8 @@ document.addEventListener('DOMContentLoaded', function() {
             messagesContainer.appendChild(messageDiv);
             
             const textElement = messageDiv.querySelector('#assistantMessageText');
-            const fixedText = `# 需求解析概览
+            const fixedText = `当前硅宝暂不支持直接回答具体问题，以下是常见回复示例：
+# 需求解析概览
 基于你提供的场景，我先给出**关键要点**与**下一步动作**，确保选型和BOM生成高效推进。
 
 ## ✅ 已识别的核心信息
