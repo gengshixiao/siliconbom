@@ -718,9 +718,9 @@ function setActiveFloor(target) {
     // 从侧边栏到芯片左侧引脚的走线 - 对称实现，与右侧风格一致
     // 左侧推荐问题列表
     const leftQuestions = [
-        'GD25Q64ESIGR',
+        '品牌为英飞凌，内阻小于 100mΩ的mos',
         '基于产品需求，生成BOM',
-        'R26110692的内阻多大'
+        'GD25Q64ESIGR'
     ];
     
     leftPinCoords.forEach((pin, i) => {
@@ -983,7 +983,7 @@ function setActiveFloor(target) {
     // 从芯片右侧引脚到页面右侧 - 基于芯片宽度计算间距
     // 右侧推荐问题列表
     const rightQuestions = [
-        '品牌为英飞凌，内阻小于 100mΩ的mos',
+        'R26110692的内阻多大',
         'R26112362推荐同规格产品',
         'SCT1000N170平台解读'
     ];
@@ -4707,6 +4707,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentChatTitle = '';
     let isInChatMode = false;
     let isStreaming = false;
+    let isTaskLocked = false;
     let typingTimers = [];
     let currentTypingTimer = null;
     let loadingTimer = null;
@@ -4718,6 +4719,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let rdSpacePreview = null;
     let rdSpaceCurrentFile = null;
     let rdSpaceSidebar = null;
+    let rdSpaceTaskTab = null;
+    let rdSpaceBomTab = null;
+    let rdSpaceWorkflow = null;
+    let rdSpaceBomSidebar = null;
+    let rdSpaceBomSidebarContent = null;
+    let rdSpaceBomContentTitle = null;
+    let rdSpaceBomContentBody = null;
     const rdSpaceFiles = [];
 
     const uploadIconMap = {
@@ -4787,6 +4795,45 @@ document.addEventListener('DOMContentLoaded', function() {
             const chatContent = getTextContent(chatPageTextarea);
             setSendButtonState(chatPageSendBtn, chatContent.length > 0);
         }
+    }
+
+    // 研发任务进行中时锁定输入区，避免继续发送消息
+    function setTaskInputLockState(locked, hintText = '当前研发任务执行中') {
+        isTaskLocked = locked;
+        const searchWrapper = getActiveSearchWrapper();
+        if (!searchWrapper) return;
+        searchWrapper.classList.toggle('is-task-locked', locked);
+        const editor = searchWrapper.querySelector('.input-editor');
+        if (editor) {
+            editor.contentEditable = locked ? 'false' : 'true';
+            editor.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        }
+        const statusEl = searchWrapper.querySelector('.input-task-status') || (() => {
+            const el = document.createElement('div');
+            el.className = 'input-task-status';
+            const actions = searchWrapper.querySelector('.input-actions');
+            if (actions) {
+                actions.insertAdjacentElement('afterend', el);
+            } else {
+                searchWrapper.appendChild(el);
+            }
+            return el;
+        })();
+        if (statusEl) {
+            statusEl.textContent = hintText;
+        }
+        const attachBtn = searchWrapper.querySelector('.btn-attach');
+        const sendBtn = searchWrapper.querySelector('.btn-send');
+        if (attachBtn) {
+            attachBtn.disabled = locked;
+        }
+        if (sendBtn) {
+            sendBtn.disabled = locked || sendBtn.disabled;
+        }
+        if (locked && editor) {
+            editor.blur();
+        }
+        syncSendButtonStates();
     }
 
     function createUploadCard(file, uploadList) {
@@ -4872,6 +4919,90 @@ document.addEventListener('DOMContentLoaded', function() {
         syncSendButtonStates();
     }
 
+    function createSimulatedUploadCard(fileName, uploadList) {
+        if (!uploadList) return;
+        const extension = getFileExtension(fileName);
+        const isImage = imageExtensions.has(extension);
+        const displayType = extension ? extension.toUpperCase() : 'FILE';
+        const iconUrl = uploadIconMap[extension] || uploadIconMap.docx;
+
+        const card = document.createElement('div');
+        card.className = 'upload-card is-ready';
+        if (isImage) {
+            card.classList.add('is-image');
+        }
+        card.dataset.fileName = fileName;
+        card.dataset.fileType = displayType;
+        card.dataset.isImage = isImage ? 'true' : 'false';
+        card.dataset.thumbUrl = isImage ? imageThumbnailUrl : iconUrl;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'upload-thumb';
+        const thumbImage = document.createElement('img');
+        if (isImage) {
+            thumbImage.src = imageThumbnailUrl;
+        } else {
+            thumb.classList.add('is-icon');
+            thumbImage.src = iconUrl;
+        }
+        thumbImage.alt = extension || 'file';
+        thumb.appendChild(thumbImage);
+
+        let meta = null;
+        if (!isImage) {
+            meta = document.createElement('div');
+            meta.className = 'upload-meta';
+            const name = document.createElement('div');
+            name.className = 'upload-name';
+            name.textContent = fileName;
+            const status = document.createElement('div');
+            status.className = 'upload-status';
+            status.textContent = displayType;
+            meta.appendChild(name);
+            meta.appendChild(status);
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'upload-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('aria-label', '移除附件');
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => {
+            card.remove();
+            updateUploadListState(uploadList);
+            syncSendButtonStates();
+        });
+
+        card.appendChild(thumb);
+        if (meta) {
+            card.appendChild(meta);
+        }
+        card.appendChild(removeBtn);
+
+        uploadList.appendChild(card);
+        updateUploadListState(uploadList);
+        syncSendButtonStates();
+    }
+
+    function maybeSimulateRecommendedUploads(text) {
+        if (text !== '基于产品需求，生成BOM') return;
+        const searchWrapper = getActiveSearchWrapper();
+        if (!searchWrapper) return;
+        const { uploadList } = ensureUploadElements(searchWrapper);
+        if (!uploadList) return;
+        uploadList.innerHTML = '';
+        updateUploadListState(uploadList);
+        const simulatedFiles = [
+            '产品外观示意.png',
+            '产品需求说明书.docx',
+            '结构图纸.dwg'
+        ];
+        simulatedFiles.forEach(fileName => {
+            createSimulatedUploadCard(fileName, uploadList);
+        });
+        syncSendButtonStates();
+    }
+
     function bindUploadButton(button) {
         if (!button) return;
         const searchWrapper = button.closest('.search-wrapper');
@@ -4910,6 +5041,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 更新发送按钮状态
     function updateSendButtonState() {
         if (!btnSend) return;
+        if (isTaskLocked) {
+            btnSend.disabled = true;
+            btnSend.style.opacity = '0.5';
+            btnSend.style.cursor = 'not-allowed';
+            return;
+        }
         const hasContent = hasValidContent();
         const pending = hasPendingUploads(mainTextarea ? mainTextarea.closest('.search-wrapper') : null);
         btnSend.disabled = !hasContent || pending;
@@ -4930,6 +5067,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!mainTextarea) return;
         mainTextarea.innerHTML = '';
         mainTextarea.textContent = text;
+        maybeSimulateRecommendedUploads(text);
         const range = document.createRange();
         range.selectNodeContents(mainTextarea);
         range.collapse(false);
@@ -4963,8 +5101,773 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
+    // 预置脚本：触发匹配与执行流程
+    function normalizePresetText(text) {
+        if (!text) return '';
+        return text.replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function findPresetScript(text) {
+        const scripts = window.PRESET_SCRIPTS || [];
+        const normalized = normalizePresetText(text);
+        return scripts.find(script => (script.triggers || []).some(trigger => normalizePresetText(trigger) === normalized));
+    }
+
+    // 预置脚本的输出节点，保持与默认对话风格一致（不包气泡）
+    function appendAssistantBlock(innerHtml) {
+        if (!messagesContainer) return null;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant';
+        messageDiv.innerHTML = innerHtml;
+        messagesContainer.appendChild(messageDiv);
+        scrollToBottom();
+        return messageDiv;
+    }
+
+    // 预置脚本的流式输出
+    function streamAssistantText(text, onComplete) {
+        const messageDiv = appendAssistantBlock('<div class="message-text markdown"></div>');
+        if (!messageDiv) return;
+        const textElement = messageDiv.querySelector('.message-text');
+        if (!textElement) return;
+        currentAssistantElement = textElement;
+        typewriterEffect(textElement, text, () => {
+            if (currentAssistantElement) {
+                currentAssistantElement.innerHTML = renderMarkdown(text);
+            }
+            currentAssistantElement = null;
+            if (onComplete) onComplete();
+        });
+    }
+
+    function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // MOS表格随机数据（用于预置脚本的“物料清单”）
+    function generateMosRows(count) {
+        const vdsOptions = [30, 40, 60, 80, 100];
+        const idOptions = [18, 22, 30, 40, 55, 65, 80, 95, 120];
+        const pkgOptions = ['TDSON-8', 'SuperSO8', 'DPAK', 'TOLL', 'TO-220'];
+        const prefixOptions = ['BSC', 'BSZ', 'BSC', 'BSC'];
+        const rows = [];
+        for (let i = 0; i < count; i++) {
+            const series = randomInt(10, 99);
+            const rdsValue = Number((Math.random() * 95 + 1).toFixed(1));
+            const vds = vdsOptions[randomInt(0, vdsOptions.length - 1)];
+            const id = idOptions[randomInt(0, idOptions.length - 1)];
+            const pkg = pkgOptions[randomInt(0, pkgOptions.length - 1)];
+            const prefix = prefixOptions[randomInt(0, prefixOptions.length - 1)];
+            const vdsCode = vds === 30 ? 3 : vds === 40 ? 4 : vds === 60 ? 6 : vds === 80 ? 8 : 10;
+            const model = `${prefix}${series}${randomInt(0,9)}N0${vdsCode}LS`;
+            rows.push({
+                brand: 'Infineon',
+                model,
+                rds: rdsValue.toString(),
+                vds: vds.toString(),
+                id: id.toString(),
+                pkg,
+                code: `INF-${model}`
+            });
+        }
+        return rows.sort((a, b) => parseFloat(a.rds) - parseFloat(b.rds));
+    }
+
+    function ensureMosRows(table) {
+        if (!table) return [];
+        if (table._rowsCache) return table._rowsCache;
+        if (Array.isArray(table.rows) && table.rows.length) {
+            table._rowsCache = table.rows;
+            return table._rowsCache;
+        }
+        if (table.randomRows) {
+            table._rowsCache = generateMosRows(table.randomRows);
+            return table._rowsCache;
+        }
+        table._rowsCache = [];
+        return table._rowsCache;
+    }
+
+    // MOS表格渲染：固定表头 + 可滚动
+    function buildMosTable(table) {
+        if (!table) return '';
+        const rows = ensureMosRows(table);
+        const colWidths = {
+            brand: '12%',
+            model: '18%',
+            rds: '16%',
+            vds: '8%',
+            id: '8%',
+            pkg: '12%',
+            code: '26%'
+        };
+        const colGroup = table.columns.map(column => {
+            const width = colWidths[column.key] || 'auto';
+            return `<col style="width:${width}">`;
+        }).join('');
+        const headerCells = table.columns.map(column => `<th data-col="${column.key}">${column.label}</th>`).join('');
+        const bodyRows = rows.map(row => {
+            const cells = table.columns.map(column => `<td data-col="${column.key}">${row[column.key] || ''}</td>`).join('');
+            return `<tr>${cells}</tr>`;
+        }).join('');
+        return `
+            <div class="mos-table-wrapper">
+                <div class="mos-table-title">${table.title || '物料清单'}</div>
+                <div class="mos-table-container">
+                    <table class="mos-table">
+                        <colgroup>${colGroup}</colgroup>
+                        <thead><tr>${headerCells}</tr></thead>
+                        <tbody>${bodyRows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // BOM需求确认单：可编辑表单 + 动态行（新增/删除/校验）
+    const defaultBomTypes = [
+        { value: 'mosfet', label: 'MOSFET' },
+        { value: 'diode', label: '二极管' },
+        { value: 'mcu', label: 'MCU' },
+        { value: 'dcdc', label: 'DC-DC电源' },
+        { value: 'ldo', label: 'LDO稳压' },
+        { value: 'resistor', label: '电阻' },
+        { value: 'capacitor', label: '电容' },
+        { value: 'driver', label: '驱动器' },
+        { value: 'interface', label: '接口芯片' }
+    ];
+
+    function getBomFormTypes(formConfig) {
+        if (formConfig && Array.isArray(formConfig.types) && formConfig.types.length) {
+            return formConfig.types;
+        }
+        return defaultBomTypes;
+    }
+
+    function buildBomRequirementRow(row, types) {
+        const safeRow = row || {};
+        const options = types.map(option => `
+            <option value="${escapeHtml(option.value)}"${safeRow.type === option.value ? ' selected' : ''}>
+                ${escapeHtml(option.label)}
+            </option>
+        `).join('');
+        const value = safeRow.desc ? escapeHtml(safeRow.desc) : '';
+        return `
+            <div class="bom-form-row" data-row="true">
+                <div class="bom-form-cell">
+                    <select class="bom-form-select">
+                        <option value="">请选择类型</option>
+                        ${options}
+                    </select>
+                </div>
+                <div class="bom-form-cell">
+                    <input class="bom-form-input" type="text" value="${value}" placeholder="请输入物料需求">
+                </div>
+                <div class="bom-form-cell bom-form-cell--action">
+                    <button class="bom-form-remove" type="button">删除</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildBomRequirementForm(formConfig = {}) {
+        const types = getBomFormTypes(formConfig);
+        const rows = Array.isArray(formConfig.rows) && formConfig.rows.length
+            ? formConfig.rows
+            : [{ type: '', desc: '' }];
+        const rowsHtml = rows.map(row => buildBomRequirementRow(row, types)).join('');
+        return `
+            <div class="bom-requirement-form" data-bom-form>
+                <div class="bom-form-title">${escapeHtml(formConfig.title || '物料需求确认单')}</div>
+                <div class="bom-form-table">
+                    <div class="bom-form-row bom-form-row--head">
+                        <div class="bom-form-cell">物料类型</div>
+                        <div class="bom-form-cell">需求</div>
+                        <div class="bom-form-cell bom-form-cell--action"></div>
+                    </div>
+                    ${rowsHtml}
+                </div>
+                <div class="bom-form-footer">
+                    <button class="bom-form-add" type="button">新增</button>
+                    <button class="bom-form-submit" type="button" disabled>确认</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function createBomRequirementRow(row, types) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = buildBomRequirementRow(row, types);
+        return wrapper.firstElementChild;
+    }
+
+    // 初始化确认单交互：唯一类型、必填校验、增删行、提交触发任务流
+    function initBomRequirementForm(formEl, formConfig) {
+        if (!formEl || formEl.dataset.bound === 'true') return;
+        formEl.dataset.bound = 'true';
+        const types = getBomFormTypes(formConfig);
+        const table = formEl.querySelector('.bom-form-table');
+        const addBtn = formEl.querySelector('.bom-form-add');
+        const submitBtn = formEl.querySelector('.bom-form-submit');
+
+        const getRows = () => Array.from(formEl.querySelectorAll('.bom-form-row[data-row="true"]'));
+        const getSelectedTypes = () => new Set(
+            getRows().map(row => {
+                const select = row.querySelector('.bom-form-select');
+                return select ? select.value : '';
+            }).filter(Boolean)
+        );
+
+        const updateState = () => {
+            if (formEl.dataset.submitted === 'true') {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+                return;
+            }
+            const rows = getRows();
+            const selected = getSelectedTypes();
+            rows.forEach(row => {
+                const select = row.querySelector('.bom-form-select');
+                if (!select) return;
+                Array.from(select.options).forEach(option => {
+                    if (!option.value) return;
+                    option.disabled = selected.has(option.value) && option.value !== select.value;
+                });
+            });
+            const allowRemove = rows.length > 1;
+            rows.forEach(row => {
+                const removeBtn = row.querySelector('.bom-form-remove');
+                if (removeBtn) {
+                    removeBtn.disabled = !allowRemove;
+                }
+            });
+            if (addBtn) {
+                const available = types.filter(option => !selected.has(option.value));
+                addBtn.disabled = available.length === 0;
+            }
+            if (submitBtn) {
+                const allValid = rows.length > 0 && rows.every(row => {
+                    const select = row.querySelector('.bom-form-select');
+                    const input = row.querySelector('.bom-form-input');
+                    return select && select.value && input && input.value.trim();
+                });
+                submitBtn.disabled = !allValid;
+            }
+        };
+
+        if (addBtn && table) {
+            addBtn.addEventListener('click', () => {
+                const selected = getSelectedTypes();
+                const available = types.filter(option => !selected.has(option.value));
+                if (!available.length) return;
+                const newRow = createBomRequirementRow({ type: '', desc: '' }, types);
+                table.appendChild(newRow);
+                updateState();
+                const select = newRow.querySelector('.bom-form-select');
+                if (select) select.focus();
+            });
+        }
+
+        if (table) {
+            table.addEventListener('change', event => {
+                if (event.target && event.target.classList.contains('bom-form-select')) {
+                    updateState();
+                }
+            });
+            table.addEventListener('input', event => {
+                if (event.target && event.target.classList.contains('bom-form-input')) {
+                    updateState();
+                }
+            });
+            table.addEventListener('click', event => {
+                if (event.target && event.target.classList.contains('bom-form-remove')) {
+                    const row = event.target.closest('.bom-form-row');
+                    if (!row) return;
+                    if (getRows().length <= 1) return;
+                    row.remove();
+                    updateState();
+                }
+            });
+        }
+
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => {
+                if (submitBtn.disabled) return;
+                runBomTaskFlow(formEl, formConfig);
+            });
+        }
+
+        updateState();
+    }
+
+    // 读取确认单数据，用于驱动任务进度与BOM生成
+    function getBomFormRows(formEl, formConfig) {
+        if (!formEl) return [];
+        const typeMap = new Map(getBomFormTypes(formConfig).map(option => [option.value, option.label]));
+        return Array.from(formEl.querySelectorAll('.bom-form-row[data-row="true"]')).map(row => {
+            const select = row.querySelector('.bom-form-select');
+            const input = row.querySelector('.bom-form-input');
+            const type = select ? select.value : '';
+            return {
+                type,
+                label: typeMap.get(type) || type,
+                desc: input ? input.value.trim() : ''
+            };
+        });
+    }
+
+    // 对话区BOM表格（横向表格 + 底部操作区）
+    function buildBomTableHtml(bomData) {
+        if (!bomData) return '';
+        const rows = (bomData.items || []).map(item => `
+            <tr>
+                <td>${escapeHtml(item.code)}</td>
+                <td>${escapeHtml(item.ref)}</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.params)}</td>
+                <td>${escapeHtml(item.package)}</td>
+                <td>${escapeHtml(item.manufacturer)}</td>
+            </tr>
+        `).join('');
+        return `
+            <div class="bom-table-container">
+                <div class="bom-table-header">${escapeHtml(bomData.projectName)} BOM清单 ${escapeHtml(bomData.version)}</div>
+                <div class="bom-table-wrapper">
+                    <table class="bom-table">
+                        <thead>
+                            <tr>
+                                <th>物料编码</th>
+                                <th>位号</th>
+                                <th>分类</th>
+                                <th>核心参数</th>
+                                <th>封装</th>
+                                <th>制造商</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bom-table-actions">
+                    <button class="bom-action-btn bom-btn-download" type="button">导出</button>
+                    <button class="bom-action-btn primary" type="button">保存</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // 研发空间BOM详情（卡片式）
+    function buildBomDetailListHtml(bomData) {
+        if (!bomData) return '';
+        const items = (bomData.items || []).map(item => `
+            <div class="bom-detail-item">
+                <div class="bom-detail-header">
+                    <div class="bom-detail-model">
+                        ${escapeHtml(item.code)}
+                    </div>
+                    <span class="bom-detail-ref">${escapeHtml(item.ref)}</span>
+                </div>
+                <div class="bom-detail-grid">
+                    <div class="bom-detail-label">分类</div>
+                    <div class="bom-detail-value">${escapeHtml(item.category)}</div>
+                    <div class="bom-detail-label">核心参数</div>
+                    <div class="bom-detail-value">${escapeHtml(item.params)}</div>
+                    <div class="bom-detail-label">封装</div>
+                    <div class="bom-detail-value">${escapeHtml(item.package)}</div>
+                    <div class="bom-detail-label">制造商</div>
+                    <div class="bom-detail-value">${escapeHtml(item.manufacturer)}</div>
+                </div>
+            </div>
+        `).join('');
+        return `<div class="bom-detail-list">${items}</div>`;
+    }
+
+    // 原型用：基于确认单生成伪BOM数据
+    function generateBomDataFromForm(rows) {
+        const packages = ['SOT-23', 'DFN-8', 'SMA', 'QFN-32', 'SOP-8', 'TO-220', 'LQFP-48'];
+        const manufacturers = ['Infineon', 'TI', 'ADI', 'ST', 'ON', 'NXP', 'ROHM', '华润微'];
+        const refPrefixMap = {
+            mosfet: 'Q',
+            diode: 'D',
+            mcu: 'U',
+            dcdc: 'U',
+            ldo: 'U',
+            resistor: 'R',
+            capacitor: 'C',
+            driver: 'U',
+            interface: 'U'
+        };
+        const items = rows.map((row, index) => {
+            const code = `${String.fromCharCode(65 + randomInt(0, 25))}${String.fromCharCode(65 + randomInt(0, 25))}${randomInt(1000, 9999)}${String.fromCharCode(65 + randomInt(0, 25))}`;
+            const prefix = refPrefixMap[row.type] || 'U';
+            return {
+                code,
+                ref: `${prefix}${index + 1}`,
+                category: row.label || '器件',
+                params: row.desc || '待确认',
+                package: packages[randomInt(0, packages.length - 1)],
+                manufacturer: manufacturers[randomInt(0, manufacturers.length - 1)]
+            };
+        });
+        return {
+            projectName: '产品需求',
+            version: 'V1.0',
+            items
+        };
+    }
+
+    // 研发空间BOM目录与详情渲染（含NEW标识）
+    function renderRdSpaceBomData(bomData) {
+        if (!rdSpaceBomSidebarContent || !rdSpaceBomContentBody || !rdSpaceBomContentTitle) return;
+        rdSpaceBomSidebarContent.innerHTML = `
+            <div class="bom-project">
+                <div class="bom-project-name">
+                    ${escapeHtml(bomData.projectName)}
+                </div>
+                <div class="bom-version-item selected" data-version="${escapeHtml(bomData.version)}">
+                    <div class="bom-version-name">
+                        ${escapeHtml(bomData.version)}
+                        <span class="bom-version-badge">NEW</span>
+                    </div>
+                    <div class="bom-version-meta">${new Date().toISOString().split('T')[0]}</div>
+                    <div class="bom-version-info">${bomData.items.length} 个器件</div>
+                </div>
+            </div>
+        `;
+        rdSpaceBomContentTitle.textContent = `${bomData.projectName} BOM清单 ${bomData.version}`;
+        rdSpaceBomContentBody.innerHTML = buildBomDetailListHtml(bomData);
+    }
+
+    let workflowConnectorResizeBound = false;
+    let workflowMaterialLabels = [];
+
+    // 构建任务进度流程图（并行检索/选型 + 汇聚BOM）
+    function createWorkflowDiagram(labels) {
+        if (!rdSpaceWorkflow) return;
+        workflowMaterialLabels = labels.slice();
+        const querySteps = labels.map((label, index) => `
+            <div class="workflow-step pending" id="rd-step-query-${index}">
+                <div class="workflow-step-category">物料检索</div>
+                <div class="workflow-step-name">${escapeHtml(label)}</div>
+            </div>
+        `).join('');
+        const selectionSteps = labels.map((label, index) => `
+            <div class="workflow-step pending" id="rd-step-selection-${index}">
+                <div class="workflow-step-category">物料选型</div>
+                <div class="workflow-step-name">${escapeHtml(label)}</div>
+            </div>
+        `).join('');
+        rdSpaceWorkflow.innerHTML = `
+            <div class="workflow-stage">
+                <div class="workflow-step-single">
+                    <div class="workflow-step completed" id="rd-step-start">开始</div>
+                </div>
+            </div>
+            <div class="workflow-connector branch" id="rd-connector-query">
+                <svg id="rd-svg-query"></svg>
+            </div>
+            <div class="workflow-stage">
+                <div class="workflow-parallel" id="rd-stage-query">
+                    ${querySteps}
+                </div>
+            </div>
+            <div class="workflow-connector simple" id="rd-connector-selection">
+                <svg id="rd-svg-selection"></svg>
+            </div>
+            <div class="workflow-stage">
+                <div class="workflow-parallel" id="rd-stage-selection">
+                    ${selectionSteps}
+                </div>
+            </div>
+            <div class="workflow-connector merge" id="rd-connector-merge">
+                <svg id="rd-svg-merge"></svg>
+            </div>
+            <div class="workflow-stage">
+                <div class="workflow-step-single">
+                    <div class="workflow-step pending" id="rd-step-bom">
+                        <div class="workflow-step-category">BOM生成</div>
+                        <div class="workflow-step-name">生成BOM清单</div>
+                    </div>
+                </div>
+            </div>
+            <div class="workflow-connector simple" id="rd-connector-complete">
+                <svg id="rd-svg-complete"></svg>
+            </div>
+            <div class="workflow-stage">
+                <div class="workflow-step-single">
+                    <div class="workflow-step pending" id="rd-step-complete">完成</div>
+                </div>
+            </div>
+        `;
+        setTimeout(() => {
+            updateWorkflowConnectors();
+        }, 200);
+    }
+
+    function updateWorkflowConnectors() {
+        const startEl = document.getElementById('rd-step-start');
+        const bomEl = document.getElementById('rd-step-bom');
+        const completeEl = document.getElementById('rd-step-complete');
+        const queryEls = workflowMaterialLabels.map((_, i) => document.getElementById(`rd-step-query-${i}`)).filter(Boolean);
+        const selectionEls = workflowMaterialLabels.map((_, i) => document.getElementById(`rd-step-selection-${i}`)).filter(Boolean);
+        const queryConnector = document.getElementById('rd-connector-query');
+        const selectionConnector = document.getElementById('rd-connector-selection');
+        const mergeConnector = document.getElementById('rd-connector-merge');
+        const completeConnector = document.getElementById('rd-connector-complete');
+        const svgQuery = document.getElementById('rd-svg-query');
+        const svgSelection = document.getElementById('rd-svg-selection');
+        const svgMerge = document.getElementById('rd-svg-merge');
+        const svgComplete = document.getElementById('rd-svg-complete');
+
+        const centerXIn = (el, containerRect) => {
+            const r = el.getBoundingClientRect();
+            return (r.left + r.width / 2) - containerRect.left;
+        };
+
+        const setSvgBox = (svg, rect) => {
+            if (!svg) return;
+            svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+        };
+
+        if (startEl && queryConnector && svgQuery && queryEls.length > 0) {
+            const rect = queryConnector.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setSvgBox(svgQuery, rect);
+                const startX = centerXIn(startEl, rect);
+                const yBranch = Math.round(rect.height * 0.6);
+                const yBottom = rect.height;
+                const xs = queryEls.map(el => centerXIn(el, rect));
+                svgQuery.innerHTML = xs.map((x, idx) => {
+                    if (idx === 0) {
+                        return `<path d="M ${startX} 0 L ${startX} ${yBranch} L ${x} ${yBranch} L ${x} ${yBottom}"></path>`;
+                    }
+                    return `<path d="M ${startX} ${yBranch} L ${x} ${yBranch} L ${x} ${yBottom}"></path>`;
+                }).join('');
+            }
+        }
+
+        if (selectionConnector && svgSelection && queryEls.length > 0 && selectionEls.length > 0) {
+            const rect = selectionConnector.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setSvgBox(svgSelection, rect);
+                const yTop = 0;
+                const yBottom = rect.height;
+                const count = Math.min(queryEls.length, selectionEls.length);
+                svgSelection.innerHTML = Array.from({ length: count }).map((_, i) => {
+                    const x1 = centerXIn(queryEls[i], rect);
+                    const x2 = centerXIn(selectionEls[i], rect);
+                    return `<path d="M ${x1} ${yTop} L ${x2} ${yBottom}"></path>`;
+                }).join('');
+            }
+        }
+
+        if (bomEl && mergeConnector && svgMerge && selectionEls.length > 0) {
+            const rect = mergeConnector.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setSvgBox(svgMerge, rect);
+                const bomX = centerXIn(bomEl, rect);
+                const yMerge = Math.round(rect.height * 0.6);
+                const yBottom = rect.height;
+                const xs = selectionEls.map(el => centerXIn(el, rect));
+                svgMerge.innerHTML = xs.map((x, idx) => {
+                    if (idx === 0) {
+                        return `<path d="M ${x} 0 L ${x} ${yMerge} L ${bomX} ${yMerge} L ${bomX} ${yBottom}"></path>`;
+                    }
+                    return `<path d="M ${x} 0 L ${x} ${yMerge} L ${bomX} ${yMerge}"></path>`;
+                }).join('');
+            }
+        }
+
+        if (bomEl && completeEl && completeConnector && svgComplete) {
+            const rect = completeConnector.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setSvgBox(svgComplete, rect);
+                const x1 = centerXIn(bomEl, rect);
+                const x2 = centerXIn(completeEl, rect);
+                svgComplete.innerHTML = `<path d="M ${x1} 0 L ${x2} ${rect.height}"></path>`;
+            }
+        }
+
+        if (!workflowConnectorResizeBound) {
+            workflowConnectorResizeBound = true;
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(updateWorkflowConnectors, 100);
+            });
+        }
+    }
+
+    function updateWorkflowStep(stepId, status) {
+        const step = document.getElementById(stepId);
+        if (!step) return;
+        step.classList.remove('pending', 'processing', 'completed');
+        step.classList.add(status);
+    }
+
+    function updateParallelWorkflow(prefix, status) {
+        workflowMaterialLabels.forEach((_, index) => {
+            updateWorkflowStep(`${prefix}-${index}`, status);
+        });
+    }
+
+    // 提交确认单后执行任务流：loading同步 -> 任务进度 -> BOM生成
+    function runBomTaskFlow(formEl, formConfig) {
+        const confirmBtn = formEl.querySelector('.bom-form-submit');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+        }
+        formEl.dataset.submitted = 'true';
+        formEl.querySelectorAll('.bom-form-select, .bom-form-input').forEach(el => {
+            el.disabled = true;
+        });
+        formEl.querySelectorAll('.bom-form-remove, .bom-form-add').forEach(el => {
+            el.disabled = true;
+        });
+        const rows = getBomFormRows(formEl, formConfig);
+        const labels = rows.map(row => row.label || '物料');
+        const introLoading = appendAssistantBlock('<div class="loading-text">正在基于需求生成任务清单</div>');
+        setTimeout(() => {
+            if (introLoading) introLoading.remove();
+            openRdSpace(null, 'task-progress');
+            showRdSpaceTab('task-progress');
+            createWorkflowDiagram(labels);
+            const progressLoading = appendAssistantBlock('<div class="loading-text">正在检索物料...</div>');
+            updateParallelWorkflow('rd-step-query', 'processing');
+            labels.forEach((label, index) => {
+                const queryDelay = randomInt(800, 2800);
+                setTimeout(() => {
+                    updateWorkflowStep(`rd-step-query-${index}`, 'completed');
+                    const selectionDelay = randomInt(300, 800);
+                    setTimeout(() => {
+                        updateWorkflowStep(`rd-step-selection-${index}`, 'processing');
+                        const selectionDuration = randomInt(1400, 2400);
+                        setTimeout(() => {
+                            updateWorkflowStep(`rd-step-selection-${index}`, 'completed');
+                        }, selectionDuration);
+                    }, selectionDelay);
+                }, queryDelay);
+            });
+            const timer1 = setTimeout(() => {
+                if (progressLoading) {
+                    progressLoading.innerHTML = '<div class="loading-text">正在选型物料...</div>';
+                }
+            }, 3000);
+            const timer2 = setTimeout(() => {
+                updateParallelWorkflow('rd-step-selection', 'completed');
+                updateWorkflowStep('rd-step-bom', 'processing');
+                if (progressLoading) {
+                    progressLoading.innerHTML = '<div class="loading-text">正在生成BOM表格结构...</div>';
+                }
+            }, 6000);
+            const timer3 = setTimeout(() => {
+                updateWorkflowStep('rd-step-bom', 'completed');
+                updateWorkflowStep('rd-step-complete', 'completed');
+                if (progressLoading) {
+                    progressLoading.remove();
+                }
+                const bomData = generateBomDataFromForm(rows);
+                appendAssistantBlock(`
+                    <div class="message-text">BOM生成完成，已整理可执行的BOM清单如下：</div>
+                    ${buildBomTableHtml(bomData)}
+                `);
+                showRdSpaceTab('bom');
+                renderRdSpaceBomData(bomData);
+                setTaskInputLockState(false);
+            }, 9000);
+        }, 3000);
+    }
+
+    function runLoadingSequence(steps, onComplete) {
+        if (!steps || !steps.length) {
+            if (onComplete) onComplete();
+            return;
+        }
+        let index = 0;
+        const next = () => {
+            const step = steps[index];
+            const loading = appendAssistantBlock(`<div class="loading-text">${escapeHtml(step.text || '正在处理...')}</div>`);
+            const delay = step.delay || 3000;
+            setTimeout(() => {
+                if (loading) loading.remove();
+                index += 1;
+                if (index >= steps.length) {
+                    if (onComplete) onComplete();
+                } else {
+                    next();
+                }
+            }, delay);
+        };
+        next();
+    }
+
+    function runBomGenerationScript(script) {
+        if (!script) return;
+        setStreamingState(true);
+        runLoadingSequence(script.preLoadings, () => {
+            streamAssistantText(script.explanation, () => {
+                const loadingMessage = appendAssistantBlock(`<div class="loading-text">${escapeHtml(script.loadingText || '正在生成物料需求表单')}</div>`);
+                const delay = script.loadingDelay || 3000;
+                setTimeout(() => {
+                    if (loadingMessage) loadingMessage.remove();
+                    const formMessage = appendAssistantBlock(buildBomRequirementForm(script.form));
+                    if (formMessage) {
+                        const formEl = formMessage.querySelector('[data-bom-form]');
+                        initBomRequirementForm(formEl, script.form);
+                    }
+                    setStreamingState(false);
+                    setTaskInputLockState(true, '当前研发任务执行中');
+                }, delay);
+            });
+        });
+    }
+
+    // 预置脚本执行顺序：预加载 -> 解释 -> loading -> 表格 -> loading -> 总结
+    function runPresetScript(script) {
+        if (!script) return;
+        if (script.type === 'bom_form' || script.id === 'bom_generation_form') {
+            runBomGenerationScript(script);
+            return;
+        }
+        setStreamingState(true);
+        const preLoading = script.preLoadingText
+            ? appendAssistantBlock(`<div class="loading-text">${script.preLoadingText}</div>`)
+            : null;
+        const preDelay = script.preLoadingDelay || 3000;
+        setTimeout(() => {
+            if (preLoading) preLoading.remove();
+            streamAssistantText(script.explanation, () => {
+                const loadingMessage = appendAssistantBlock(`<div class="loading-text">${script.loadingText || '正在处理...'}</div>`);
+                const loadDelay = script.loadingDelay || 3000;
+                setTimeout(() => {
+                    if (loadingMessage) loadingMessage.remove();
+                    appendAssistantBlock(buildMosTable(script.table));
+                    const followLoading = appendAssistantBlock(`<div class="loading-text">${script.followupLoadingText || '正在理解查询结果'}</div>`);
+                    const followDelay = script.followupDelay || 3000;
+                    setTimeout(() => {
+                        if (followLoading) followLoading.remove();
+                        const count = ensureMosRows(script.table).length;
+                        const summaryText = (script.summary || '').replace('{count}', count);
+                        streamAssistantText(summaryText, () => {
+                            setStreamingState(false);
+                        });
+                    }, followDelay);
+                }, loadDelay);
+            });
+        }, preDelay);
+    }
+
     function setSendButtonState(button, hasContent) {
         if (!button) return;
+        if (isTaskLocked) {
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.style.cursor = 'not-allowed';
+            return;
+        }
         if (isStreaming) {
             button.disabled = false;
             button.style.opacity = '1';
@@ -5004,9 +5907,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
             <div class="rd-space-tabs">
-                <button class="rd-space-tab active" type="button">本地资源</button>
+                <button class="rd-space-tab" type="button" data-tab="task-progress" style="display: none;">任务进度</button>
+                <button class="rd-space-tab" type="button" data-tab="bom" style="display: none;">BOM</button>
+                <button class="rd-space-tab active" type="button" data-tab="local-resources">本地资源</button>
             </div>
             <div class="rd-space-content">
+                <div class="rd-space-panel" id="task-progress-panel">
+                    <div class="task-progress-panel">
+                        <div class="workflow-diagram" id="rdWorkflowDiagram"></div>
+                    </div>
+                </div>
+                <div class="rd-space-panel" id="bom-panel">
+                    <div class="bom-panel">
+                        <div class="bom-sidebar" id="rdBomSidebar">
+                            <div class="bom-sidebar-header">
+                                <span class="bom-sidebar-title">项目版本</span>
+                                <button class="bom-sidebar-toggle" id="rdBomSidebarToggle" title="收起/展开目录" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="bom-sidebar-content" id="rdBomSidebarContent"></div>
+                        </div>
+                        <div class="bom-content">
+                            <button class="bom-expand-button" id="rdBomExpandButton" title="展开目录" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="bom-content-header">
+                                <div class="bom-content-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    <span id="rdBomContentTitle">选择BOM版本查看详情</span>
+                                </div>
+                            </div>
+                            <div class="bom-content-body" id="rdBomContentBody">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">选择左侧BOM版本查看详情</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="rd-space-panel active" id="local-resources-panel">
                     <div class="local-resources-panel">
                         <div class="resources-sidebar" id="resourcesSidebar">
@@ -5058,10 +6006,30 @@ document.addEventListener('DOMContentLoaded', function() {
         rdSpacePreview = rdSpaceDrawer.querySelector('#rdSpacePreview');
         rdSpaceCurrentFile = rdSpaceDrawer.querySelector('#rdSpaceCurrentFile');
         rdSpaceSidebar = rdSpaceDrawer.querySelector('#resourcesSidebar');
+        const rdSpaceTabs = rdSpaceDrawer.querySelectorAll('.rd-space-tab');
+        const rdBomSidebar = rdSpaceDrawer.querySelector('#rdBomSidebar');
+        const rdBomSidebarToggle = rdSpaceDrawer.querySelector('#rdBomSidebarToggle');
+        const rdBomExpandButton = rdSpaceDrawer.querySelector('#rdBomExpandButton');
+        const rdBomSidebarContent = rdSpaceDrawer.querySelector('#rdBomSidebarContent');
+        const rdBomContentTitle = rdSpaceDrawer.querySelector('#rdBomContentTitle');
+        const rdBomContentBody = rdSpaceDrawer.querySelector('#rdBomContentBody');
+        const rdWorkflowDiagram = rdSpaceDrawer.querySelector('#rdWorkflowDiagram');
+        rdSpaceTaskTab = rdSpaceDrawer.querySelector('.rd-space-tab[data-tab="task-progress"]');
+        rdSpaceBomTab = rdSpaceDrawer.querySelector('.rd-space-tab[data-tab="bom"]');
+        rdSpaceWorkflow = rdWorkflowDiagram;
+        rdSpaceBomSidebar = rdBomSidebar;
+        rdSpaceBomSidebarContent = rdBomSidebarContent;
+        rdSpaceBomContentTitle = rdBomContentTitle;
+        rdSpaceBomContentBody = rdBomContentBody;
         const closeBtn = rdSpaceDrawer.querySelector('.rd-space-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', closeRdSpace);
         }
+        rdSpaceTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchRdSpaceTab(tab.dataset.tab);
+            });
+        });
         const sidebarToggle = rdSpaceDrawer.querySelector('#resourcesSidebarToggle');
         const expandBtn = rdSpaceDrawer.querySelector('#resourcesExpandButton');
         if (sidebarToggle && rdSpaceSidebar) {
@@ -5074,10 +6042,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 rdSpaceSidebar.classList.remove('collapsed');
             });
         }
+        if (rdBomSidebarToggle && rdBomSidebar) {
+            rdBomSidebarToggle.addEventListener('click', () => {
+                rdBomSidebar.classList.add('collapsed');
+            });
+        }
+        if (rdBomExpandButton && rdBomSidebar) {
+            rdBomExpandButton.addEventListener('click', () => {
+                rdBomSidebar.classList.remove('collapsed');
+            });
+        }
         renderRdSpaceFileList();
     }
 
-    function openRdSpace(targetFile) {
+    // 研发空间Tab控制：显示/切换指定面板
+    function showRdSpaceTab(tabName) {
+        if (!rdSpaceDrawer || !tabName) return;
+        const tab = rdSpaceDrawer.querySelector(`.rd-space-tab[data-tab="${tabName}"]`);
+        if (tab) {
+            tab.style.display = 'block';
+        }
+    }
+
+    function switchRdSpaceTab(tabName) {
+        if (!rdSpaceDrawer || !tabName) return;
+        const tabs = rdSpaceDrawer.querySelectorAll('.rd-space-tab');
+        const panels = rdSpaceDrawer.querySelectorAll('.rd-space-panel');
+        tabs.forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+        panels.forEach(panel => {
+            panel.classList.toggle('active', panel.id === `${tabName}-panel`);
+        });
+        if (tabName === 'task-progress') {
+            requestAnimationFrame(() => {
+                if (typeof updateWorkflowConnectors === 'function') {
+                    updateWorkflowConnectors();
+                }
+            });
+        }
+    }
+
+    function openRdSpace(targetFile, targetTab) {
         ensureRdSpaceDrawer();
         rdSpaceDrawer.classList.add('open');
         document.body.classList.add('rd-space-open');
@@ -5085,8 +6091,15 @@ document.addEventListener('DOMContentLoaded', function() {
             rdSpaceTrigger.classList.add('is-hidden');
         }
         if (targetFile) {
+            showRdSpaceTab('local-resources');
+            switchRdSpaceTab('local-resources');
             showRdSpacePreview(targetFile);
             setActiveRdSpaceFile(targetFile.key);
+            return;
+        }
+        if (targetTab) {
+            showRdSpaceTab(targetTab);
+            switchRdSpaceTab(targetTab);
         }
     }
 
@@ -5621,7 +6634,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 50);
         
-        // 2秒后移除loading，开始流式输出
+        // 3秒后移除loading，开始流式输出
         loadingTimer = setTimeout(() => {
             if (loadingDiv && loadingDiv.parentNode) {
                 loadingDiv.remove();
@@ -5683,7 +6696,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setStreamingState(false);
                 currentAssistantElement = null;
             });
-        }, 2000);
+        }, 3000);
     }
     
     // 打字机效果
@@ -5756,6 +6769,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeWrapper = getActiveSearchWrapper();
         const activeTextarea = isInChatMode ? chatPageTextarea : mainTextarea;
         if (!activeTextarea) return;
+        if (isTaskLocked) return;
 
         const text = getTextContent(activeTextarea);
         if (!text) return;
@@ -5773,6 +6787,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 添加用户消息
         addUserMessage(text, attachments, activeWrapper);
+
+        const preset = findPresetScript(text);
+        if (preset) {
+            runPresetScript(preset);
+            return;
+        }
         
         // 添加助手消息（带loading和流式输出）
         setTimeout(() => {
@@ -5790,7 +6810,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 清理定时器
-    window.addEventListener('beforeunload', function() {
-        typingTimers.forEach(timer => clearTimeout(timer));
-    });
+window.addEventListener('beforeunload', function() {
+    typingTimers.forEach(timer => clearTimeout(timer));
+});
 })();
+
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'practices') {
+        setActiveFloor('practices');
+        renderPracticesFloor();
+        if (typeof initPracticesEffects === 'function') {
+            initPracticesEffects();
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.delete('from');
+        history.replaceState({}, '', url.pathname + url.search + url.hash);
+    }
+});
