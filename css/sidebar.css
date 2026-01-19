@@ -273,16 +273,17 @@
  * 
  * 注意：HTML代码和JavaScript路由功能均保留，可直接通过访问 design-mode.html 进入设计模式页面
  */
+/* 
 .menu-section:has(#designMode) {
     display: none;
 }
+*/
 
 /* 如果需要显示设计模式入口，取消下面这行注释，并注释掉上面的规则 */
-/* 
-.show-design-mode .menu-section:has(#designMode) {
+.show-design-mode .menu-section:has(#designMode),
+.menu-section:has(#designMode) {
     display: block;
 }
-*/
 
 .menu-item-text {
     flex: 1;

@@ -3432,13 +3432,12 @@
                             </svg>
                             下载
                         </button>
-                        <button class="bom-action-btn bom-btn-save primary">
+                        <button class="bom-action-btn bom-btn-quote primary">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                                <polyline points="17 21 17 13 7 13 7 21"/>
-                                <polyline points="7 3 7 8 15 8"/>
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                             </svg>
-                            保存BOM版本
+                            智能报价
                         </button>
                     </div>
                 </div>
@@ -3463,6 +3462,7 @@
     // 初始化BOM操作按钮
     function initBomActions(bomMessage) {
         const downloadBtn = bomMessage.querySelector('.bom-btn-download');
+        const quoteBtn = bomMessage.querySelector('.bom-btn-quote');
         const saveBtn = bomMessage.querySelector('.bom-btn-save');
         
         // 下载按钮
@@ -3471,6 +3471,15 @@
                 e.preventDefault();
                 e.stopPropagation();
                 // 仅展示，不做任何操作
+            });
+        }
+
+        // 智能报价按钮
+        if (quoteBtn) {
+            quoteBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                startSmartQuotation(quoteBtn);
             });
         }
         
@@ -3482,6 +3491,380 @@
                 // 仅展示，不做任何操作
             });
         }
+    }
+
+    // 开始智能报价模拟流程
+    function startSmartQuotation(btn) {
+        if (btn.disabled) return;
+        
+        // 锁定高度
+        const btnHeight = btn.offsetHeight;
+        btn.style.height = btnHeight + 'px';
+        btn.style.display = 'inline-flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        
+        btn.disabled = true;
+        btn.innerHTML = `<span>报价中...</span>`;
+        
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+
+        // 1. 发送查询供应链数据的消息
+        setTimeout(() => {
+            const assistantMessage = document.createElement('div');
+            assistantMessage.className = 'copilot-message assistant';
+            assistantMessage.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">
+                        正在为您进行<strong>智能报价分析</strong>...
+                    </div>
+                    <div class="loading-steps" style="margin-top: 12px;">
+                        <div class="loading-step active" id="quote-step1">
+                            <div class="loading-step-icon"></div>
+                            <span>正在调取 6 款核心物料的全球行情与交期数据...</span>
+                        </div>
+                        <div class="loading-step" id="quote-step2">
+                            <div class="loading-step-icon"></div>
+                            <span>正在分析设计方案需求，计算 PCB 特殊工艺与工程费用...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(assistantMessage);
+            
+            // 滚动到最新消息
+            setTimeout(() => {
+                assistantMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 100);
+
+            // --- 第一阶段：供应链明细 (2.5秒后) ---
+            setTimeout(() => {
+                const s1 = document.getElementById('quote-step1');
+                if(s1) { 
+                    s1.classList.remove('active'); 
+                    s1.classList.add('completed');
+                    s1.querySelector('.loading-step-icon').innerHTML = '✅';
+                }
+                
+                showMaterialSupplyChainDetails();
+
+                // --- 第二阶段：工艺推理分析 (3秒后) ---
+                setTimeout(() => {
+                    const s2 = document.getElementById('quote-step2');
+                    if(s2) { 
+                        s2.classList.add('active'); 
+                    }
+                    
+                    setTimeout(() => {
+                        if(s2) {
+                            s2.classList.remove('active'); 
+                            s2.classList.add('completed');
+                            s2.querySelector('.loading-step-icon').innerHTML = '✅';
+                        }
+                        
+                        showProcessReasoning();
+
+                        // --- 第三阶段：报价单生成加载 (2秒后) ---
+                        setTimeout(() => {
+                            showQuoteLoading(btn);
+                        }, 2000);
+                    }, 3000);
+                }, 1000);
+            }, 2500);
+        }, 500);
+    }
+
+    // 展示报价单生成加载动画
+    function showQuoteLoading(btn) {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+        
+        const loadingMessage = document.createElement('div');
+        loadingMessage.className = 'copilot-message assistant';
+        loadingMessage.id = 'quoteLoadingMessage';
+        
+        loadingMessage.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">
+                    工艺分析已完成！现在正在汇总各项费用，为您生成智能报价单...
+                </div>
+                
+                <div class="bom-loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">正在计算报价</div>
+                    <div class="loading-progress" id="quoteLoadingProgress">正在核算物料成本...</div>
+                    
+                    <div class="loading-steps">
+                        <div class="loading-step active" id="qstep1">
+                            <div class="loading-step-icon"></div>
+                            <span>核算物料成本 (BOM合计)</span>
+                        </div>
+                        <div class="loading-step" id="qstep2">
+                            <div class="loading-step-icon"></div>
+                            <span>计算特殊工艺附加费 (2oz/沉金)</span>
+                        </div>
+                        <div class="loading-step" id="qstep3">
+                            <div class="loading-step-icon"></div>
+                            <span>关联工程固定项与加急费用</span>
+                        </div>
+                        <div class="loading-step" id="qstep4">
+                            <div class="loading-step-icon"></div>
+                            <span>生成最终报价汇总</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="message-meta">${new Date().getHours()}:${new Date().getMinutes()}</div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(loadingMessage);
+        
+        setTimeout(() => {
+            loadingMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+        
+        // 模拟加载步骤
+        simulateQuoteLoadingSteps(btn);
+    }
+
+    // 模拟报价加载步骤
+    function simulateQuoteLoadingSteps(btn) {
+        const steps = ['qstep1', 'qstep2', 'qstep3', 'qstep4'];
+        const progressTexts = [
+            '正在核算物料成本...',
+            '正在计算工艺附加费...',
+            '正在汇总工程固定项...',
+            '即将生成报价单...'
+        ];
+        
+        let currentStep = 0;
+        
+        const stepInterval = setInterval(() => {
+            if (currentStep > 0) {
+                const prevStep = document.getElementById(steps[currentStep - 1]);
+                if (prevStep) {
+                    prevStep.classList.remove('active');
+                    prevStep.classList.add('completed');
+                }
+            }
+            
+            if (currentStep < steps.length) {
+                const currentStepEl = document.getElementById(steps[currentStep]);
+                if (currentStepEl) {
+                    currentStepEl.classList.add('active');
+                }
+                
+                const progressEl = document.getElementById('quoteLoadingProgress');
+                if (progressEl) {
+                    progressEl.textContent = progressTexts[currentStep];
+                }
+                
+                currentStep++;
+            } else {
+                const lastStep = document.getElementById(steps[steps.length - 1]);
+                if (lastStep) {
+                    lastStep.classList.remove('active');
+                    lastStep.classList.add('completed');
+                }
+                
+                clearInterval(stepInterval);
+                
+                setTimeout(() => {
+                    const loadingMsg = document.getElementById('quoteLoadingMessage');
+                    if (loadingMsg) {
+                        loadingMsg.remove();
+                    }
+                    
+                    btn.innerHTML = `✓ 报价完成`;
+                    btn.style.background = '#10B981';
+                    btn.style.borderColor = '#10B981';
+                    showFinalQuote();
+                    
+                    // 最终：输出AI总结话语
+                    setTimeout(() => {
+                        showQuoteSummary();
+                    }, 1000);
+                }, 800);
+            }
+        }, 1200);
+    }
+
+    // 展示物料供应链详情
+    function showMaterialSupplyChainDetails() {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+
+        const detailMessage = document.createElement('div');
+        detailMessage.className = 'copilot-message assistant';
+        detailMessage.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">
+                    已完成 6 款核心物料的全球实时询价。基于<strong>样品小批量 (10套)</strong> 需求，详情如下：
+                </div>
+                
+                <div class="bom-table-container" style="margin: 12px 0; border: 1px dashed var(--border-color);">
+                    <div class="bom-table-wrapper">
+                        <table class="bom-table" style="font-size: 11px; min-width: 450px;">
+                            <thead>
+                                <tr>
+                                    <th>型号</th>
+                                    <th>单价 (¥)</th>
+                                    <th>交期 (工作日)</th>
+                                    <th>实时库存</th>
+                                    <th>货源渠道</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>TPS3813K33DBVR</td>
+                                    <td>3.52</td>
+                                    <td>现货</td>
+                                    <td>12k+</td>
+                                    <td>TI 官方代理</td>
+                                </tr>
+                                <tr>
+                                    <td>IRFB4115PBF</td>
+                                    <td>18.45</td>
+                                    <td>3-5天</td>
+                                    <td>850</td>
+                                    <td>Infineon 旗舰店</td>
+                                </tr>
+                                <tr>
+                                    <td>TMR 3-2412WI</td>
+                                    <td>65.80</td>
+                                    <td>现货</td>
+                                    <td>45</td>
+                                    <td>Mouser 代购</td>
+                                </tr>
+                                <tr>
+                                    <td>STM32F030C8T6</td>
+                                    <td>4.25</td>
+                                    <td>现货</td>
+                                    <td>50k+</td>
+                                    <td>立创商城</td>
+                                </tr>
+                                <tr>
+                                    <td>WSL2512R0100FEA</td>
+                                    <td>2.10</td>
+                                    <td>现货</td>
+                                    <td>1.2k</td>
+                                    <td>Vishay 授权商</td>
+                                </tr>
+                                <tr>
+                                    <td>MBRS340T3G</td>
+                                    <td>0.85</td>
+                                    <td>现货</td>
+                                    <td>20k+</td>
+                                    <td>ON Semi 代理</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="message-meta">${new Date().getHours()}:${new Date().getMinutes()}</div>
+            </div>
+        `;
+        messagesContainer.appendChild(detailMessage);
+        detailMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    // 展示工艺推理过程
+    function showProcessReasoning() {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+
+        const reasoningMessage = document.createElement('div');
+        reasoningMessage.className = 'copilot-message assistant';
+        reasoningMessage.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">
+                    <strong>💡 硅宝专家工艺分析：</strong><br>
+                    我已实时读取了您左侧画布上的<strong>电路原理图</strong>。基于您设计的<strong>“12V/5A 功率切换路径”</strong>以及<strong>高频开关拓扑</strong>，我为您匹配了以下 PCB 制造标准：
+                </div>
+                
+                <div style="margin-top: 10px; padding: 10px; background: rgba(109, 213, 232, 0.05); border-left: 3px solid #6DD5E8; font-size: 12px; line-height: 1.5;">
+                    • <strong>热平衡推理：</strong> 通过原理图识别出 Q1/Q2 MOSFET 存在持续高功耗，默认 1oz 铜厚难以满足散热，已自动升级为 <strong>2oz 厚铜</strong>。<br>
+                    • <strong>精密采样保障：</strong> 识别到您使用了精密采样电阻 R1，为降低接触电阻并提高采样精度，表面处理已设定为 <strong>沉金 (ENIG)</strong>。<br>
+                    • <strong>工程优化：</strong> 根据原理图中反馈的过孔密度，工程费已包含<strong>Via-in-Pad (盘中孔)</strong> 工艺，以支持更优的散热布线。
+                </div>
+                
+                <div class="message-meta">${new Date().getHours()}:${new Date().getMinutes()}</div>
+            </div>
+        `;
+        messagesContainer.appendChild(reasoningMessage);
+        reasoningMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    // 展示最终报价单
+    function showFinalQuote() {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+
+        const quoteMessage = document.createElement('div');
+        quoteMessage.className = 'copilot-message assistant';
+        quoteMessage.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">
+                    综合实时物料行情与画布原理图中的工艺要求，为您生成以下<strong>智能报价单</strong>：
+                </div>
+                
+                <div class="quote-card" style="margin-top: 12px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; width: 100%; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px; align-items: center;">
+                        <span style="font-weight: 600; font-size: 13px; color: #334155;">项目报价汇总 (10套样品)</span>
+                        <span style="color: #6DD5E8; font-weight: 700; font-size: 16px;">¥ 1,428.50</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748B;">物料合计 (制版费)</span>
+                            <span style="color: #334155;">¥ 1,128.50</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748B;">工程及工艺费 (2oz/沉金)</span>
+                            <span style="color: #334155;">¥ 260.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748B;">固定及运费 (加急/物流)</span>
+                            <span style="color: #334155;">¥ 40.00</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 10px; color: #94A3B8; font-style: italic;">
+                        * 报价基于实时行情，有效期 72 小时。
+                    </div>
+                </div>
+                <div class="message-meta">${new Date().getHours()}:${new Date().getMinutes()}</div>
+            </div>
+        `;
+        messagesContainer.appendChild(quoteMessage);
+        
+        setTimeout(() => {
+            quoteMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+    }
+
+    // 展示报价总结
+    function showQuoteSummary() {
+        const messagesContainer = document.getElementById('copilotMessages');
+        if (!messagesContainer) return;
+
+        const summaryMessage = document.createElement('div');
+        summaryMessage.className = 'copilot-message assistant';
+        summaryMessage.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">
+                    以上是为您精准核算的<strong>智能报价汇总</strong>。硅宝通过对您设计的原理图进行实时扫描，识别出了电路中的大电流敏感节点及高精度采样链路，从而为您匹配了当前最具性价比的 2oz 厚铜与沉金组合。
+                    <br><br>
+                    随着您继续在画布上添加或删除元器件、调整连线拓扑，系统将实时动态更新这一成本预期，确保研发成本在您的设计过程中全程受控。
+                </div>
+                <div class="message-meta">${new Date().getHours()}:${new Date().getMinutes()}</div>
+            </div>
+        `;
+        messagesContainer.appendChild(summaryMessage);
+        
+        setTimeout(() => {
+            summaryMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
     }
 
     // 显示替代料下拉框

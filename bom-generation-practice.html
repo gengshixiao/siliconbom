@@ -1393,6 +1393,43 @@
             width: 12px;
             height: 12px;
         }
+
+        /* 卡片颜色风格调整 - 中性保守的低饱和度配色 */
+        .chat-area .requirements-form .form-header {
+            background: #475569;
+            color: white;
+        }
+
+        .chat-area .requirements-form .confirm-btn {
+            background: #475569;
+            color: white;
+        }
+
+        .chat-area .requirements-form .confirm-btn:hover {
+            background: #334155;
+        }
+
+        .chat-area .requirements-form .confirm-btn:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+
+        .chat-area .bom-detail-item:hover {
+            border-color: #94a3b8;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .chat-area .bom-detail-model svg {
+            color: #64748b;
+        }
+
+        .chat-area .component-name {
+            color: #475569;
+        }
+
+        .chat-area .component-name:hover {
+            color: #334155;
+        }
     </style>
 </head>
 <body>
@@ -1829,7 +1866,7 @@
             messagesContainer.innerHTML = `
                 <!-- 用户消息 - 上传文档 -->
                 <div class="message user">
-                    <div class="message-avatar">🚀</div>
+                    <div class="message-avatar"></div>
                     <div class="message-content">
                         <div class="message-bubble">
                             <div class="uploaded-file">
@@ -1842,7 +1879,7 @@
 
                 <!-- 用户消息 - 文字需求 -->
                 <div class="message user">
-                    <div class="message-avatar">🚀</div>
+                    <div class="message-avatar"></div>
                     <div class="message-content">
                         <div class="message-bubble">
                             <div class="message-text">基于这个需求文档，帮我生成完整的BOM</div>
@@ -1860,7 +1897,7 @@
                             </div>
                             
                             <div class="message-text">
-                                <strong>📋 核心需求解析：</strong><br>
+                                <strong>核心需求解析：</strong><br>
                                 • 主电源：12V/5A，备用电源：24V转12V/3A<br>
                                 • 自动检测主电源状态，故障时无缝切换<br>
                                 • 切换时间 ≤ 10ms，支持手动强制切换<br>
@@ -1871,7 +1908,7 @@
                             <!-- 需求表单 -->
                             <div class="requirements-form">
                                 <div class="form-header">
-                                    🔧 器件需求分解表单
+                                    器件需求分解表单
                                 </div>
                                 <div class="form-body">
                                     <div class="requirement-item">
@@ -2250,8 +2287,8 @@
             const confirmBtn = document.getElementById('bomConfirmBtn');
             if (confirmBtn) {
                 confirmBtn.disabled = true;
-                confirmBtn.textContent = '✓ 已确认';
-                confirmBtn.style.background = '#10B981';
+                confirmBtn.textContent = '已确认';
+                confirmBtn.style.background = '#64748b';
                 confirmBtn.style.cursor = 'not-allowed';
             }
             
@@ -2403,7 +2440,7 @@
                         
                         <div class="bom-table-container">
                             <div class="bom-table-header">
-                                📋 电源切换模块 BOM清单 v1.0
+                                电源切换模块 BOM清单 v1.0
                             </div>
                             <div class="bom-table-wrapper">
                                 <table class="bom-table">
