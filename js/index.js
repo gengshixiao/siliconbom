@@ -4712,12 +4712,186 @@ document.addEventListener('DOMContentLoaded', function() {
     let loadingTimer = null;
     let chatPageTitleText = null;
     let currentAssistantElement = null;
+    let rdSpaceTrigger = null;
+    let rdSpaceDrawer = null;
+    let rdSpaceFileList = null;
+    let rdSpacePreview = null;
+    let rdSpaceCurrentFile = null;
+    let rdSpaceSidebar = null;
+    const rdSpaceFiles = [];
+
+    const uploadIconMap = {
+        pdf: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/84098143372a4828bf5ce06e9d2a889f.png',
+        ppt: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/077a31b1f1c489b1bad5d9afd31dd5c6.png',
+        pptx: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/077a31b1f1c489b1bad5d9afd31dd5c6.png',
+        doc: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/169b73ec51cdfce368ca53a552b3ce73.png',
+        docx: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/169b73ec51cdfce368ca53a552b3ce73.png',
+        dwg: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/cd95b681ffe991014970985239cd5dd8.png',
+        dxf: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/cd95b681ffe991014970985239cd5dd8.png',
+        dwf: 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/cd95b681ffe991014970985239cd5dd8.png'
+    };
+    const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'heic']);
+    const imageThumbnailUrl = 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/102a1c051943ba05502612899a1f8d6f.png';
+    const rdSpaceIconUrl = 'https://chat-web-1253214834.cos.ap-beijing.myqcloud.com/image/ea1dfc3e0402304adbf03e95174c6944.png';
     
-    // 初始化：置灰上传附件按钮
-    if (btnAttach) {
-        btnAttach.style.opacity = '0.5';
-        btnAttach.style.cursor = 'not-allowed';
-        btnAttach.title = '功能开发中';
+    function getFileExtension(fileName = '') {
+        const parts = fileName.split('.');
+        return parts.length > 1 ? parts.pop().toLowerCase() : '';
+    }
+
+    function hasPendingUploads(searchWrapper) {
+        if (!searchWrapper) return false;
+        return Boolean(searchWrapper.querySelector('.upload-card.is-loading'));
+    }
+
+    function getActiveSearchWrapper() {
+        if (isInChatMode && chatPageTextarea) {
+            const wrapper = chatPageTextarea.closest('.search-wrapper');
+            if (wrapper) return wrapper;
+        }
+        return mainTextarea ? mainTextarea.closest('.search-wrapper') : null;
+    }
+
+    function ensureUploadElements(searchWrapper) {
+        if (!searchWrapper) return {};
+        let uploadList = searchWrapper.querySelector('[data-role="upload-list"]');
+        let uploadInput = searchWrapper.querySelector('.upload-input');
+
+        if (!uploadList) {
+            uploadList = document.createElement('div');
+            uploadList.className = 'upload-list';
+            uploadList.setAttribute('data-role', 'upload-list');
+            searchWrapper.prepend(uploadList);
+        }
+
+        if (!uploadInput) {
+            uploadInput = document.createElement('input');
+            uploadInput.type = 'file';
+            uploadInput.multiple = true;
+            uploadInput.className = 'upload-input';
+            uploadInput.accept = '.ppt,.pptx,.pdf,.doc,.docx,.jpeg,.jpg,.png,.heic,.dwg,.dxf,.dwf';
+            searchWrapper.prepend(uploadInput);
+        }
+
+        return { uploadList, uploadInput };
+    }
+
+    function updateUploadListState(uploadList) {
+        if (!uploadList) return;
+        uploadList.classList.toggle('has-files', uploadList.children.length > 0);
+    }
+
+    function syncSendButtonStates() {
+        updateSendButtonState();
+        if (chatPageTextarea && chatPageSendBtn) {
+            const chatContent = getTextContent(chatPageTextarea);
+            setSendButtonState(chatPageSendBtn, chatContent.length > 0);
+        }
+    }
+
+    function createUploadCard(file, uploadList) {
+        const extension = getFileExtension(file.name);
+        const isImage = imageExtensions.has(extension);
+        const displayType = extension ? extension.toUpperCase() : 'FILE';
+        const iconUrl = uploadIconMap[extension] || uploadIconMap.docx;
+
+        const card = document.createElement('div');
+        card.className = 'upload-card is-loading';
+        if (isImage) {
+            card.classList.add('is-image');
+        }
+        card.dataset.fileName = file.name;
+        card.dataset.fileType = displayType;
+        card.dataset.isImage = isImage ? 'true' : 'false';
+        card.dataset.thumbUrl = isImage ? imageThumbnailUrl : iconUrl;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'upload-thumb';
+
+        const thumbImage = document.createElement('img');
+        if (isImage) {
+            thumbImage.src = imageThumbnailUrl;
+        } else {
+            thumb.classList.add('is-icon');
+            thumbImage.src = iconUrl;
+        }
+        thumbImage.alt = extension || 'file';
+        thumb.appendChild(thumbImage);
+
+        let status = null;
+        let meta = null;
+        if (!isImage) {
+            meta = document.createElement('div');
+            meta.className = 'upload-meta';
+
+            const name = document.createElement('div');
+            name.className = 'upload-name';
+            name.textContent = file.name;
+
+            status = document.createElement('div');
+            status.className = 'upload-status';
+            status.textContent = '解析中';
+
+            meta.appendChild(name);
+            meta.appendChild(status);
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'upload-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('aria-label', '移除附件');
+        removeBtn.textContent = '×';
+
+        card.appendChild(thumb);
+        if (meta) {
+            card.appendChild(meta);
+        }
+        card.appendChild(removeBtn);
+
+        const minDelay = 3000;
+        const maxDelay = 10000;
+        const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+        const timer = setTimeout(() => {
+            card.classList.remove('is-loading');
+            card.classList.add('is-ready');
+            if (status) {
+                status.textContent = displayType;
+            }
+            syncSendButtonStates();
+        }, delay);
+
+        removeBtn.addEventListener('click', () => {
+            clearTimeout(timer);
+            card.remove();
+            updateUploadListState(uploadList);
+            syncSendButtonStates();
+        });
+
+        uploadList.appendChild(card);
+        updateUploadListState(uploadList);
+        syncSendButtonStates();
+    }
+
+    function bindUploadButton(button) {
+        if (!button) return;
+        const searchWrapper = button.closest('.search-wrapper');
+        if (!searchWrapper) return;
+        const { uploadList, uploadInput } = ensureUploadElements(searchWrapper);
+
+        if (!uploadInput.dataset.bound) {
+            uploadInput.addEventListener('change', () => {
+                const files = Array.from(uploadInput.files || []);
+                if (!files.length) return;
+                files.forEach(file => createUploadCard(file, uploadList));
+                uploadInput.value = '';
+                syncSendButtonStates();
+            });
+            uploadInput.dataset.bound = 'true';
+        }
+
+        button.addEventListener('click', () => {
+            uploadInput.click();
+        });
     }
     
     // 获取输入框文本内容（去除HTML标签和空格）
@@ -4737,8 +4911,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateSendButtonState() {
         if (!btnSend) return;
         const hasContent = hasValidContent();
-        btnSend.disabled = !hasContent;
-        if (hasContent) {
+        const pending = hasPendingUploads(mainTextarea ? mainTextarea.closest('.search-wrapper') : null);
+        btnSend.disabled = !hasContent || pending;
+        if (hasContent && !pending) {
             btnSend.style.opacity = '1';
             btnSend.style.cursor = 'pointer';
         } else {
@@ -4749,6 +4924,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化按钮状态
     updateSendButtonState();
+    bindUploadButton(btnAttach);
 
     function setMainInputValue(text) {
         if (!mainTextarea) return;
@@ -4795,9 +4971,267 @@ document.addEventListener('DOMContentLoaded', function() {
             button.style.cursor = 'pointer';
             return;
         }
-        button.disabled = !hasContent;
-        button.style.opacity = hasContent ? '1' : '0.5';
-        button.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+        const searchWrapper = button.closest('.search-wrapper');
+        const pending = hasPendingUploads(searchWrapper);
+        button.disabled = !hasContent || pending;
+        const isEnabled = hasContent && !pending;
+        button.style.opacity = isEnabled ? '1' : '0.5';
+        button.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+    }
+
+    function getRdSpaceCategory(extension, isImage) {
+        if (isImage) return 'image';
+        if (['dwg', 'dxf', 'dwf'].includes(extension)) return 'cad';
+        return 'doc';
+    }
+
+    function ensureRdSpaceDrawer() {
+        if (rdSpaceDrawer) return;
+        rdSpaceDrawer = document.createElement('div');
+        rdSpaceDrawer.className = 'rd-space-drawer';
+        rdSpaceDrawer.id = 'rdSpaceDrawer';
+        rdSpaceDrawer.innerHTML = `
+            <div class="rd-space-header">
+                <div class="rd-space-title">
+                    <img src="${rdSpaceIconUrl}" alt="研发空间">
+                    <span>研发空间</span>
+                </div>
+                <button class="rd-space-close" type="button" aria-label="关闭研发空间">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="rd-space-tabs">
+                <button class="rd-space-tab active" type="button">本地资源</button>
+            </div>
+            <div class="rd-space-content">
+                <div class="rd-space-panel active" id="local-resources-panel">
+                    <div class="local-resources-panel">
+                        <div class="resources-sidebar" id="resourcesSidebar">
+                            <div class="resources-sidebar-header">
+                                <span class="resources-sidebar-title">资源目录</span>
+                                <button class="resources-sidebar-toggle" id="resourcesSidebarToggle" title="收起/展开目录" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="resources-sidebar-content" id="rdSpaceFileList"></div>
+                        </div>
+                        <div class="resources-content">
+                            <button class="resources-expand-button" id="resourcesExpandButton" title="展开目录" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="resources-content-header">
+                                <div class="resources-content-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    <span id="rdSpaceCurrentFile">选择文件查看详情</span>
+                                </div>
+                            </div>
+                            <div class="resources-content-body" id="rdSpacePreview">
+                                <div class="empty-state">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    <div class="empty-state-text">选择左侧文件查看详情</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(rdSpaceDrawer);
+        rdSpaceFileList = rdSpaceDrawer.querySelector('#rdSpaceFileList');
+        rdSpacePreview = rdSpaceDrawer.querySelector('#rdSpacePreview');
+        rdSpaceCurrentFile = rdSpaceDrawer.querySelector('#rdSpaceCurrentFile');
+        rdSpaceSidebar = rdSpaceDrawer.querySelector('#resourcesSidebar');
+        const closeBtn = rdSpaceDrawer.querySelector('.rd-space-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeRdSpace);
+        }
+        const sidebarToggle = rdSpaceDrawer.querySelector('#resourcesSidebarToggle');
+        const expandBtn = rdSpaceDrawer.querySelector('#resourcesExpandButton');
+        if (sidebarToggle && rdSpaceSidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                rdSpaceSidebar.classList.add('collapsed');
+            });
+        }
+        if (expandBtn && rdSpaceSidebar) {
+            expandBtn.addEventListener('click', () => {
+                rdSpaceSidebar.classList.remove('collapsed');
+            });
+        }
+        renderRdSpaceFileList();
+    }
+
+    function openRdSpace(targetFile) {
+        ensureRdSpaceDrawer();
+        rdSpaceDrawer.classList.add('open');
+        document.body.classList.add('rd-space-open');
+        if (rdSpaceTrigger) {
+            rdSpaceTrigger.classList.add('is-hidden');
+        }
+        if (targetFile) {
+            showRdSpacePreview(targetFile);
+            setActiveRdSpaceFile(targetFile.key);
+        }
+    }
+
+    function closeRdSpace() {
+        if (!rdSpaceDrawer) return;
+        rdSpaceDrawer.classList.remove('open');
+        document.body.classList.remove('rd-space-open');
+        if (rdSpaceTrigger) {
+            rdSpaceTrigger.classList.remove('is-hidden');
+        }
+    }
+
+    function setActiveRdSpaceFile(key) {
+        if (!rdSpaceFileList) return;
+        rdSpaceFileList.querySelectorAll('.resource-file').forEach(item => {
+            item.classList.toggle('selected', item.dataset.fileKey === key);
+        });
+    }
+
+    function showRdSpacePreview(file) {
+        if (!rdSpacePreview) return;
+        if (rdSpaceCurrentFile) {
+            rdSpaceCurrentFile.textContent = file.name;
+        }
+        if (!file.sizeLabel) {
+            const sizeUnit = Math.random() > 0.5 ? 'MB' : 'KB';
+            const sizeValue = sizeUnit === 'MB'
+                ? (Math.random() * 8 + 0.5).toFixed(1)
+                : Math.floor(Math.random() * 900 + 120);
+            file.sizeLabel = `${sizeValue} ${sizeUnit}`;
+        }
+        if (file.category === 'image') {
+            rdSpacePreview.innerHTML = `
+                <div class="resource-preview active">
+                    <div class="resource-preview-info">
+                        <strong>${escapeHtml(file.name)}</strong><br>
+                        大小: ${escapeHtml(file.sizeLabel)}
+                    </div>
+                    <div class="resource-preview-image">
+                        <img src="${file.thumbUrl}" alt="${escapeHtml(file.name)}">
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        if (file.category === 'cad') {
+            rdSpacePreview.innerHTML = `
+                <div class="resource-preview active">
+                    <div class="resource-preview-info">
+                        <strong>${escapeHtml(file.name)}</strong><br>
+                        大小: ${escapeHtml(file.sizeLabel)}
+                    </div>
+                    <div class="resource-preview-image">
+                        <div class="preview-cad"></div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        rdSpacePreview.innerHTML = `
+            <div class="resource-preview active">
+                <div class="resource-preview-info">
+                    <strong>${escapeHtml(file.name)}</strong><br>
+                    大小: ${escapeHtml(file.sizeLabel)}
+                </div>
+                <div class="resource-preview-image">
+                    <div class="preview-document">
+                        <div class="preview-document-line"></div>
+                        <div class="preview-document-line"></div>
+                        <div class="preview-document-line"></div>
+                        <div class="preview-document-line"></div>
+                        <div class="preview-document-line"></div>
+                        <div class="preview-document-line"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderRdSpaceFileList() {
+        if (!rdSpaceFileList) return;
+        rdSpaceFileList.innerHTML = '';
+        if (!rdSpaceFiles.length) {
+            rdSpaceFileList.innerHTML = '<div class="rd-space-empty-list">暂无文件</div>';
+            return;
+        }
+        const groups = {
+            image: { label: '图片', files: [], icon: 'image' },
+            doc: { label: '文档', files: [], icon: 'doc' },
+            cad: { label: 'CAD', files: [], icon: 'cad' }
+        };
+        rdSpaceFiles.forEach(file => {
+            if (groups[file.category]) {
+                groups[file.category].files.push(file);
+            }
+        });
+        ['image', 'doc', 'cad'].forEach(key => {
+            const group = groups[key];
+            if (!group.files.length) return;
+            const groupEl = document.createElement('div');
+            groupEl.className = 'resource-category';
+            const iconSvg = group.icon === 'image'
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+                : group.icon === 'cad'
+                    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>`
+                    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+            groupEl.innerHTML = `
+                <div class="resource-category-title">${iconSvg}${group.label}</div>
+            `;
+            group.files.forEach(file => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'resource-file';
+                item.dataset.fileKey = file.key;
+                item.innerHTML = `
+                    <span class="resource-file-name">${escapeHtml(file.name)}</span>
+                `;
+                item.addEventListener('click', () => {
+                    rdSpaceFileList.querySelectorAll('.resource-file').forEach(node => node.classList.remove('selected'));
+                    item.classList.add('selected');
+                    openRdSpace(file);
+                });
+                groupEl.appendChild(item);
+            });
+            rdSpaceFileList.appendChild(groupEl);
+        });
+    }
+
+    function addRdSpaceFiles(files) {
+        files.forEach(file => {
+            const key = `${file.name}-${file.type}`;
+            if (rdSpaceFiles.some(existing => existing.key === key)) {
+                return;
+            }
+            const extension = getFileExtension(file.name);
+            const category = getRdSpaceCategory(extension, file.isImage);
+            rdSpaceFiles.push({ ...file, key, category });
+        });
+        renderRdSpaceFileList();
+    }
+
+    function showRdSpaceTrigger() {
+        if (rdSpaceTrigger) {
+            rdSpaceTrigger.classList.add('is-visible');
+        }
     }
 
     function setStreamingState(state) {
@@ -4881,6 +5315,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="chat-page-title-text">友好的对话</span>
                     <span class="chat-page-title-hint">点击编辑</span>
                 </div>
+                <button class="rd-space-trigger rd-space-trigger--chat" id="rdSpaceTrigger" type="button" aria-label="打开研发空间">
+                    <img src="${rdSpaceIconUrl}" alt="">
+                </button>
             </div>
 
             <!-- 消息区域 -->
@@ -4891,6 +5328,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- 输入区域 -->
             <div class="chat-page-input-container">
                 <div class="search-wrapper">
+                    <div class="upload-list" data-role="upload-list"></div>
+                    <input class="upload-input" type="file" multiple accept=".ppt,.pptx,.pdf,.doc,.docx,.jpeg,.jpg,.png,.heic,.dwg,.dxf,.dwf">
                     <div class="input-editor" id="chatPageTextarea" contenteditable="true" data-placeholder="请描述需求，输入@可调用BOM档案"></div>
                     <div class="input-actions">
                         <div class="input-actions-left">
@@ -4929,16 +5368,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const newAttachBtn = document.getElementById('chatPageAttach');
         const chatPageTitle = document.getElementById('chatPageTitle');
 
-        if (newAttachBtn) {
-            newAttachBtn.disabled = true;
-            newAttachBtn.style.opacity = '0.5';
-            newAttachBtn.style.cursor = 'not-allowed';
-            newAttachBtn.title = '功能开发中';
-        }
-
         chatPageSendBtn = newSendBtn;
         chatPageTextarea = newTextarea;
         chatPageAttachBtn = newAttachBtn;
+        bindUploadButton(chatPageAttachBtn);
+        rdSpaceTrigger = document.getElementById('rdSpaceTrigger');
+        if (rdSpaceTrigger) {
+            rdSpaceTrigger.addEventListener('click', () => openRdSpace());
+        }
+        ensureRdSpaceDrawer();
 
         if (typeof initMentionTextarea === 'function') {
             initMentionTextarea(chatPageTextarea);
@@ -5017,13 +5455,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (isStreaming) {
                         return;
                     }
-                    const text = newTextarea.textContent.trim();
-                    if (text && !newSendBtn.disabled) {
-                        newTextarea.textContent = '';
-                        newTextarea.innerHTML = '';
-                        setSendButtonState(newSendBtn, false);
-                        addUserMessage(text);
-                        setTimeout(() => addAssistantMessage(), 300);
+                    if (!newSendBtn.disabled) {
+                        sendMessage();
                     }
                 }
             });
@@ -5036,14 +5469,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 if (newTextarea && !newSendBtn.disabled) {
-                    const text = newTextarea.textContent.trim();
-                    if (text) {
-                        newTextarea.textContent = '';
-                        newTextarea.innerHTML = '';
-                        setSendButtonState(newSendBtn, false);
-                        addUserMessage(text);
-                        setTimeout(() => addAssistantMessage(), 300);
-                    }
+                    sendMessage();
                 }
             });
         }
@@ -5079,19 +5505,88 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 添加用户消息
-    function addUserMessage(text) {
+    function collectAttachments(searchWrapper) {
+        if (!searchWrapper) return [];
+        const uploadList = searchWrapper.querySelector('[data-role="upload-list"]');
+        if (!uploadList) return [];
+        return Array.from(uploadList.querySelectorAll('.upload-card')).map(card => ({
+            name: card.dataset.fileName || '',
+            type: card.dataset.fileType || 'FILE',
+            thumbUrl: card.dataset.thumbUrl || '',
+            isImage: card.dataset.isImage === 'true'
+        }));
+    }
+
+    function addUserMessage(text, attachments = null, sourceWrapper = null) {
         if (!messagesContainer) return;
-        
+        const searchWrapper = sourceWrapper || getActiveSearchWrapper();
+        const files = attachments || collectAttachments(searchWrapper);
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message user';
-        
-        messageDiv.innerHTML = `
-            <div class="message-bubble">
-                <div class="message-text">${escapeHtml(text)}</div>
-            </div>
-        `;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        if (files.length > 0) {
+            const attachmentsContainer = document.createElement('div');
+            attachmentsContainer.className = 'message-attachments';
+            files.forEach(file => {
+                const attachment = document.createElement('div');
+                attachment.className = `message-attachment ${file.isImage ? 'image' : 'file'}`;
+                attachment.dataset.fileName = file.name;
+                attachment.dataset.fileType = file.type;
+                attachment.dataset.thumbUrl = file.thumbUrl;
+                attachment.dataset.isImage = file.isImage ? 'true' : 'false';
+                if (file.isImage) {
+                    attachment.innerHTML = `
+                        <img src="${file.thumbUrl}" alt="${escapeHtml(file.name)}">
+                    `;
+                } else {
+                    attachment.innerHTML = `
+                        <div class="message-attachment-icon">
+                            <img src="${file.thumbUrl}" alt="${escapeHtml(file.type)}">
+                        </div>
+                        <div class="message-attachment-info">
+                            <div class="message-attachment-name">${escapeHtml(file.name)}</div>
+                            <div class="message-attachment-type">${escapeHtml(file.type)}</div>
+                        </div>
+                    `;
+                }
+                attachment.addEventListener('click', () => {
+                    const fileData = {
+                        name: file.name,
+                        type: file.type,
+                        thumbUrl: file.thumbUrl,
+                        isImage: file.isImage,
+                        key: `${file.name}-${file.type}`
+                    };
+                    openRdSpace(fileData);
+                });
+                attachmentsContainer.appendChild(attachment);
+            });
+            contentDiv.appendChild(attachmentsContainer);
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.innerHTML = `<div class="message-text">${escapeHtml(text)}</div>`;
+        contentDiv.appendChild(bubble);
+        messageDiv.appendChild(contentDiv);
         
         messagesContainer.appendChild(messageDiv);
+        if (searchWrapper) {
+            const uploadList = searchWrapper.querySelector('[data-role="upload-list"]');
+            if (uploadList) {
+                uploadList.innerHTML = '';
+                updateUploadListState(uploadList);
+                syncSendButtonStates();
+            }
+        }
+        if (files.length > 0) {
+            addRdSpaceFiles(files);
+            showRdSpaceTrigger();
+        }
         
         // 滚动到底部
         setTimeout(() => {
@@ -5258,15 +5753,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 发送消息
     function sendMessage() {
-        if (!mainTextarea) return;
-        
-        const text = getTextContent(mainTextarea);
+        const activeWrapper = getActiveSearchWrapper();
+        const activeTextarea = isInChatMode ? chatPageTextarea : mainTextarea;
+        if (!activeTextarea) return;
+
+        const text = getTextContent(activeTextarea);
         if (!text) return;
+        const attachments = collectAttachments(activeWrapper);
         
         // 清空输入框
-        mainTextarea.textContent = '';
-        mainTextarea.innerHTML = '';
-        updateSendButtonState();
+        activeTextarea.textContent = '';
+        activeTextarea.innerHTML = '';
+        syncSendButtonStates();
         
         // 如果是第一条消息，切换到对话模式
         if (!isInChatMode) {
@@ -5274,7 +5772,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 添加用户消息
-        addUserMessage(text);
+        addUserMessage(text, attachments, activeWrapper);
         
         // 添加助手消息（带loading和流式输出）
         setTimeout(() => {
