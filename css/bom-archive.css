@@ -671,7 +671,7 @@
 }
 
 /* 模态框样式 */
-.modal-overlay {
+.bom-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -688,12 +688,12 @@
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.modal-overlay[style*="display: flex"] {
+.bom-modal-overlay[style*="display: flex"] {
     opacity: 1;
     visibility: visible;
 }
 
-.modal {
+.bom-modal-overlay .modal {
     background: white;
     border-radius: 20px;
     box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
@@ -707,11 +707,11 @@
     transition: transform 0.3s ease;
 }
 
-.modal-overlay[style*="display: flex"] .modal {
+.bom-modal-overlay[style*="display: flex"] .modal {
     transform: scale(1) translateY(0);
 }
 
-.modal-header {
+.bom-modal-overlay .modal-header {
     padding: 28px 32px 24px;
     border-bottom: 1px solid #F1F5F9;
     display: flex;
@@ -721,14 +721,14 @@
 }
 
 
-.modal-title {
+.bom-modal-overlay .modal-title {
     font-size: 22px;
     font-weight: 600;
     color: var(--text-main);
     letter-spacing: -0.3px;
 }
 
-.modal-close {
+.bom-modal-overlay .bom-modal-overlay .modal-close {
     width: 36px;
     height: 36px;
     border: none;
@@ -743,21 +743,21 @@
     flex-shrink: 0;
 }
 
-.modal-close:hover {
+.bom-modal-overlay .modal-close:hover {
     background: #F1F5F9;
     color: #64748B;
 }
 
-.modal-close:active {
+.bom-modal-overlay .modal-close:active {
     transform: scale(0.95);
 }
 
-.modal-close svg {
+.bom-modal-overlay .modal-close svg {
     width: 20px;
     height: 20px;
 }
 
-.modal-body {
+.bom-modal-overlay .modal-body {
     padding: 40px 32px;
     flex: 1;
     overflow-y: auto;
@@ -767,7 +767,7 @@
     gap: 32px;
 }
 
-.modal-footer {
+.bom-modal-overlay .bom-modal-overlay .modal-footer {
     padding: 24px 32px;
     border-top: 1px solid #F1F5F9;
     display: flex;
@@ -777,7 +777,7 @@
     background: #FAFBFC;
 }
 
-.modal-footer .btn {
+.bom-modal-overlay .modal-footer .btn {
     min-width: 100px;
     padding: 10px 24px;
     font-weight: 500;
@@ -788,13 +788,13 @@
     text-align: center;
 }
 
-.modal-footer .btn-secondary {
+.bom-modal-overlay .modal-footer .btn-secondary {
     background: #FFFFFF;
     border: 1.5px solid #E2E8F0;
     color: #64748B;
 }
 
-.modal-footer .btn-secondary:hover {
+.bom-modal-overlay .modal-footer .btn-secondary:hover {
     background: #F8FAFC;
     border-color: #CBD5E1;
     color: #475569;
@@ -802,30 +802,30 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.modal-footer .btn-primary {
+.bom-modal-overlay .modal-footer .btn-primary {
     background: linear-gradient(135deg, var(--trace-active) 0%, #4DB6AC 100%);
     border: none;
     color: #FFFFFF;
     box-shadow: 0 2px 8px rgba(109, 213, 232, 0.25);
 }
 
-.modal-footer .btn-primary:hover {
+.bom-modal-overlay .modal-footer .btn-primary:hover {
     opacity: 0.95;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(109, 213, 232, 0.35);
 }
 
-.modal-footer .btn-primary:active {
+.bom-modal-overlay .modal-footer .btn-primary:active {
     transform: translateY(0);
 }
 
-.form-group {
+.bom-modal-overlay .bom-modal-overlay .form-group {
     width: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.form-label {
+.bom-modal-overlay .form-label {
     display: block;
     font-size: 14px;
     font-weight: 500;
@@ -834,7 +834,7 @@
     letter-spacing: -0.1px;
 }
 
-.form-label.required::after {
+.bom-modal-overlay .form-label.required::after {
     content: '';
     display: inline-block;
     width: 4px;
@@ -845,8 +845,8 @@
     vertical-align: middle;
 }
 
-.form-input,
-.form-textarea {
+.bom-modal-overlay .form-input,
+.bom-modal-overlay .form-textarea {
     width: 100%;
     padding: 12px 16px;
     border: 1.5px solid #E2E8F0;
@@ -859,25 +859,25 @@
     box-sizing: border-box;
 }
 
-.form-input::placeholder,
-.form-textarea::placeholder {
+.bom-modal-overlay .form-input::placeholder,
+.bom-modal-overlay .form-textarea::placeholder {
     color: #94A3B8;
 }
 
-.form-input:hover,
-.form-textarea:hover {
+.bom-modal-overlay .form-input:hover,
+.bom-modal-overlay .form-textarea:hover {
     border-color: #CBD5E1;
 }
 
-.form-input:focus,
-.form-textarea:focus {
+.bom-modal-overlay .form-input:focus,
+.bom-modal-overlay .form-textarea:focus {
     outline: none;
     border-color: var(--trace-active);
     box-shadow: 0 0 0 4px rgba(109, 213, 232, 0.12);
     background: #FFFFFF;
 }
 
-.form-textarea {
+.bom-modal-overlay .form-textarea {
     resize: vertical;
     min-height: 120px;
     line-height: 1.6;

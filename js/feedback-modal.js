@@ -308,6 +308,10 @@
 
     function openFeedbackModal() {
         createFeedbackModal();
+        
+        // 确保反馈弹窗在最上层
+        feedbackModal.style.zIndex = '100001';
+        
         // 填充会话下拉框
         populateConversationSelect();
         feedbackModal.classList.add('show');

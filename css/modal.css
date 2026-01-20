@@ -155,18 +155,7 @@
     color: #94A3B8;
 }
 
-.password-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #64748B;
-    font-size: 18px;
-    padding: 4px;
-}
+/* password-toggle 样式已移至 settings-feedback.css */
 
 .verification-wrapper {
     display: flex;
@@ -340,8 +329,9 @@
     visibility: hidden;
     transform: translateY(10px);
     transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-    z-index: 10001;
+    z-index: 99999;
     overflow: hidden;
+    pointer-events: auto;
 }
 
 .user-menu-popup.show {
@@ -360,6 +350,7 @@
     align-items: center;
     gap: 8px;
     border-bottom: 1px solid #F1F5F9;
+    pointer-events: auto;
 }
 
 .user-menu-item:last-child {
@@ -495,8 +486,9 @@
     visibility: hidden;
     transform: translateX(-10px);
     transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-    z-index: 10002;
+    z-index: 100000;
     overflow: hidden;
+    pointer-events: auto;
 }
 
 .language-selector.show {

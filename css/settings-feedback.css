@@ -203,6 +203,18 @@
     position: relative;
 }
 
+.input-wrapper .form-input {
+    width: 100%;
+    padding: 12px 42px 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
 .form-input {
     width: 100%;
     padding: 12px 16px;
@@ -239,8 +251,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--text-secondary);
-    font-size: 18px;
+    color: #94A3B8;
     padding: 4px;
     display: flex;
     align-items: center;
@@ -250,6 +261,55 @@
 
 .password-toggle:hover {
     color: var(--text-main);
+}
+
+.password-toggle .eye-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* 密码提示 */
+.password-tip {
+    font-size: 14px;
+    color: #64748B;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+/* 验证码输入框 */
+.verification-wrapper {
+    display: flex;
+    gap: 12px;
+}
+
+.verification-wrapper .form-input {
+    flex: 1;
+}
+
+.get-code-btn {
+    flex-shrink: 0;
+    padding: 12px 20px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--trace-active);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.get-code-btn:hover:not(:disabled) {
+    background: #F0F9FF;
+    border-color: var(--trace-active);
+}
+
+.get-code-btn:disabled {
+    background: #F8FAFC;
+    color: #94A3B8;
+    cursor: not-allowed;
+    border-color: #E2E8F0;
 }
 
 .form-hint {

@@ -110,24 +110,55 @@
         const menu = document.createElement('div');
         menu.className = 'user-menu-popup';
         menu.id = 'userMenuPopup';
-        menu.innerHTML = `
-            <div class="user-menu-item" data-action="settings">
-                <span class="user-menu-item-icon">⚙️</span>
-                <span>个人设置</span>
-            </div>
-            <div class="user-menu-item" data-action="language" id="languageMenuItem">
-                <span class="user-menu-item-icon">🌐</span>
-                <span>Language</span>
-            </div>
-            <div class="user-menu-item" data-action="feedback">
-                <span class="user-menu-item-icon">💬</span>
-                <span>提交反馈</span>
-            </div>
-            <div class="user-menu-item" data-action="logout">
-                <span class="user-menu-item-icon">🚪</span>
-                <span>退出登录</span>
-            </div>
-        `;
+        
+        // 创建菜单项 - 使用 onclick 直接绑定
+        const settingsItem = document.createElement('div');
+        settingsItem.className = 'user-menu-item';
+        settingsItem.innerHTML = '<span class="user-menu-item-icon">⚙️</span><span>个人设置</span>';
+        settingsItem.onclick = function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            closeUserMenu();
+            setTimeout(function() {
+                window.openSettingsModal();
+            }, 50);
+        };
+        settingsItem.style.cursor = 'pointer';
+        
+        const languageItem = document.createElement('div');
+        languageItem.className = 'user-menu-item';
+        languageItem.id = 'languageMenuItem';
+        languageItem.innerHTML = '<span class="user-menu-item-icon">🌐</span><span>Language</span>';
+        
+        const feedbackItem = document.createElement('div');
+        feedbackItem.className = 'user-menu-item';
+        feedbackItem.innerHTML = '<span class="user-menu-item-icon">💬</span><span>提交反馈</span>';
+        feedbackItem.onclick = function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            closeUserMenu();
+            setTimeout(function() {
+                window.openFeedbackModal();
+            }, 50);
+        };
+        feedbackItem.style.cursor = 'pointer';
+        
+        const logoutItem = document.createElement('div');
+        logoutItem.className = 'user-menu-item';
+        logoutItem.innerHTML = '<span class="user-menu-item-icon">🚪</span><span>退出登录</span>';
+        logoutItem.onclick = function(e) {
+            e.stopPropagation();
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                closeUserMenu();
+            }
+        };
+        
+        menu.appendChild(settingsItem);
+        menu.appendChild(languageItem);
+        menu.appendChild(feedbackItem);
+        menu.appendChild(logoutItem);
+        
         document.body.appendChild(menu);
         userMenuPopup = menu;
         initUserMenuEvents();
@@ -136,7 +167,8 @@
 
     // 初始化菜单事件
     function initUserMenuEvents() {
-        const menuItems = userMenuPopup.querySelectorAll('.user-menu-item');
+        if (!userMenuPopup) return;
+        
         const languageMenuItem = userMenuPopup.querySelector('#languageMenuItem');
         
         // 语言菜单项悬浮事件
@@ -170,48 +202,6 @@
                 languageSelector.classList.remove('show');
             });
         }
-        
-        menuItems.forEach(item => {
-            item.addEventListener('click', function(e) {
-                const action = this.getAttribute('data-action');
-                
-                // Language菜单项不关闭菜单
-                if (action === 'language') {
-                    return;
-                }
-                
-                e.stopPropagation();
-                
-                switch(action) {
-                    case 'settings':
-                        if (window.openSettingsModal) {
-                            window.openSettingsModal();
-                        }
-                        closeUserMenu();
-                        break;
-                    case 'feedback':
-                        if (window.openFeedbackModal) {
-                            window.openFeedbackModal();
-                        }
-                        closeUserMenu();
-                        break;
-                    case 'logout':
-                        if (window.showConfirm) {
-                            window.showConfirm('确定要退出登录吗？', function() {
-                                Auth.logout();
-                                closeUserMenu();
-                            });
-                        } else {
-                            // 降级处理
-                            if (confirm('确定要退出登录吗？')) {
-                                Auth.logout();
-                                closeUserMenu();
-                            }
-                        }
-                        break;
-                }
-            });
-        });
     }
 
     // 显示菜单
@@ -248,27 +238,41 @@
 
     // 点击用户区域
     function initUserBlockClick() {
-        const userBlock = document.getElementById('userBlock');
-        if (userBlock) {
-            userBlock.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (isMenuOpen) {
-                    closeUserMenu();
-                } else {
-                    showUserMenu();
-                }
-            });
+        // 使用事件委托，确保即使元素是动态显示的也能正常工作
+        const sidebarUnit = document.getElementById('sidebarUnit');
+        if (sidebarUnit) {
+            // 移除之前可能存在的监听器，避免重复绑定
+            sidebarUnit.removeEventListener('click', handleUserBlockClick);
+            sidebarUnit.addEventListener('click', handleUserBlockClick);
         }
 
         // 点击登录按钮
         const loginButton = document.getElementById('loginButton');
         if (loginButton) {
-            loginButton.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (window.openLoginModal) {
-                    window.openLoginModal();
-                }
-            });
+            // 移除之前可能存在的监听器
+            loginButton.removeEventListener('click', handleLoginButtonClick);
+            loginButton.addEventListener('click', handleLoginButtonClick);
+        }
+    }
+
+    // 处理用户区域点击事件
+    function handleUserBlockClick(e) {
+        const userBlock = document.getElementById('userBlock');
+        if (userBlock && userBlock.contains(e.target)) {
+            e.stopPropagation();
+            if (isMenuOpen) {
+                closeUserMenu();
+            } else {
+                showUserMenu();
+            }
+        }
+    }
+
+    // 处理登录按钮点击事件
+    function handleLoginButtonClick(e) {
+        e.stopPropagation();
+        if (window.openLoginModal) {
+            window.openLoginModal();
         }
     }
 
@@ -283,13 +287,6 @@
             }
         }
     });
-
-    // 阻止菜单内部点击事件冒泡
-    if (userMenuPopup) {
-        userMenuPopup.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
 
     // 初始化
     if (document.readyState === 'loading') {

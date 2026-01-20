@@ -285,9 +285,13 @@
                 <!-- 设计模式（内测功能） -->
                 <div class="menu-section">
                     <div class="menu-item" id="designMode" data-tooltip="设计模式">
-                        <div class="menu-item-icon">🎨</div>
-                        <span class="menu-item-text">设计模式</span>
-                        <span class="menu-item-badge">内测</span>
+                        <div class="menu-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21h6M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3.5 5.5M12 2a7 7 0 0 1 7 7c0 2.5-1.5 4.5-3.5 5.5"/>
+                                <path d="M12 8a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2"/>
+                            </svg>
+                        </div>
+                        <span class="menu-item-text">设计模式<span class="menu-item-badge">内测</span></span>
                     </div>
                 </div>
             </div>
@@ -471,7 +475,7 @@
     </div>
 
     <!-- 版本查看弹窗 -->
-    <div class="modal-overlay" id="versionViewModalOverlay" style="display: none;">
+    <div class="bom-modal-overlay" id="versionViewModalOverlay" style="display: none;">
         <div class="modal version-view-modal" id="versionViewModal">
             <div class="modal-header">
                 <h2 class="modal-title" id="versionViewModalTitle">版本号</h2>
@@ -506,7 +510,7 @@
     </div>
 
     <!-- 发布新版本弹窗 -->
-    <div class="modal-overlay" id="newVersionModalOverlay" style="display: none;">
+    <div class="bom-modal-overlay" id="newVersionModalOverlay" style="display: none;">
         <div class="modal" id="newVersionModal">
             <div class="modal-header">
                 <h2 class="modal-title">发布新版本</h2>
@@ -535,7 +539,7 @@
     </div>
 
     <!-- 导入BOM模态框 -->
-    <div class="modal-overlay" id="importBomModalOverlay" style="display: none;">
+    <div class="bom-modal-overlay" id="importBomModalOverlay" style="display: none;">
         <div class="modal" id="importBomModal">
             <div class="modal-header">
                 <h2 class="modal-title">导入BOM</h2>
@@ -587,7 +591,7 @@
     </div>
 
     <!-- 新建/编辑项目模态框 -->
-    <div class="modal-overlay" id="projectModalOverlay" style="display: none;">
+    <div class="bom-modal-overlay" id="projectModalOverlay" style="display: none;">
         <div class="modal" id="projectModal">
             <div class="modal-header">
                 <h2 class="modal-title" id="projectModalTitle">新建项目</h2>

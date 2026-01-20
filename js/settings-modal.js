@@ -98,7 +98,7 @@
                                         type="tel" 
                                         class="form-input" 
                                         id="profilePhone" 
-                                        value="13645166079"
+                                        value="136****6079"
                                         readonly
                                     >
                                 </div>
@@ -168,30 +168,25 @@
 
                         <!-- 修改密码内容 -->
                         <div class="content-section" id="password-section">
-                            <h3 class="section-title">修改密码</h3>
+                            <h3 class="section-title">设置密码</h3>
+                            <p class="password-tip">您还未设置密码，设置后可使用密码登录</p>
                             <form class="password-form" id="passwordForm">
+                                <!-- 手机号显示 -->
                                 <div class="form-group">
-                                    <label class="form-label">
-                                        当前密码
-                                        <span class="form-label-required">*</span>
-                                    </label>
-                                    <div class="input-wrapper">
-                                        <input 
-                                            type="password" 
-                                            class="form-input" 
-                                            id="currentPassword" 
-                                            placeholder="请输入当前密码"
-                                            required
-                                        >
-                                        <button class="password-toggle" type="button" data-target="currentPassword">
-                                            👁
-                                        </button>
-                                    </div>
+                                    <label class="form-label">绑定手机号</label>
+                                    <input 
+                                        type="tel" 
+                                        class="form-input" 
+                                        id="passwordPhone" 
+                                        value="136****6079"
+                                        readonly
+                                    >
                                 </div>
 
+                                <!-- 新密码 -->
                                 <div class="form-group">
                                     <label class="form-label">
-                                        新密码
+                                        设置密码
                                         <span class="form-label-required">*</span>
                                     </label>
                                     <div class="input-wrapper">
@@ -199,11 +194,13 @@
                                             type="password" 
                                             class="form-input" 
                                             id="newPassword" 
-                                            placeholder="8-20位,数字/大/小写字母/字符至少3种"
+                                            placeholder="8-20位，包含数字/大小写字母/字符至少3种"
                                             required
                                         >
                                         <button class="password-toggle" type="button" data-target="newPassword">
-                                            👁
+                                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path>
+                                            </svg>
                                         </button>
                                     </div>
                                     <div class="form-hint">
@@ -211,9 +208,10 @@
                                     </div>
                                 </div>
 
+                                <!-- 确认密码 -->
                                 <div class="form-group">
                                     <label class="form-label">
-                                        确认新密码
+                                        确认密码
                                         <span class="form-label-required">*</span>
                                     </label>
                                     <div class="input-wrapper">
@@ -221,12 +219,33 @@
                                             type="password" 
                                             class="form-input" 
                                             id="confirmPassword" 
-                                            placeholder="请再次输入新密码"
+                                            placeholder="请再次输入密码"
                                             required
                                         >
                                         <button class="password-toggle" type="button" data-target="confirmPassword">
-                                            👁
+                                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path>
+                                            </svg>
                                         </button>
+                                    </div>
+                                </div>
+
+                                <!-- 验证码 -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        验证码
+                                        <span class="form-label-required">*</span>
+                                    </label>
+                                    <div class="verification-wrapper">
+                                        <input 
+                                            type="text" 
+                                            class="form-input" 
+                                            id="passwordVerifyCode" 
+                                            placeholder="请输入验证码"
+                                            maxlength="6"
+                                            required
+                                        >
+                                        <button class="get-code-btn" type="button" id="getPasswordCode">获取验证码</button>
                                     </div>
                                 </div>
                             </form>
@@ -289,15 +308,49 @@
             toggle.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');
                 const input = settingsModal.querySelector(`#${targetId}`);
+                const svg = this.querySelector('.eye-icon');
+                
                 if (input.type === 'password') {
                     input.type = 'text';
-                    this.textContent = '👁️‍🗨️';
+                    svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
                 } else {
                     input.type = 'password';
-                    this.textContent = '👁';
+                    svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path>';
                 }
             });
         });
+
+        // 验证码倒计时
+        const getPasswordCodeBtn = settingsModal.querySelector('#getPasswordCode');
+        if (getPasswordCodeBtn) {
+            let countdown = 0;
+            getPasswordCodeBtn.addEventListener('click', function() {
+                if (countdown > 0) return;
+                
+                const phone = settingsModal.querySelector('#passwordPhone').value;
+                if (!phone) {
+                    if (window.showToast) {
+                        window.showToast('手机号不存在');
+                    }
+                    return;
+                }
+                
+                // 模拟发送验证码（不显示提示）
+                countdown = 60;
+                getPasswordCodeBtn.disabled = true;
+                
+                const timer = setInterval(() => {
+                    getPasswordCodeBtn.textContent = `${countdown}秒后重试`;
+                    countdown--;
+                    
+                    if (countdown < 0) {
+                        clearInterval(timer);
+                        getPasswordCodeBtn.disabled = false;
+                        getPasswordCodeBtn.textContent = '获取验证码';
+                    }
+                }, 1000);
+            });
+        }
 
         // 头像上传
         const avatarInput = settingsModal.querySelector('#avatarInput');
@@ -427,11 +480,27 @@
         }
 
         function handlePasswordChange() {
-            const currentPassword = settingsModal.querySelector('#currentPassword').value;
+            const verifyCode = settingsModal.querySelector('#passwordVerifyCode').value;
             const newPassword = settingsModal.querySelector('#newPassword').value;
             const confirmPassword = settingsModal.querySelector('#confirmPassword').value;
 
-            if (!currentPassword || !newPassword || !confirmPassword) {
+            // 验证验证码
+            if (!verifyCode) {
+                if (window.showToast) {
+                    window.showToast('请输入验证码');
+                }
+                return;
+            }
+
+            if (verifyCode.length !== 6) {
+                if (window.showToast) {
+                    window.showToast('验证码格式不正确');
+                }
+                return;
+            }
+
+            // 验证新密码
+            if (!newPassword || !confirmPassword) {
                 if (window.showToast) {
                     window.showToast('请填写完整信息');
                 }
@@ -465,16 +534,9 @@
                 return;
             }
 
-            if (currentPassword === newPassword) {
-                if (window.showToast) {
-                    window.showToast('新密码不能与当前密码相同');
-                }
-                return;
-            }
-
-            // 保存逻辑
+            // 保存逻辑（实际项目中需要调用后端 API）
             if (window.showToast) {
-                window.showToast('密码修改成功！');
+                window.showToast('密码设置成功！');
             }
             settingsModal.querySelector('#passwordForm').reset();
         }
@@ -612,6 +674,9 @@
     function openSettingsModal() {
         createSettingsModal();
         
+        // 确保设置弹窗在最上层
+        settingsModal.style.zIndex = '100001';
+        
         // 加载并显示当前保存的模式
         const savedMode = localStorage.getItem('developmentMode') || 'balanced';
         const preferenceTags = settingsModal.querySelectorAll('.preference-tag');
@@ -644,4 +709,3 @@
     window.openSettingsModal = openSettingsModal;
     window.closeSettingsModal = closeSettingsModal;
 })();
-
