@@ -320,7 +320,7 @@
                         </div>
                         
                         <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📋 文档概述</h3>
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">文档概述</h3>
                             <p style="color: var(--text-secondary); line-height: 1.6; font-size: 14px;">
                                 这是关于 ${docName.replace('.pdf', '').replace('.docx', '').replace('.doc', '')} 的技术文档。
                                 该文档包含了详细的技术规格、应用说明和使用指南，为工程师提供全面的参考资料。
@@ -328,7 +328,7 @@
                         </div>
 
                         <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">⚡ 主要特性</h3>
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">主要特性</h3>
                             <ul style="color: var(--text-secondary); line-height: 1.8; font-size: 14px; padding-left: 20px;">
                                 <li>详细的技术规格说明</li>
                                 <li>完整的参数表格和性能指标</li>
@@ -340,7 +340,7 @@
                         </div>
 
                         <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">📐 技术参数</h3>
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">技术参数</h3>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
                                 <div style="color: var(--text-secondary);"><strong>文档类型:</strong> PDF文档</div>
                                 <div style="color: var(--text-secondary);"><strong>文档ID:</strong> ${docId}</div>
@@ -350,7 +350,7 @@
                         </div>
 
                         <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">🔧 应用领域</h3>
+                            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 16px;">应用领域</h3>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: var(--text-secondary);">
                                 <div>• 嵌入式系统开发</div>
                                 <div>• 物联网设备</div>

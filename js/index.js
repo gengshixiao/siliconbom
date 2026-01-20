@@ -1995,7 +1995,7 @@ function initChatDemo() {
         practicesMessagesContainer.innerHTML = `
             <!-- 用户消息 -->
             <div class="message user">
-                <div class="message-avatar">👨🏻‍💻</div>
+                <div class="message-avatar"></div>
                 <div class="message-content">
                     <div class="message-bubble">
                         <div class="message-text">GD25Q64ESIGR</div>
@@ -2016,7 +2016,12 @@ function initChatDemo() {
                         <!-- 工具调用 -->
                         <div class="tool-call">
                             <div class="tool-call-header">
-                                <div class="tool-call-icon">🔍</div>
+                                <div class="tool-call-icon">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </div>
                                 <div class="tool-call-name">物料查询工具</div>
                                 <div class="tool-call-status">已完成</div>
                             </div>
@@ -2034,7 +2039,7 @@ function initChatDemo() {
                         <!-- 芯片参数表格 -->
                         <div class="chip-info-table">
                             <div class="chip-info-header">
-                                📱 GD25Q64ESIGR 技术参数
+                                GD25Q64ESIGR 技术参数
                             </div>
                             <div class="chip-info-body">
                                 <div class="chip-param-row">
@@ -2081,7 +2086,7 @@ function initChatDemo() {
                         </div>
 
                         <div class="message-text">
-                            📋 <strong>物料说明书要点：</strong><br>
+                            <strong>物料说明书要点：</strong><br>
                             • 支持标准SPI指令集，兼容性好<br>
                             • 具备硬件写保护功能<br>
                             • 支持双/四线SPI高速读取<br>
@@ -2103,7 +2108,7 @@ function initChatDemo() {
                         <!-- 替代料列表 -->
                         <div class="alternatives-list">
                             <div class="alternatives-header">
-                                🔄 推荐替代料列表
+                                推荐替代料列表
                             </div>
                             <div class="alternative-item">
                                 <div>
@@ -2161,7 +2166,7 @@ function initChatDemo() {
         practicesMessagesContainer.innerHTML = `
             <!-- 用户消息 - @项目调用 -->
             <div class="message user">
-                <div class="message-avatar">📋</div>
+                <div class="message-avatar"></div>
                 <div class="message-content">
                     <div class="message-bubble">
                         <div class="message-text">
@@ -2188,7 +2193,12 @@ function initChatDemo() {
                         <!-- 工具调用 - 读取BOM版本 -->
                         <div class="tool-call">
                             <div class="tool-call-header">
-                                <div class="tool-call-icon">📚</div>
+                                <div class="tool-call-icon">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                    </svg>
+                                </div>
                                 <div class="tool-call-name">BOM档案读取工具</div>
                                 <div class="tool-call-status">执行中...</div>
                             </div>
@@ -2222,19 +2232,34 @@ function initChatDemo() {
                 已读取项目 <strong>双电源自动切换系统</strong>，共找到 <strong>3个</strong> 历史版本：
                 <div style="display: flex; gap: 12px; margin-top: 12px;">
                     <div class="bom-version-card" onclick="showBomVersionDetail('v1.0')" style="cursor: pointer;">
-                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                        </div>
                         <div class="bom-version-name">v1.0</div>
                         <div class="bom-version-date">2024-01-15</div>
                         <div class="bom-version-info">初版设计 · 6个器件</div>
                     </div>
                     <div class="bom-version-card" onclick="showBomVersionDetail('v2.0')" style="cursor: pointer;">
-                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                        </div>
                         <div class="bom-version-name">v2.0</div>
                         <div class="bom-version-date">2024-03-20</div>
                         <div class="bom-version-info">优化电源 · 6个器件</div>
                     </div>
                     <div class="bom-version-card" onclick="showBomVersionDetail('v2.1')" style="cursor: pointer;">
-                        <div class="bom-version-icon">📄</div>
+                        <div class="bom-version-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                        </div>
                         <div class="bom-version-name">v2.1</div>
                         <div class="bom-version-date">2024-05-10</div>
                         <div class="bom-version-info">降低成本 · 6个器件</div>
@@ -2414,7 +2439,7 @@ function initChatDemo() {
         
         if (taskContent) {
             taskContent.innerHTML = `
-                <div class="task-progress">✅ 选型完成</div>
+                <div class="task-progress">选型完成</div>
                 <div class="task-result">
                     <div class="selected-component">${result.component}</div>
                     <div class="component-reason">${result.reason}</div>
@@ -2556,7 +2581,7 @@ function initChatDemo() {
                     
                     <div class="bom-table-container">
                         <div class="bom-table-header">
-                            📋 电源切换模块 BOM清单 v3.0 (高温国产版)
+                            电源切换模块 BOM清单 v3.0 (高温国产版)
                         </div>
                         <table class="bom-table">
                             <thead>
@@ -2783,13 +2808,12 @@ function initChatDemo() {
                                 </svg>
                                 下载
                             </button>
-                            <button class="bom-action-btn bom-btn-save primary">
+                            <button class="bom-action-btn bom-btn-quote primary">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                                    <polyline points="17 21 17 13 7 13 7 21"/>
-                                    <polyline points="7 3 7 8 15 8"/>
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                                 </svg>
-                                保存BOM版本
+                                智能报价
                             </button>
                         </div>
                     </div>
@@ -2819,7 +2843,7 @@ function initChatDemo() {
         practicesMessagesContainer.innerHTML = `
             <!-- 用户消息 - 上传文档 -->
             <div class="message user">
-                <div class="message-avatar">🚀</div>
+                <div class="message-avatar"></div>
                 <div class="message-content">
                     <div class="message-bubble">
                         <div class="uploaded-file">
@@ -2833,7 +2857,7 @@ function initChatDemo() {
 
             <!-- 用户消息 - 文字需求 -->
             <div class="message user">
-                <div class="message-avatar">🚀</div>
+                <div class="message-avatar"></div>
                 <div class="message-content">
                     <div class="message-bubble">
                         <div class="message-text">基于这个需求文档，帮我生成完整的BOM</div>
@@ -2852,7 +2876,7 @@ function initChatDemo() {
                         </div>
                         
                         <div class="message-text">
-                            <strong>📋 核心需求解析：</strong><br>
+                            <strong>核心需求解析：</strong><br>
                             • 主电源：12V/5A，备用电源：24V转12V/3A<br>
                             • 自动检测主电源状态，故障时无缝切换<br>
                             • 切换时间 ≤ 10ms，支持手动强制切换<br>
@@ -2863,7 +2887,7 @@ function initChatDemo() {
                         <!-- 需求表单 -->
                         <div class="requirements-form">
                             <div class="form-header">
-                                🔧 器件需求分解表单
+                                器件需求分解表单
                             </div>
                             <div class="form-body">
                                 <div class="requirement-item">
@@ -3129,7 +3153,7 @@ function initChatDemo() {
         
         if (taskContent) {
             taskContent.innerHTML = `
-                <div class="task-progress">✅ 选型完成</div>
+                <div class="task-progress">选型完成</div>
                 <div class="task-result">
                     <div class="selected-component">${result.component}</div>
                     <div class="component-reason">${result.reason}</div>
@@ -3262,12 +3286,12 @@ function initChatDemo() {
             <div class="message-content">
                 <div class="message-bubble">
                     <div class="message-text">
-                        🎉 所有器件选型完成！基于需求分析和并行查询结果，我为您生成了初版BOM清单。您可以点击器件型号查看替代方案：
+                        所有器件选型完成！基于需求分析和并行查询结果，我为您生成了初版BOM清单。您可以点击器件型号查看替代方案：
                     </div>
                     
                     <div class="bom-table-container">
                         <div class="bom-table-header">
-                            📋 电源切换模块 BOM清单 v1.0
+                            电源切换模块 BOM清单 v1.0
                         </div>
                         <table class="bom-table">
                             <thead>
@@ -3612,28 +3636,28 @@ function initChatDemo() {
 
             // --- 第一阶段：供应链明细 (2.5秒后) ---
             setTimeout(() => {
-                const s1 = document.getElementById('quote-step1');
-                if(s1) { 
-                    s1.classList.remove('active'); 
-                    s1.classList.add('completed');
-                    s1.querySelector('.loading-step-icon').innerHTML = '✅';
-                }
-                
-                showMaterialSupplyChainDetails();
-
-                // --- 第二阶段：工艺推理分析 (3秒后) ---
-                setTimeout(() => {
-                    const s2 = document.getElementById('quote-step2');
-                    if(s2) { 
-                        s2.classList.add('active'); 
+                    const s1 = document.getElementById('quote-step1');
+                    if(s1) { 
+                        s1.classList.remove('active'); 
+                        s1.classList.add('completed');
+                        s1.querySelector('.loading-step-icon').innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
                     }
                     
+                    showMaterialSupplyChainDetails();
+
+                    // --- 第二阶段：工艺推理分析 (3秒后) ---
                     setTimeout(() => {
-                        if(s2) {
-                            s2.classList.remove('active'); 
-                            s2.classList.add('completed');
-                            s2.querySelector('.loading-step-icon').innerHTML = '✅';
+                        const s2 = document.getElementById('quote-step2');
+                        if(s2) { 
+                            s2.classList.add('active'); 
                         }
+                        
+                        setTimeout(() => {
+                            if(s2) {
+                                s2.classList.remove('active'); 
+                                s2.classList.add('completed');
+                                s2.querySelector('.loading-step-icon').innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                            }
                         
                         showProcessReasoning();
 
@@ -3875,11 +3899,11 @@ function initChatDemo() {
             <div class="message-content">
                 <div class="message-bubble">
                     <div class="message-text">
-                        <strong>💡 硅宝专家工艺分析：</strong><br>
+                        <strong>硅宝专家工艺分析：</strong><br>
                         基于您需求文档中提到的<strong>“12V/5A 持续工作”</strong>与<strong>“无缝切换”</strong>特性，我为您优化了 PCB 工艺标准：
                     </div>
                     
-                    <div style="margin-top: 10px; padding: 12px; background: rgba(var(--primary-rgb), 0.05); border-left: 3px solid var(--primary-color); font-size: 13px; line-height: 1.6;">
+                    <div style="margin-top: 10px; padding: 12px; background: #F0FDF4; border-left: 3px solid #166534; font-size: 13px; line-height: 1.6; color: #166534;">
                         • <strong>载流强化：</strong> 5A 持续电流伴随瞬间大电流冲击，普通 1oz 铜厚难以维持温升控制，已自动升级为 <strong>2oz 厚铜工艺</strong>。<br>
                         • <strong>信号稳定性：</strong> 为保证精密电阻 (WSL2512) 的电流采样精度，推荐使用 <strong>沉金 (ENIG)</strong> 表面处理，防止触点氧化影响采样。<br>
                         • <strong>热平衡：</strong> 针对 MOSFET 的散热需求，推荐增加过孔塞孔 (Via-in-Pad) 工艺以提高热传导效率。<br>
@@ -4307,7 +4331,7 @@ function initChatDemo() {
                     </div>
                     
                     <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">📋 产品概述</h3>
+                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">产品概述</h3>
                         <p style="color: #64748B; line-height: 1.6; font-size: 14px;">
                             GD25Q64ESIGR是兆易创新推出的一款64Mbit容量的SPI NOR Flash存储器。
                             该产品采用先进的工艺技术，具有高可靠性、低功耗的特点，广泛应用于各种嵌入式系统中。
@@ -4315,7 +4339,7 @@ function initChatDemo() {
                     </div>
 
                     <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">⚡ 主要特性</h3>
+                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">主要特性</h3>
                         <ul style="color: #64748B; line-height: 1.8; font-size: 14px; padding-left: 20px;">
                             <li>64Mbit (8MB) 存储容量</li>
                             <li>标准SPI接口，最高133MHz时钟频率</li>
@@ -4329,7 +4353,7 @@ function initChatDemo() {
                     </div>
 
                     <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">📐 封装信息</h3>
+                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">封装信息</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
                             <div><strong>封装类型:</strong> SOP8 (150mil)</div>
                             <div><strong>引脚数量:</strong> 8 pins</div>
@@ -4339,7 +4363,7 @@ function initChatDemo() {
                     </div>
 
                     <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">🔧 应用领域</h3>
+                        <h3 style="color: #334155; margin-bottom: 12px; font-size: 16px;">应用领域</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: #64748B;">
                             <div>• 嵌入式系统固件存储</div>
                             <div>• 物联网设备</div>

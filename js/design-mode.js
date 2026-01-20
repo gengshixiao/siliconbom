@@ -1798,7 +1798,12 @@
             <div>我来为您设计电源切换模块。让我先分析需求并添加必要的组件...</div>
             <div class="tool-call" style="margin-top: 12px;">
                 <div class="tool-call-header">
-                    <div class="tool-call-icon">🔍</div>
+                    <div class="tool-call-icon">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
                     <div class="tool-call-name">设计分析工具</div>
                     <div class="tool-call-status">执行中...</div>
                 </div>
@@ -1839,7 +1844,12 @@
                 <div>开始进行物料选型，将逐一查询并选择最适合的器件...</div>
                 <div class="tool-call" style="margin-top: 12px;">
                     <div class="tool-call-header">
-                        <div class="tool-call-icon">📚</div>
+                        <div class="tool-call-icon">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
                         <div class="tool-call-name">物料查询工具</div>
                         <div class="tool-call-status">执行中...</div>
                     </div>
@@ -1879,7 +1889,7 @@
             // MCU参数表格
             paramTableHTML = `
                 <div class="chip-info-table" style="margin-top: 12px;">
-                    <div class="chip-info-header">📱 ${partNumber} 技术参数</div>
+                    <div class="chip-info-header">${partNumber} 技术参数</div>
                     <div class="chip-info-body">
                         <div class="chip-param-row">
                             <div class="chip-param-label">制造商</div>
@@ -1912,7 +1922,7 @@
             // DC-DC参数表格
             paramTableHTML = `
                 <div class="chip-info-table" style="margin-top: 12px;">
-                    <div class="chip-info-header">⚡ ${partNumber} 技术参数</div>
+                    <div class="chip-info-header">${partNumber} 技术参数</div>
                     <div class="chip-info-body">
                         <div class="chip-param-row">
                             <div class="chip-param-label">输入电压</div>
@@ -1957,7 +1967,7 @@
         addCopilotMessageHTML('assistant', `
             <div style="margin-top: 8px;">所有组件选型完成！以下是完整的BOM清单：</div>
             <div class="bom-table-container" style="margin-top: 12px;">
-                <div class="bom-table-header">📋 电源切换模块 BOM清单 v1.0</div>
+                <div class="bom-table-header">电源切换模块 BOM清单 v1.0</div>
                 <table class="bom-table">
                     <thead>
                         <tr>
@@ -2028,7 +2038,7 @@
             </div>
             
             <div class="message-text">
-                <strong>📋 核心需求解析：</strong><br>
+                <strong>核心需求解析：</strong><br>
                 • 主电源：12V/5A，备用电源：24V转12V/3A<br>
                 • 自动检测主电源状态，故障时无缝切换<br>
                 • 切换时间 ≤ 10ms，支持手动强制切换<br>
@@ -2039,7 +2049,7 @@
             <!-- 需求表单 -->
             <div class="requirements-form">
                 <div class="form-header">
-                    🔧 器件需求分解表单
+                    器件需求分解表单
                 </div>
                 <div class="form-body">
                     <div class="requirement-item">
@@ -2285,20 +2295,20 @@
                     我已经分析了您上传的电源切换模块需求说明书。根据文档内容，这是一个双电源自动切换系统，主要技术要求如下：
                 </div>
                 
-                <div class="message-text">
-                    <strong>📋 核心需求解析：</strong><br>
-                    • 主电源：12V/5A，备用电源：24V转12V/3A<br>
-                    • 自动检测主电源状态，故障时无缝切换<br>
-                    • 切换时间 ≤ 10ms，支持手动强制切换<br>
-                    • 工作温度：-20°C ~ +70°C<br>
-                    • 具备过压、欠压、过流保护功能
-                </div>
+            <div class="message-text">
+                <strong>核心需求解析：</strong><br>
+                • 主电源：12V/5A，备用电源：24V转12V/3A<br>
+                • 自动检测主电源状态，故障时无缝切换<br>
+                • 切换时间 ≤ 10ms，支持手动强制切换<br>
+                • 工作温度：-20°C ~ +70°C<br>
+                • 具备过压、欠压、过流保护功能
+            </div>
 
-                <!-- 需求表单 -->
-                <div class="requirements-form" id="requirementsForm">
-                    <div class="form-header">
-                        🔧 器件需求分解表单
-                    </div>
+            <!-- 需求表单 -->
+            <div class="requirements-form" id="requirementsForm">
+                <div class="form-header">
+                    器件需求分解表单
+                </div>
                     <div class="form-body" id="formBody">
                         <!-- 表单项将通过JavaScript逐步添加 -->
                     </div>
@@ -3017,7 +3027,7 @@
         
         if (taskContent) {
             taskContent.innerHTML = `
-                <div class="task-progress">✅ 选型完成</div>
+                <div class="task-progress">选型完成</div>
                 <div class="task-result">
                     <div class="selected-component">${result.component}</div>
                     <div class="component-reason">${result.reason}</div>
@@ -3205,12 +3215,12 @@
         bomMessage.innerHTML = `
             <div class="message-content">
                 <div class="message-text">
-                    🎉 所有器件选型完成！基于需求分析和并行查询结果，我为您生成了初版BOM清单。您可以点击器件型号查看替代方案：
+                    所有器件选型完成！基于需求分析和并行查询结果，我为您生成了初版BOM清单。您可以点击器件型号查看替代方案：
                 </div>
                 
                 <div class="bom-table-container">
                     <div class="bom-table-header">
-                        📋 电源切换模块 BOM清单 v1.0
+                        电源切换模块 BOM清单 v1.0
                     </div>
                     <div class="bom-table-wrapper">
                         <table class="bom-table">
@@ -3540,28 +3550,28 @@
 
             // --- 第一阶段：供应链明细 (2.5秒后) ---
             setTimeout(() => {
-                const s1 = document.getElementById('quote-step1');
-                if(s1) { 
-                    s1.classList.remove('active'); 
-                    s1.classList.add('completed');
-                    s1.querySelector('.loading-step-icon').innerHTML = '✅';
-                }
-                
-                showMaterialSupplyChainDetails();
-
-                // --- 第二阶段：工艺推理分析 (3秒后) ---
-                setTimeout(() => {
-                    const s2 = document.getElementById('quote-step2');
-                    if(s2) { 
-                        s2.classList.add('active'); 
+                    const s1 = document.getElementById('quote-step1');
+                    if(s1) { 
+                        s1.classList.remove('active'); 
+                        s1.classList.add('completed');
+                        s1.querySelector('.loading-step-icon').innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
                     }
                     
+                    showMaterialSupplyChainDetails();
+
+                    // --- 第二阶段：工艺推理分析 (3秒后) ---
                     setTimeout(() => {
-                        if(s2) {
-                            s2.classList.remove('active'); 
-                            s2.classList.add('completed');
-                            s2.querySelector('.loading-step-icon').innerHTML = '✅';
+                        const s2 = document.getElementById('quote-step2');
+                        if(s2) { 
+                            s2.classList.add('active'); 
                         }
+                        
+                        setTimeout(() => {
+                            if(s2) {
+                                s2.classList.remove('active'); 
+                                s2.classList.add('completed');
+                                s2.querySelector('.loading-step-icon').innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                            }
                         
                         showProcessReasoning();
 
@@ -3780,11 +3790,11 @@
         reasoningMessage.innerHTML = `
             <div class="message-content">
                 <div class="message-text">
-                    <strong>💡 硅宝专家工艺分析：</strong><br>
+                    <strong>硅宝专家工艺分析：</strong><br>
                     我已实时读取了您左侧画布上的<strong>电路原理图</strong>。基于您设计的<strong>“12V/5A 功率切换路径”</strong>以及<strong>高频开关拓扑</strong>，我为您匹配了以下 PCB 制造标准：
                 </div>
                 
-                <div style="margin-top: 10px; padding: 10px; background: rgba(109, 213, 232, 0.05); border-left: 3px solid #6DD5E8; font-size: 12px; line-height: 1.5;">
+                <div style="margin-top: 10px; padding: 10px; background: #F0FDF4; border-left: 3px solid #166534; font-size: 12px; line-height: 1.5; color: #166534;">
                     • <strong>热平衡推理：</strong> 通过原理图识别出 Q1/Q2 MOSFET 存在持续高功耗，默认 1oz 铜厚难以满足散热，已自动升级为 <strong>2oz 厚铜</strong>。<br>
                     • <strong>精密采样保障：</strong> 识别到您使用了精密采样电阻 R1，为降低接触电阻并提高采样精度，表面处理已设定为 <strong>沉金 (ENIG)</strong>。<br>
                     • <strong>工程优化：</strong> 根据原理图中反馈的过孔密度，工程费已包含<strong>Via-in-Pad (盘中孔)</strong> 工艺，以支持更优的散热布线。
